@@ -23,7 +23,7 @@ let non_null = unsafe { NonNull::new_unchecked(ptr) };
 - **Never use `unwrap()` in production code paths**
   - Use `expect()` with descriptive messages for programmer errors
   - Use `?` or explicit error handling for runtime errors
-  
+
 - **Never panic on user input**
   - Always validate and return `Result` types
   - Use the `thiserror` crate for custom error types
@@ -54,7 +54,7 @@ pub fn parse_key(bytes: &[u8]) -> Key {
 - **Always zero sensitive data before deallocation**
   - Use `MLockedBytes` for cryptographic secrets
   - Use `ptr::write_bytes(ptr, 0, len)` in Drop implementations
-  
+
 - **Be careful with memory locking**
   - Check ulimit settings don't prevent mlock
   - Handle mlock failures gracefully
@@ -65,7 +65,7 @@ pub fn parse_key(bytes: &[u8]) -> Key {
 - **Never roll your own crypto**
   - Use established libraries (curve25519-dalek, ed25519-dalek, etc.)
   - Follow IETF standards and RFCs
-  
+
 - **Constant-time operations**
   - Use the `subtle` crate for equality checks on secrets
   - Avoid branches on secret data
