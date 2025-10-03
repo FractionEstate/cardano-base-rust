@@ -164,10 +164,17 @@ impl<const N: usize> PinnedSizedBytes<N> {
         Self::from_slice(slice).unwrap_or_else(|err| panic!("psbFromByteString: {}", err))
     }
 
-    /// Convert a pointer to pinned bytes into a sized pointer wrapper. Unsafe
-    /// because the caller must ensure the pointer is valid for `N` bytes.
+    /// Convert a pointer to pinned bytes into a sized pointer wrapper.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that:
+    /// - `ptr` is a valid pointer to a `PinnedSizedBytes<N>` instance
+    /// - `ptr` points to memory containing at least N valid bytes
+    /// - The lifetime of the returned `SizedPtr` doesn't outlive the pointed-to data
     pub unsafe fn ptr_to_sized_ptr(ptr: *const Self) -> SizedPtr<'static, N> {
         let raw = (ptr as *const [u8; N]) as *mut u8;
+        // SAFETY: Caller guarantees ptr is valid, so casting through it is safe
         let nn = NonNull::new_unchecked(raw);
         SizedPtr::new(nn)
     }

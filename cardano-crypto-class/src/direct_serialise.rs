@@ -90,9 +90,14 @@ pub fn direct_serialise_buf<T: DirectSerialise>(
 ) -> DirectResult<usize> {
     let base = dst.as_ptr();
     direct_serialise_to(
-        |offset, src, len| unsafe {
-            std::ptr::copy_nonoverlapping(src, base.add(offset), len);
-            Ok(())
+        |offset, src, len| {
+            // SAFETY: Caller guarantees dst is valid for dst_len bytes.
+            // offset + len <= dst_len is verified by direct_serialise_to.
+            // src is valid for len bytes (provided by value.direct_serialise).
+            unsafe {
+                std::ptr::copy_nonoverlapping(src, base.add(offset), len);
+                Ok(())
+            }
         },
         dst_len,
         value,
@@ -106,9 +111,14 @@ pub fn direct_serialise_buf_checked<T: DirectSerialise>(
     value: &T,
 ) -> DirectResult<()> {
     direct_serialise_to_checked(
-        |offset, src, len| unsafe {
-            std::ptr::copy_nonoverlapping(src, dst.as_ptr().add(offset), len);
-            Ok(())
+        |offset, src, len| {
+            // SAFETY: Caller guarantees dst is valid for dst_len bytes.
+            // offset + len <= dst_len is verified by direct_serialise_to_checked.
+            // src is valid for len bytes (provided by value.direct_serialise).
+            unsafe {
+                std::ptr::copy_nonoverlapping(src, dst.as_ptr().add(offset), len);
+                Ok(())
+            }
         },
         dst_len,
         value,
@@ -164,9 +174,14 @@ pub fn direct_deserialise_buf<T: DirectDeserialise>(
 ) -> DirectResult<(T, usize)> {
     let base = src.as_ptr();
     direct_deserialise_from(
-        |offset, dst, len| unsafe {
-            std::ptr::copy_nonoverlapping(base.add(offset), dst, len);
-            Ok(())
+        |offset, dst, len| {
+            // SAFETY: Caller guarantees src is valid for src_len bytes.
+            // offset + len <= src_len is verified by direct_deserialise_from.
+            // dst is valid for len bytes (provided by T::direct_deserialise).
+            unsafe {
+                std::ptr::copy_nonoverlapping(base.add(offset), dst, len);
+                Ok(())
+            }
         },
         src_len,
     )
@@ -178,9 +193,14 @@ pub fn direct_deserialise_buf_checked<T: DirectDeserialise>(
     src_len: usize,
 ) -> DirectResult<T> {
     direct_deserialise_from_checked(
-        |offset, dst, len| unsafe {
-            std::ptr::copy_nonoverlapping(src.as_ptr().add(offset), dst, len);
-            Ok(())
+        |offset, dst, len| {
+            // SAFETY: Caller guarantees src is valid for src_len bytes.
+            // offset + len <= src_len is verified by direct_deserialise_from_checked.
+            // dst is valid for len bytes (provided by T::direct_deserialise).
+            unsafe {
+                std::ptr::copy_nonoverlapping(src.as_ptr().add(offset), dst, len);
+                Ok(())
+            }
         },
         src_len,
     )

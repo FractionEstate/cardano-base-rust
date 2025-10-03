@@ -1,0 +1,43 @@
+# Rust formatting configuration for cardano-base-rust
+# Run with: cargo fmt
+
+edition = "2021"
+
+# Line length
+max_width = 100
+comment_width = 80
+
+# Imports
+imports_granularity = "Crate"
+group_imports = "StdExternalCrate"
+
+# Formatting style
+use_field_init_shorthand = true
+use_try_shorthand = true
+format_code_in_doc_comments = true
+normalize_comments = true
+normalize_doc_attributes = true
+wrap_comments = true
+
+# Function definitions
+fn_params_layout = "Tall"
+fn_single_line = false
+
+# Match expressions
+match_block_trailing_comma = true
+
+# Arrays and structs
+trailing_comma = "Vertical"
+
+# Chains
+chain_width = 60
+chains_overflow_last = true
+
+# Control flow
+control_brace_style = "AlwaysSameLine"
+indent_style = "Block"
+
+# Misc
+reorder_imports = true
+reorder_modules = true
+remove_nested_parens = true
