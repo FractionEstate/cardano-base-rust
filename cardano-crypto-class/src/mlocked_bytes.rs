@@ -397,9 +397,9 @@ pub fn mlocked_alloc_bytes_aligned(len: usize, align: usize) -> Result<MLockedBy
 }
 
 /// Zero `len` bytes starting at `ptr`.
-/// 
+///
 /// # Safety
-/// 
+///
 /// The caller must ensure that:
 /// - `ptr` is valid for writes of at least `len` bytes
 /// - `ptr` is properly aligned
@@ -412,9 +412,9 @@ pub unsafe fn zero_mem(ptr: *mut u8, len: usize) {
 }
 
 /// Copy `len` bytes from `src` to `dst`. The regions must not overlap.
-/// 
+///
 /// # Safety
-/// 
+///
 /// The caller must ensure that:
 /// - `src` is valid for reads of at least `len` bytes
 /// - `dst` is valid for writes of at least `len` bytes
