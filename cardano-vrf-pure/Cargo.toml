@@ -1,0 +1,26 @@
+[package]
+name = "cardano-vrf-pure"
+version = "0.1.0"
+edition = "2021"
+authors = ["Cardano Base Contributors"]
+license = "Apache-2.0"
+description = "Pure Rust implementation of VRF (Verifiable Random Function) for Cardano"
+repository = "https://github.com/IntersectMBO/cardano-base"
+
+[dependencies]
+# Core cryptographic primitives
+curve25519-dalek = { version = "4.1", features = ["digest", "rand_core"] }
+sha2 = "0.10"
+rand_core = "0.6"
+
+# Utilities
+subtle = "2.5"
+zeroize = { version = "1.7", features = ["derive"] }
+thiserror = "2.0"
+
+[dev-dependencies]
+hex = "0.4"
+rand = "0.8"
+
+[features]
+default = []

@@ -1,0 +1,13 @@
+[package]
+name = "orphans-deriving-via"
+version = "0.1.0"
+edition = "2021"
+authors = ["IOHK"]
+license = "Apache-2.0"
+description = "Bridge traits between base-deriving-via and their deepseq/nothunks counterparts"
+repository = "https://github.com/input-output-hk/cardano-base"
+
+[dependencies]
+base-deriving-via = { path = "../base-deriving-via" }
+deepseq = { path = "../deepseq" }
+nothunks = { path = "../nothunks" }

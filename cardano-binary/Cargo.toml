@@ -1,0 +1,22 @@
+[package]
+name = "cardano-binary"
+version = "0.1.0"
+edition = "2021"
+authors = ["Cardano Engineering"]
+description = "Binary serialisation and deserialisation helpers for Cardano"
+license = "Apache-2.0"
+repository = "https://github.com/FractionEstate/cardano-base"
+readme = "README.md"
+keywords = ["cardano", "cbor", "serialization"]
+categories = ["encoding"]
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_cbor = { version = "0.11", features = ["tags"] }
+thiserror = "2.0.17"
+
+# NOTE: serde_cbor is deprecated. Migration to ciborium planned.
+# See: https://github.com/FractionEstate/cardano-base-rust/issues/XXX
+
+[dev-dependencies]
+serde_bytes = "0.11"

@@ -1,0 +1,486 @@
+use std::fmt;
+
+use cardano_vrf_pure::{common, VrfDraft13, VrfError as VrfPureError};
+use thiserror::Error;
+
+use crate::mlocked_bytes::{MLockedBytes, MLockedError};
+use crate::seed::Seed;
+
+use super::{OutputVRF, VRFAlgorithm};
+
+fn seed_size() -> usize {
+    32
+}
+
+fn verification_key_size() -> usize {
+    32
+}
+
+fn signing_key_size() -> usize {
+    64
+}
+
+fn proof_size() -> usize {
+    128 // draft-13 batch-compatible uses 128-byte proofs
+}
+
+fn output_size() -> usize {
+    64
+}
+
+fn io_verification_key_size() -> usize {
+    32
+}
+
+fn io_signing_key_size() -> usize {
+    64
+}
+
+#[derive(Debug, Error)]
+pub enum PraosBatchConstructionError {
+    #[error("mlocked allocation failed: {0}")]
+    Memory(#[from] MLockedError),
+    #[error("vrf error: {0}")]
+    Vrf(#[from] VrfPureError),
+    #[error("invalid length: expected {expected}, got {actual}")]
+    WrongLength { expected: usize, actual: usize },
+    #[error("invalid length: expected {expected} or alternate {alternate}, got {actual}")]
+    WrongLengthWithAlternate {
+        expected: usize,
+        alternate: usize,
+        actual: usize,
+    },
+}
+
+pub struct PraosBatchCompatSeed {
+    bytes: MLockedBytes,
+}
+
+impl fmt::Debug for PraosBatchCompatSeed {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("PraosBatchCompatSeed(<mlocked>)")
+    }
+}
+
+impl PraosBatchCompatSeed {
+    pub fn generate() -> Result<Self, PraosBatchConstructionError> {
+        let mut bytes = MLockedBytes::new_zeroed(seed_size())?;
+        // Use Rust's rand crate
+        use rand::RngCore;
+        let mut rng = rand::thread_rng();
+        rng.fill_bytes(bytes.as_mut_slice());
+        Ok(Self { bytes })
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, PraosBatchConstructionError> {
+        if bytes.len() != seed_size() {
+            return Err(PraosBatchConstructionError::WrongLength {
+                expected: seed_size(),
+                actual: bytes.len(),
+            });
+        }
+        let mut allocated = MLockedBytes::new_zeroed(seed_size())?;
+        allocated.as_mut_slice().copy_from_slice(bytes);
+        Ok(Self { bytes: allocated })
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        self.bytes.as_slice()
+    }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.bytes.as_slice().to_vec()
+    }
+}
+
+impl Clone for PraosBatchCompatSeed {
+    fn clone(&self) -> Self {
+        Self {
+            bytes: self
+                .bytes
+                .try_clone()
+                .expect("mlocked seed cloning failed - memory allocation error"),
+        }
+    }
+}
+
+pub fn gen_seed() -> Result<PraosBatchCompatSeed, PraosBatchConstructionError> {
+    PraosBatchCompatSeed::generate()
+}
+
+pub struct PraosBatchCompatSigningKey {
+    secret: MLockedBytes,
+}
+
+impl fmt::Debug for PraosBatchCompatSigningKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("PraosBatchCompatSigningKey(<mlocked>)")
+    }
+}
+
+impl PraosBatchCompatSigningKey {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, PraosBatchConstructionError> {
+        let len = bytes.len();
+        let expected = signing_key_size();
+        let alternate = io_signing_key_size();
+        if len != expected && len != alternate {
+            return Err(PraosBatchConstructionError::WrongLengthWithAlternate {
+                expected,
+                alternate,
+                actual: len,
+            });
+        }
+        let mut secret = MLockedBytes::new_zeroed(expected)?;
+        if len == expected {
+            secret.as_mut_slice().copy_from_slice(bytes);
+        } else {
+            secret.as_mut_slice()[..alternate].copy_from_slice(bytes);
+        }
+        Ok(Self { secret })
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        self.secret.as_slice()
+    }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.secret.as_slice().to_vec()
+    }
+
+    pub fn derive_verification_key(
+        &self,
+    ) -> Result<PraosBatchCompatVerificationKey, PraosBatchConstructionError> {
+        // Extract seed (first 32 bytes) from sk
+        let seed: [u8; 32] = self.as_bytes()[0..32].try_into().unwrap();
+        // Use common::seed_to_public_key
+        let pk = common::seed_to_public_key(&seed);
+        Ok(PraosBatchCompatVerificationKey { bytes: pk.to_vec() })
+    }
+
+    pub fn to_seed(&self) -> Result<PraosBatchCompatSeed, PraosBatchConstructionError> {
+        // Extract seed from first 32 bytes
+        let mut seed = MLockedBytes::new_zeroed(seed_size())?;
+        seed.as_mut_slice().copy_from_slice(&self.as_bytes()[0..32]);
+        Ok(PraosBatchCompatSeed { bytes: seed })
+    }
+
+    pub fn prove(
+        &self,
+        message: &[u8],
+    ) -> Result<PraosBatchCompatProof, PraosBatchConstructionError> {
+        // Use VrfDraft13::prove
+        let sk: [u8; 64] = self.as_bytes().try_into().unwrap();
+        let proof = VrfDraft13::prove(&sk, message)?;
+        Ok(PraosBatchCompatProof {
+            bytes: proof.to_vec(),
+        })
+    }
+}
+
+impl Clone for PraosBatchCompatSigningKey {
+    fn clone(&self) -> Self {
+        Self {
+            secret: self.secret.try_clone().expect("failed to clone secret key"),
+        }
+    }
+}
+
+pub struct PraosBatchCompatVerificationKey {
+    bytes: Vec<u8>,
+}
+
+impl fmt::Debug for PraosBatchCompatVerificationKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("PraosBatchCompatVerificationKey")
+            .field(&hex::encode(&self.bytes))
+            .finish()
+    }
+}
+
+impl PraosBatchCompatVerificationKey {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, PraosBatchConstructionError> {
+        let len = bytes.len();
+        let expected = verification_key_size();
+        let alternate = io_verification_key_size();
+        if len != expected && len != alternate {
+            return Err(PraosBatchConstructionError::WrongLengthWithAlternate {
+                expected,
+                alternate,
+                actual: len,
+            });
+        }
+        let mut owned = vec![0u8; expected];
+        if len == expected {
+            owned.copy_from_slice(bytes);
+        } else {
+            owned[..alternate].copy_from_slice(bytes);
+        }
+        Ok(Self { bytes: owned })
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.bytes.clone()
+    }
+
+    pub fn verify(
+        &self,
+        message: &[u8],
+        proof: &PraosBatchCompatProof,
+    ) -> Result<Option<Vec<u8>>, PraosBatchConstructionError> {
+        // Use VrfDraft13::verify
+        let pk: [u8; 32] = self.bytes.as_slice().try_into().unwrap();
+        let proof_bytes: [u8; 128] = proof.bytes.as_slice().try_into().unwrap();
+
+        match VrfDraft13::verify(&pk, &proof_bytes, message) {
+            Ok(output) => Ok(Some(output.to_vec())),
+            Err(_) => Ok(None),
+        }
+    }
+}
+
+impl Clone for PraosBatchCompatVerificationKey {
+    fn clone(&self) -> Self {
+        Self {
+            bytes: self.bytes.clone(),
+        }
+    }
+}
+
+impl PartialEq for PraosBatchCompatVerificationKey {
+    fn eq(&self, other: &Self) -> bool {
+        self.bytes == other.bytes
+    }
+}
+
+impl Eq for PraosBatchCompatVerificationKey {}
+
+#[derive(Clone, PartialEq, Eq)]
+pub struct PraosBatchCompatProof {
+    bytes: Vec<u8>,
+}
+
+impl fmt::Debug for PraosBatchCompatProof {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("PraosBatchCompatProof")
+            .field(&hex::encode(&self.bytes))
+            .finish()
+    }
+}
+
+impl PraosBatchCompatProof {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, PraosBatchConstructionError> {
+        if bytes.len() != proof_size() {
+            return Err(PraosBatchConstructionError::WrongLength {
+                expected: proof_size(),
+                actual: bytes.len(),
+            });
+        }
+        Ok(Self {
+            bytes: bytes.to_vec(),
+        })
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.bytes.clone()
+    }
+
+    pub fn to_output_bytes(&self) -> Result<Option<Vec<u8>>, PraosBatchConstructionError> {
+        // Use VrfDraft13::proof_to_hash
+        let proof_bytes: [u8; 128] = self.bytes.as_slice().try_into().unwrap();
+        match VrfDraft13::proof_to_hash(&proof_bytes) {
+            Ok(output) => Ok(Some(output.to_vec())),
+            Err(_) => Ok(None),
+        }
+    }
+}
+
+pub fn keypair_from_seed(
+    seed: &PraosBatchCompatSeed,
+) -> Result<
+    (PraosBatchCompatVerificationKey, PraosBatchCompatSigningKey),
+    PraosBatchConstructionError,
+> {
+    // Use VrfDraft13::keypair_from_seed
+    let seed_bytes: [u8; 32] = seed.as_bytes().try_into().unwrap();
+    let (sk_array, pk_array) = VrfDraft13::keypair_from_seed(&seed_bytes);
+
+    // Store in mlocked memory
+    let mut sk = MLockedBytes::new_zeroed(signing_key_size())?;
+    sk.as_mut_slice().copy_from_slice(&sk_array);
+
+    Ok((
+        PraosBatchCompatVerificationKey {
+            bytes: pk_array.to_vec(),
+        },
+        PraosBatchCompatSigningKey { secret: sk },
+    ))
+}
+
+pub fn keypair_from_seed_bytes(
+    seed_bytes: &[u8],
+) -> Result<
+    (PraosBatchCompatVerificationKey, PraosBatchCompatSigningKey),
+    PraosBatchConstructionError,
+> {
+    let seed = PraosBatchCompatSeed::from_bytes(seed_bytes)?;
+    keypair_from_seed(&seed)
+}
+
+pub fn signing_key_from_seed(seed: &Seed) -> PraosBatchCompatSigningKey {
+    let (material, _) = crate::seed::get_bytes_from_seed_t(signing_key_size(), seed.clone());
+    signing_key_from_bytes(&material).expect("seed produced invalid praos batch signing key")
+}
+
+pub fn signing_key_from_bytes(
+    bytes: &[u8],
+) -> Result<PraosBatchCompatSigningKey, PraosBatchConstructionError> {
+    PraosBatchCompatSigningKey::from_bytes(bytes)
+}
+
+pub fn signing_key_to_bytes(signing_key: &PraosBatchCompatSigningKey) -> Vec<u8> {
+    signing_key.to_vec()
+}
+
+pub fn verification_key_from_bytes(
+    bytes: &[u8],
+) -> Result<PraosBatchCompatVerificationKey, PraosBatchConstructionError> {
+    PraosBatchCompatVerificationKey::from_bytes(bytes)
+}
+
+pub fn verification_key_to_bytes(verification_key: &PraosBatchCompatVerificationKey) -> Vec<u8> {
+    verification_key.to_vec()
+}
+
+pub fn proof_from_bytes(
+    bytes: &[u8],
+) -> Result<PraosBatchCompatProof, PraosBatchConstructionError> {
+    PraosBatchCompatProof::from_bytes(bytes)
+}
+
+pub fn proof_to_bytes(proof: &PraosBatchCompatProof) -> Vec<u8> {
+    proof.to_vec()
+}
+
+pub fn seed_from_bytes(bytes: &[u8]) -> Result<PraosBatchCompatSeed, PraosBatchConstructionError> {
+    PraosBatchCompatSeed::from_bytes(bytes)
+}
+
+pub fn seed_to_bytes(seed: &PraosBatchCompatSeed) -> Vec<u8> {
+    seed.to_vec()
+}
+
+pub fn unsafe_raw_seed(seed: &PraosBatchCompatSeed) -> Vec<u8> {
+    seed.to_vec()
+}
+
+pub fn output_from_proof(
+    proof: &PraosBatchCompatProof,
+) -> Result<Option<OutputVRF<PraosBatchCompatVRF>>, PraosBatchConstructionError> {
+    match proof.to_output_bytes()? {
+        Some(bytes) => {
+            let actual = bytes.len();
+            if actual != output_size() {
+                return Err(PraosBatchConstructionError::WrongLength {
+                    expected: output_size(),
+                    actual,
+                });
+            }
+            let output = OutputVRF::from_bytes(bytes).map_err(|_| {
+                PraosBatchConstructionError::WrongLength {
+                    expected: output_size(),
+                    actual,
+                }
+            })?;
+            Ok(Some(output))
+        }
+        None => Ok(None),
+    }
+}
+
+pub struct PraosBatchCompatVRF;
+
+impl VRFAlgorithm for PraosBatchCompatVRF {
+    type VerificationKey = PraosBatchCompatVerificationKey;
+    type SigningKey = PraosBatchCompatSigningKey;
+    type Proof = PraosBatchCompatProof;
+    type Context = ();
+
+    const ALGORITHM_NAME: &'static str = "PraosBatchCompatVRF";
+    const SEED_SIZE: usize = 32;
+    const VERIFICATION_KEY_SIZE: usize = 32;
+    const SIGNING_KEY_SIZE: usize = 64;
+    const PROOF_SIZE: usize = 80;
+    const OUTPUT_SIZE: usize = 64;
+
+    fn derive_verification_key(signing_key: &Self::SigningKey) -> Self::VerificationKey {
+        signing_key
+            .derive_verification_key()
+            .expect("praos batch sk_to_pk failed")
+    }
+
+    fn evaluate_bytes(
+        _context: &Self::Context,
+        message: &[u8],
+        signing_key: &Self::SigningKey,
+    ) -> (OutputVRF<Self>, Self::Proof) {
+        let proof = signing_key
+            .prove(message)
+            .expect("praos batch prove failed");
+        let output_bytes = proof
+            .to_output_bytes()
+            .expect("praos batch proof_to_hash failed")
+            .expect("invalid praos batch proof");
+        let output = OutputVRF::from_bytes(output_bytes).expect("output size mismatch");
+        (output, proof)
+    }
+
+    fn verify_bytes(
+        _context: &Self::Context,
+        verification_key: &Self::VerificationKey,
+        message: &[u8],
+        proof: &Self::Proof,
+    ) -> Option<OutputVRF<Self>> {
+        match verification_key.verify(message, proof) {
+            Ok(Some(bytes)) => OutputVRF::copy_from_slice(&bytes).ok(),
+            Ok(None) => None,
+            Err(_) => None,
+        }
+    }
+
+    fn gen_key_from_seed_bytes(seed: &[u8]) -> Self::SigningKey {
+        let (_, sk) = keypair_from_seed_bytes(seed).expect("invalid praos batch seed bytes");
+        sk
+    }
+
+    fn raw_serialize_verification_key(key: &Self::VerificationKey) -> Vec<u8> {
+        key.to_vec()
+    }
+
+    fn raw_deserialize_verification_key(bytes: &[u8]) -> Option<Self::VerificationKey> {
+        PraosBatchCompatVerificationKey::from_bytes(bytes).ok()
+    }
+
+    fn raw_serialize_signing_key(key: &Self::SigningKey) -> Vec<u8> {
+        key.to_vec()
+    }
+
+    fn raw_deserialize_signing_key(bytes: &[u8]) -> Option<Self::SigningKey> {
+        PraosBatchCompatSigningKey::from_bytes(bytes).ok()
+    }
+
+    fn raw_serialize_proof(proof: &Self::Proof) -> Vec<u8> {
+        proof.to_vec()
+    }
+
+    fn raw_deserialize_proof(bytes: &[u8]) -> Option<Self::Proof> {
+        PraosBatchCompatProof::from_bytes(bytes).ok()
+    }
+}

@@ -1,0 +1,16 @@
+[package]
+name = "cardano-slotting"
+version = "0.1.0"
+edition = "2021"
+authors = ["Cardano Engineering"]
+description = "Slotting primitives for Cardano consensus components"
+license = "Apache-2.0"
+repository = "https://github.com/FractionEstate/cardano-base"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "2.0.17"
+time = { version = "0.3", features = ["serde", "macros"] }
+
+[dev-dependencies]
+serde_json = "1.0"

@@ -1,0 +1,12 @@
+[package]
+name = "heapwords"
+version = "0.1.0"
+edition = "2021"
+authors = ["Cardano Engineering"]
+description = "Heuristics for estimating heap usage in Rust, ported from cardano-prelude"
+license = "Apache-2.0"
+repository = "https://github.com/FractionEstate/cardano-base"
+
+[dependencies]
+num-bigint = "0.4"
+time = { version = "0.3", features = ["std"] }

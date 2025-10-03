@@ -1,0 +1,48 @@
+[workspace]
+members = [
+    "base-deriving-via",
+    "cardano-base",
+    "cardano-binary",
+    "cardano-git-rev",
+    "cardano-crypto-class",
+    "cardano-vrf-pure",
+    "deepseq",
+    "cardano-slotting",
+    "cardano-strict-containers",
+    "heapwords",
+    "nothunks",
+    "orphans-deriving-via",
+    "measures",
+]
+
+resolver = "2"
+
+[workspace.lints.clippy]
+# Correctness lints (deny)
+all = "warn"
+correctness = "deny"
+
+# Suspicious patterns
+suspicious = "warn"
+
+# Performance
+perf = "warn"
+
+# Style (warn level)
+style = "warn"
+
+# Pedantic lints (selective)
+must_use_candidate = "warn"
+missing_errors_doc = "warn"
+missing_panics_doc = "warn"
+
+# Restriction lints (for production code quality)
+unwrap_used = "warn"
+expect_used = "allow"  # Allow expect with good messages
+panic = "warn"
+todo = "warn"
+unimplemented = "deny"
+
+# Allow some pedantic lints that are too noisy
+module_name_repetitions = "allow"
+similar_names = "allow"

@@ -1,0 +1,11 @@
+[package]
+name = "nothunks"
+version = "0.1.0"
+edition = "2021"
+authors = ["IOHK"]
+license = "Apache-2.0"
+description = "Runtime checks mirroring the Haskell nothunks package"
+repository = "https://github.com/input-output-hk/cardano-base"
+
+[dependencies]
+base-deriving-via = { path = "../base-deriving-via" }

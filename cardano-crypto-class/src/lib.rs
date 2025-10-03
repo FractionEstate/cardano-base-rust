@@ -1,0 +1,62 @@
+//! Cardano cryptography utilities.
+//!
+//! This crate provides pure-Rust replacements for modules from
+//! `cardano-crypto-class`. The initial focus is the `Seed` abstraction used to
+//! seed deterministic key generation and pseudo-random generators.
+
+pub mod direct_serialise;
+pub mod dsign;
+pub mod ffi;
+pub mod mlocked_bytes;
+pub mod mlocked_seed;
+pub mod packed_bytes;
+pub mod pinned_sized_bytes;
+pub mod seed;
+pub mod util;
+pub mod vrf;
+
+pub use seed::{
+    expand_seed, get_bytes_from_seed, get_bytes_from_seed_either, get_bytes_from_seed_t,
+    get_seed_bytes, get_seed_size, mk_seed_from_bytes, read_seed_from_system_entropy,
+    run_with_seed, split_seed, Seed, SeedBytesExhausted, SeedRng,
+};
+
+pub use packed_bytes::{
+    pack_bytes, pack_bytes_maybe, pack_pinned_bytes, unpack_bytes, unpack_pinned_bytes,
+    xor_packed_bytes, PackedBytes, PackedBytesError,
+};
+
+pub use util::{
+    bytes_to_natural, decode_hex_byte_string, decode_hex_string, get_random_word64,
+    natural_to_bytes, read_binary_natural, read_binary_word64, slice, splits_at,
+    write_binary_natural, write_binary_word64, DecodeHexError, Empty, SignableRepresentation,
+};
+
+pub use direct_serialise::{
+    direct_deserialise_buf, direct_deserialise_buf_checked, direct_deserialise_from,
+    direct_deserialise_from_checked, direct_serialise_buf, direct_serialise_buf_checked,
+    direct_serialise_to, direct_serialise_to_checked, DirectDeserialise, DirectResult,
+    DirectSerialise, SizeCheckError,
+};
+
+pub use ffi::{SizedMutPtr, SizedPtr};
+
+pub use pinned_sized_bytes::{PinnedSizedBytes, PinnedSizedBytesError};
+
+pub use mlocked_bytes::{
+    copy_mem, mlocked_alloc_bytes, mlocked_alloc_bytes_aligned, mlocked_alloc_bytes_zeroed,
+    mlocked_allocator, zero_mem, MLockedAllocator, MLockedBytes, MLockedError, MLockedSizedBytes,
+};
+
+pub use mlocked_seed::MLockedSeed;
+
+pub use dsign::{
+    fail_size_check, seed_size, signed_dsign, signed_dsign_m, size_signature, size_signing_key,
+    size_verification_key, verify_signed_dsign, DsignAlgorithm, DsignError, DsignMAlgorithm,
+    DsignMError, SignedDsign, UnsoundDsignMAlgorithm,
+};
+
+pub use dsign::ed25519::{Ed25519, Ed25519Signature, Ed25519SigningKey, Ed25519VerificationKey};
+pub use dsign::ed25519_mlocked::Ed25519MLockedSigningKey;
+
+pub use vrf::{eval_certified, verify_certified, CertifiedVRF, OutputVRF, VRFAlgorithm, VRFError};

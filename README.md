@@ -132,3 +132,4 @@ This project is dual-licensed under Apache-2.0 and MIT licenses. See `LICENSE` f
 ## 🎉 Migration Complete
 
 The Haskell → Rust migration is **complete**! All functionality has been successfully ported to pure Rust with enhanced type safety, memory safety, and performance.
+

@@ -1,0 +1,116 @@
+name: Sync Documentation to Wiki
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "docs/**"
+  workflow_dispatch:
+
+jobs:
+  sync-wiki:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout wiki
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}.wiki
+          path: wiki
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync documentation to wiki
+        run: |
+          # Copy all markdown files from docs/ to wiki/
+          rsync -av --delete \
+            --exclude='.git' \
+            --include='*/' \
+            --include='*.md' \
+            --exclude='*' \
+            docs/ wiki/
+
+          # Flatten directory structure for wiki
+          cd wiki
+
+          # Move files from subdirectories to root with prefixed names
+          if [ -d "api" ]; then
+            for file in api/*.md; do
+              if [ -f "$file" ]; then
+                filename=$(basename "$file")
+                mv "$file" "API-${filename}"
+              fi
+            done
+            rmdir api 2>/dev/null || true
+          fi
+
+          if [ -d "migration" ]; then
+            for file in migration/*.md; do
+              if [ -f "$file" ]; then
+                filename=$(basename "$file")
+                mv "$file" "Migration-${filename}"
+              fi
+            done
+            rmdir migration 2>/dev/null || true
+          fi
+
+          if [ -d "development" ]; then
+            for file in development/*.md; do
+              if [ -f "$file" ]; then
+                filename=$(basename "$file")
+                mv "$file" "Development-${filename}"
+              fi
+            done
+            rmdir development 2>/dev/null || true
+          fi
+
+          if [ -d "contributing" ]; then
+            for file in contributing/*.md; do
+              if [ -f "$file" ]; then
+                filename=$(basename "$file")
+                mv "$file" "Contributing-${filename}"
+              fi
+            done
+            rmdir contributing 2>/dev/null || true
+          fi
+
+      - name: Commit and push to wiki
+        run: |
+          cd wiki
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Add all changes
+          git add .
+
+          # Commit if there are changes
+          if ! git diff --cached --quiet; then
+            git commit -m "Sync documentation from docs/ folder
+
+            Auto-synced from commit: ${{ github.sha }}
+            Triggered by: ${{ github.actor }}
+            "
+            git push
+            echo "✅ Wiki updated successfully"
+          else
+            echo "ℹ️ No changes to sync"
+          fi
+
+      - name: Summary
+        run: |
+          echo "### Documentation Sync Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Documentation synced to wiki" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Source**: \`docs/\` folder" >> $GITHUB_STEP_SUMMARY
+          echo "**Target**: Repository wiki" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📚 View wiki: [${{ github.repository }}/wiki](https://github.com/${{ github.repository }}/wiki)" >> $GITHUB_STEP_SUMMARY
