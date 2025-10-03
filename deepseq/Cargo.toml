@@ -7,5 +7,7 @@ license = "Apache-2.0"
 description = "Utilities for eagerly evaluating values akin to Haskell's Control.DeepSeq"
 repository = "https://github.com/input-output-hk/cardano-base"
 
+[lints]
+workspace = true
 [dependencies]
 base-deriving-via = { path = "../base-deriving-via" }

@@ -98,11 +98,13 @@ impl VRFAlgorithm for NeverVRF {
 }
 
 /// Deterministic key generation helper for consistency with the Haskell API.
+#[must_use] 
 pub fn gen_key(_seed: &Seed) -> NeverSigningKey {
     NeverSigningKey
 }
 
 /// Helper that mirrors the Haskell `genKeyPairVRF` behaviour.
+#[must_use] 
 pub fn gen_keypair(_seed: &Seed) -> (NeverSigningKey, NeverVerificationKey) {
     (NeverSigningKey, NeverVerificationKey)
 }

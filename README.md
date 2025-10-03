@@ -3,10 +3,13 @@
 [![100% Pure Rust](https://img.shields.io/badge/Pure_Rust-100%25-orange.svg)](https://www.rust-lang.org/)
 [![Tests](https://img.shields.io/badge/Tests-148_Passing-brightgreen.svg)]()
 [![Zero C Dependencies](https://img.shields.io/badge/C_Dependencies-0-blue.svg)]()
+[![Security Hardened](https://img.shields.io/badge/Security-Hardened-green.svg)]()
 
 **Complete Haskell → Rust Migration: ✅ DONE**
 
 This repository contains the pure Rust foundations that back Cardano's consensus components. The migration from Haskell to Rust is **100% complete**, with all C and Haskell code removed.
+
+> 🔒 **Security Update**: Comprehensive security hardening completed (Oct 2025). See [IMPROVEMENTS_SUMMARY.md](IMPROVEMENTS_SUMMARY.md) for details.
 
 ## 📚 Documentation
 
@@ -114,9 +117,25 @@ cargo check --workspace
 # Format code
 cargo fmt --all
 
-# Lint code
-cargo clippy --workspace --all-targets
+# Lint code (with security-focused checks)
+cargo clippy --workspace --all-targets -- -D warnings
+
+# Security audit
+cargo audit
+
+# License/dependency checking
+cargo deny check
 ```
+
+### Code Quality
+
+The workspace enforces strict quality standards:
+- **Clippy lints**: correctness=deny, unwrap_used=warn, panic=warn
+- **Format checking**: rustfmt configuration enforced
+- **Security scanning**: Automated vulnerability detection
+- **License compliance**: Dependency license validation
+
+See [SECURITY_PRACTICES.md](SECURITY_PRACTICES.md) for security guidelines and [PRE_COMMIT_CHECKLIST.md](PRE_COMMIT_CHECKLIST.md) for commit requirements.
 
 ## 🤝 Contributing
 

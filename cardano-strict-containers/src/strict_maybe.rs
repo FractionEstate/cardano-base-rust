@@ -7,18 +7,15 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 /// In Rust, evaluation is already strict, but the type provides API parity
 /// with the original Haskell `StrictMaybe`.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Default)]
 pub enum StrictMaybe<T> {
+    #[default]
     SNothing,
     SJust(T),
 }
 
 impl<T: Copy> Copy for StrictMaybe<T> {}
 
-impl<T> Default for StrictMaybe<T> {
-    fn default() -> Self {
-        StrictMaybe::SNothing
-    }
-}
 
 impl<T> StrictMaybe<T> {
     pub const fn is_s_nothing(&self) -> bool {
@@ -220,7 +217,7 @@ mod tests {
     fn conversions_work() {
         let some: StrictMaybe<u32> = StrictMaybe::SJust(5);
         assert!(some.is_s_just());
-        assert_eq!(strict_maybe_to_maybe(some.clone()), Some(5));
+        assert_eq!(strict_maybe_to_maybe(some), Some(5));
         assert_eq!(strict_maybe_to_maybe(StrictMaybe::SNothing::<u32>), None);
 
         let from_opt: StrictMaybe<u32> = maybe_to_strict_maybe(Some(7));
@@ -244,8 +241,8 @@ mod tests {
     fn or_prefers_left_value() {
         let left = StrictMaybe::SJust(10);
         let right = StrictMaybe::SJust(20);
-        assert_eq!(left.clone().or(right.clone()), left);
-        assert_eq!(StrictMaybe::SNothing.or(right.clone()), right);
+        assert_eq!(left.or(right), left);
+        assert_eq!(StrictMaybe::SNothing.or(right), right);
 
         let called = StrictMaybe::SNothing.or_else(|| StrictMaybe::SJust(5));
         assert_eq!(called, StrictMaybe::SJust(5));

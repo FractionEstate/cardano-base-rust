@@ -30,6 +30,7 @@ pub enum CardanoFeatureFlag {
 
 impl CardanoFeatureFlag {
     /// Return all known feature flags in declaration order.
+    #[must_use] 
     pub const fn all() -> &'static [CardanoFeatureFlag; 3] {
         &[
             CardanoFeatureFlag::Leios,

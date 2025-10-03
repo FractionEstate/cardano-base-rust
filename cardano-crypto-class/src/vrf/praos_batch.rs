@@ -84,10 +84,12 @@ impl PraosBatchCompatSeed {
         Ok(Self { bytes: allocated })
     }
 
+    #[must_use] 
     pub fn as_bytes(&self) -> &[u8] {
         self.bytes.as_slice()
     }
 
+    #[must_use] 
     pub fn to_vec(&self) -> Vec<u8> {
         self.bytes.as_slice().to_vec()
     }
@@ -139,10 +141,12 @@ impl PraosBatchCompatSigningKey {
         Ok(Self { secret })
     }
 
+    #[must_use] 
     pub fn as_bytes(&self) -> &[u8] {
         self.secret.as_slice()
     }
 
+    #[must_use] 
     pub fn to_vec(&self) -> Vec<u8> {
         self.secret.as_slice().to_vec()
     }
@@ -218,10 +222,12 @@ impl PraosBatchCompatVerificationKey {
         Ok(Self { bytes: owned })
     }
 
+    #[must_use] 
     pub fn as_bytes(&self) -> &[u8] {
         &self.bytes
     }
 
+    #[must_use] 
     pub fn to_vec(&self) -> Vec<u8> {
         self.bytes.clone()
     }
@@ -284,10 +290,12 @@ impl PraosBatchCompatProof {
         })
     }
 
+    #[must_use] 
     pub fn as_bytes(&self) -> &[u8] {
         &self.bytes
     }
 
+    #[must_use] 
     pub fn to_vec(&self) -> Vec<u8> {
         self.bytes.clone()
     }
@@ -334,6 +342,7 @@ pub fn keypair_from_seed_bytes(
     keypair_from_seed(&seed)
 }
 
+#[must_use] 
 pub fn signing_key_from_seed(seed: &Seed) -> PraosBatchCompatSigningKey {
     let (material, _) = crate::seed::get_bytes_from_seed_t(signing_key_size(), seed.clone());
     signing_key_from_bytes(&material).expect("seed produced invalid praos batch signing key")
@@ -345,6 +354,7 @@ pub fn signing_key_from_bytes(
     PraosBatchCompatSigningKey::from_bytes(bytes)
 }
 
+#[must_use] 
 pub fn signing_key_to_bytes(signing_key: &PraosBatchCompatSigningKey) -> Vec<u8> {
     signing_key.to_vec()
 }
@@ -355,6 +365,7 @@ pub fn verification_key_from_bytes(
     PraosBatchCompatVerificationKey::from_bytes(bytes)
 }
 
+#[must_use] 
 pub fn verification_key_to_bytes(verification_key: &PraosBatchCompatVerificationKey) -> Vec<u8> {
     verification_key.to_vec()
 }
@@ -365,6 +376,7 @@ pub fn proof_from_bytes(
     PraosBatchCompatProof::from_bytes(bytes)
 }
 
+#[must_use] 
 pub fn proof_to_bytes(proof: &PraosBatchCompatProof) -> Vec<u8> {
     proof.to_vec()
 }
@@ -373,10 +385,12 @@ pub fn seed_from_bytes(bytes: &[u8]) -> Result<PraosBatchCompatSeed, PraosBatchC
     PraosBatchCompatSeed::from_bytes(bytes)
 }
 
+#[must_use] 
 pub fn seed_to_bytes(seed: &PraosBatchCompatSeed) -> Vec<u8> {
     seed.to_vec()
 }
 
+#[must_use] 
 pub fn unsafe_raw_seed(seed: &PraosBatchCompatSeed) -> Vec<u8> {
     seed.to_vec()
 }

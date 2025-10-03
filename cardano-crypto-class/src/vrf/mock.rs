@@ -32,18 +32,21 @@ impl fmt::Debug for MockSigningKey {
 pub struct MockCertificate(u64);
 
 impl MockVerificationKey {
+    #[must_use] 
     pub fn value(&self) -> u64 {
         self.0
     }
 }
 
 impl MockSigningKey {
+    #[must_use] 
     pub fn value(&self) -> u64 {
         self.0
     }
 }
 
 impl MockCertificate {
+    #[must_use] 
     pub fn value(&self) -> u64 {
         self.0
     }
@@ -204,11 +207,13 @@ impl From<&MockSigningKey> for MockCertificate {
 }
 
 /// Convenience helper for deterministic key generation matching the Haskell helper.
+#[must_use] 
 pub fn gen_key(seed: &Seed) -> MockSigningKey {
     MockVRF::gen_key(seed)
 }
 
 /// Convenience helper returning the keypair from a seed.
+#[must_use] 
 pub fn gen_keypair(seed: &Seed) -> (MockSigningKey, MockVerificationKey) {
     MockVRF::gen_keypair(seed)
 }

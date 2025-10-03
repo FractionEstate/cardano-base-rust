@@ -27,6 +27,7 @@ pub enum DsignError {
 
 impl DsignError {
     /// Helper mirroring the Haskell `failSizeCheck` behaviour.
+    #[must_use] 
     pub fn wrong_length(context: &'static str, expected: usize, actual: usize) -> Self {
         DsignError::WrongLength {
             context,
@@ -89,6 +90,7 @@ pub trait DsignAlgorithm {
     ///
     /// Mirrors the Haskell `genKeyDSIGN` behaviour by panicking when the seed
     /// does not provide enough bytes.
+    #[must_use] 
     fn gen_key(seed: &Seed) -> Self::SigningKey {
         let (material, _) = get_bytes_from_seed_t(Self::SEED_SIZE, seed.clone());
         Self::gen_key_from_seed_bytes(&material)
@@ -153,26 +155,31 @@ where
 }
 
 /// Helper mirroring `failSizeCheck` from the Haskell implementation.
+#[must_use] 
 pub fn fail_size_check(function: &'static str, expected: usize, actual: usize) -> DsignError {
     DsignError::wrong_length(function, expected, actual)
 }
 
 /// Helper returning the required seed size for algorithm `A`.
+#[must_use] 
 pub const fn seed_size<A: DsignAlgorithm>() -> usize {
     A::SEED_SIZE
 }
 
 /// Helper returning the verification key size for algorithm `A`.
+#[must_use] 
 pub const fn size_verification_key<A: DsignAlgorithm>() -> usize {
     A::VERIFICATION_KEY_SIZE
 }
 
 /// Helper returning the signing key size for algorithm `A`.
+#[must_use] 
 pub const fn size_signing_key<A: DsignAlgorithm>() -> usize {
     A::SIGNING_KEY_SIZE
 }
 
 /// Helper returning the signature size for algorithm `A`.
+#[must_use] 
 pub const fn size_signature<A: DsignAlgorithm>() -> usize {
     A::SIGNATURE_SIZE
 }

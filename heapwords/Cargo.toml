@@ -7,6 +7,8 @@ description = "Heuristics for estimating heap usage in Rust, ported from cardano
 license = "Apache-2.0"
 repository = "https://github.com/FractionEstate/cardano-base"
 
+[lints]
+workspace = true
 [dependencies]
 num-bigint = "0.4"
 time = { version = "0.3", features = ["std"] }

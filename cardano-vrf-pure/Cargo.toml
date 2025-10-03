@@ -7,6 +7,9 @@ license = "Apache-2.0"
 description = "Pure Rust implementation of VRF (Verifiable Random Function) for Cardano"
 repository = "https://github.com/IntersectMBO/cardano-base"
 
+[lints]
+workspace = true
+
 [dependencies]
 # Core cryptographic primitives
 curve25519-dalek = { version = "4.1", features = ["digest", "rand_core"] }

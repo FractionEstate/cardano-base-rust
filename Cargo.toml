@@ -18,18 +18,12 @@ members = [
 resolver = "2"
 
 [workspace.lints.clippy]
-# Correctness lints (deny)
-all = "warn"
-correctness = "deny"
-
-# Suspicious patterns
-suspicious = "warn"
-
-# Performance
-perf = "warn"
-
-# Style (warn level)
-style = "warn"
+# Lint groups (with lower priority so individual lints can override)
+all = { level = "warn", priority = -1 }
+correctness = { level = "deny", priority = -1 }
+suspicious = { level = "warn", priority = -1 }
+perf = { level = "warn", priority = -1 }
+style = { level = "warn", priority = -1 }
 
 # Pedantic lints (selective)
 must_use_candidate = "warn"
@@ -46,3 +40,5 @@ unimplemented = "deny"
 # Allow some pedantic lints that are too noisy
 module_name_repetitions = "allow"
 similar_names = "allow"
+needless_borrows_for_generic_args = "allow"  # Stylistic, doesn't affect correctness
+useless_conversion = "allow"  # Can be overly pedantic with generic code

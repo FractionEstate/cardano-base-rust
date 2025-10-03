@@ -74,10 +74,12 @@ impl PraosSeed {
         Ok(Self { bytes: mlocked })
     }
 
+    #[must_use] 
     pub fn as_bytes(&self) -> &[u8] {
         self.bytes.as_slice()
     }
 
+    #[must_use] 
     pub fn to_vec(&self) -> Vec<u8> {
         self.bytes.as_slice().to_vec()
     }
@@ -117,10 +119,12 @@ impl PraosSigningKey {
         Ok(Self { secret })
     }
 
+    #[must_use] 
     pub fn as_bytes(&self) -> &[u8] {
         self.secret.as_slice()
     }
 
+    #[must_use] 
     pub fn to_vec(&self) -> Vec<u8> {
         self.secret.as_slice().to_vec()
     }
@@ -180,10 +184,12 @@ impl PraosVerificationKey {
         })
     }
 
+    #[must_use] 
     pub fn as_bytes(&self) -> &[u8] {
         &self.bytes
     }
 
+    #[must_use] 
     pub fn to_vec(&self) -> Vec<u8> {
         self.bytes.clone()
     }
@@ -254,10 +260,12 @@ impl PraosProof {
         })
     }
 
+    #[must_use] 
     pub fn as_bytes(&self) -> &[u8] {
         &self.bytes
     }
 
+    #[must_use] 
     pub fn to_vec(&self) -> Vec<u8> {
         self.bytes.clone()
     }
@@ -298,6 +306,7 @@ pub fn keypair_from_seed_bytes(
     keypair_from_seed(&seed)
 }
 
+#[must_use] 
 pub fn signing_key_from_seed(seed: &Seed) -> PraosSigningKey {
     let (material, _) = crate::seed::get_bytes_from_seed_t(signing_key_size(), seed.clone());
     signing_key_from_bytes(&material).expect("seed produced invalid signing key")
@@ -307,6 +316,7 @@ pub fn signing_key_from_bytes(bytes: &[u8]) -> Result<PraosSigningKey, PraosCons
     PraosSigningKey::from_bytes(bytes)
 }
 
+#[must_use] 
 pub fn signing_key_to_bytes(signing_key: &PraosSigningKey) -> Vec<u8> {
     signing_key.to_vec()
 }
@@ -317,6 +327,7 @@ pub fn verification_key_from_bytes(
     PraosVerificationKey::from_bytes(bytes)
 }
 
+#[must_use] 
 pub fn verification_key_to_bytes(verification_key: &PraosVerificationKey) -> Vec<u8> {
     verification_key.to_vec()
 }
@@ -325,6 +336,7 @@ pub fn proof_from_bytes(bytes: &[u8]) -> Result<PraosProof, PraosConstructionErr
     PraosProof::from_bytes(bytes)
 }
 
+#[must_use] 
 pub fn proof_to_bytes(proof: &PraosProof) -> Vec<u8> {
     proof.to_vec()
 }
@@ -333,6 +345,7 @@ pub fn seed_from_bytes(bytes: &[u8]) -> Result<PraosSeed, PraosConstructionError
     PraosSeed::from_bytes(bytes)
 }
 
+#[must_use] 
 pub fn seed_to_bytes(seed: &PraosSeed) -> Vec<u8> {
     seed.to_vec()
 }

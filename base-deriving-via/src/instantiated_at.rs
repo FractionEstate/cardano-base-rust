@@ -18,7 +18,7 @@ impl<T> InstantiatedAt<T> {
     }
 
     /// Borrow the inner value.
-    pub fn as_ref(&self) -> &T {
+    pub fn get(&self) -> &T {
         &self.0
     }
 
@@ -79,5 +79,11 @@ where
 {
     fn empty() -> Self {
         InstantiatedAt::new(T::from_repr(<T::Repr as Monoid>::empty()))
+    }
+}
+
+impl<T> AsRef<T> for InstantiatedAt<T> {
+    fn as_ref(&self) -> &T {
+        &self.0
     }
 }

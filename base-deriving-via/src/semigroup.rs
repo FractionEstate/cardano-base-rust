@@ -38,15 +38,11 @@ pub trait Monoid: Semigroup {
 }
 
 impl Semigroup for () {
-    fn combine(self, _other: Self) -> Self {
-        ()
-    }
+    fn combine(self, _other: Self) -> Self {}
 }
 
 impl Monoid for () {
-    fn empty() -> Self {
-        ()
-    }
+    fn empty() -> Self {}
 }
 
 macro_rules! impl_numeric_semigroup {

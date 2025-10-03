@@ -369,6 +369,7 @@ macro_rules! impl_nothunks_for_tuple {
     ($($name:ident),+ $(,)?) => {
         impl<$($name: NoThunks),+> NoThunks for ($($name,)+) {
             #[allow(non_snake_case)]
+            #[allow(clippy::question_mark)]
             fn no_thunks(&self, context: &[&str]) -> NoThunksResult {
                 let ($($name,)+) = self;
                 $( if let Err(info) = apply_context($name.no_thunks(context), context) {

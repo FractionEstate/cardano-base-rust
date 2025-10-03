@@ -7,6 +7,8 @@ license = "Apache-2.0"
 description = "Bridge traits between base-deriving-via and their deepseq/nothunks counterparts"
 repository = "https://github.com/input-output-hk/cardano-base"
 
+[lints]
+workspace = true
 [dependencies]
 base-deriving-via = { path = "../base-deriving-via" }
 deepseq = { path = "../deepseq" }

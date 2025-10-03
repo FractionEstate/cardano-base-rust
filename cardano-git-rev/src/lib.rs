@@ -10,6 +10,7 @@ const ZERO_REV: &str = "0000000000000000000000000000000000000000";
 /// is unavailable (for example when building in environments without git
 /// metadata), the function attempts to query `git` at runtime. Should that
 /// fail as well, the zero revision is returned.
+#[must_use] 
 pub fn git_rev() -> Cow<'static, str> {
     static EMBEDDED: &str = env!("CARDANO_GIT_REV");
 

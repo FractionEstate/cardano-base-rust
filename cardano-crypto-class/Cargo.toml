@@ -7,6 +7,8 @@ license = "Apache-2.0"
 authors = ["Cardano Rust Port"]
 build = "build.rs"
 
+[lints]
+workspace = true
 [dependencies]
 digest = "0.10"
 hex = "0.4"
@@ -16,7 +18,7 @@ thiserror = "2.0.17"
 blake2 = "0.10"
 cardano-binary = { path = "../cardano-binary" }
 serde = { version = "1", features = ["derive"], optional = true }
-serde_cbor = "0.11"  # NOTE: Deprecated, migration to ciborium planned
+ciborium = "0.2"
 subtle = "2"
 libc = "0.2"
 ed25519-dalek = "2"

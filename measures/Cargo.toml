@@ -10,6 +10,8 @@ readme = "README.md"
 keywords = ["cardano", "measure", "capacity"]
 categories = ["algorithms"]
 
+[lints]
+workspace = true
 [dependencies]
 thiserror = "2.0.17"
 

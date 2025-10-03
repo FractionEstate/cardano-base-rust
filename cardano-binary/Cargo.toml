@@ -10,13 +10,16 @@ readme = "README.md"
 keywords = ["cardano", "cbor", "serialization"]
 categories = ["encoding"]
 
+[lints]
+workspace = true
+
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
-serde_cbor = { version = "0.11", features = ["tags"] }
+ciborium = "0.2"
+ciborium-io = "0.2"
+ciborium-ll = "0.2"
 thiserror = "2.0.17"
-
-# NOTE: serde_cbor is deprecated. Migration to ciborium planned.
-# See: https://github.com/FractionEstate/cardano-base-rust/issues/XXX
 
 [dev-dependencies]
 serde_bytes = "0.11"
+proptest = "1.5"

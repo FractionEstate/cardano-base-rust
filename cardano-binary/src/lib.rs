@@ -10,8 +10,8 @@ mod serialize;
 
 #[allow(deprecated)]
 pub use crate::deserialize::{
-    decode_full, decode_full_decoder, decode_full_owned, decode_nested_cbor,
-    decode_nested_cbor_bytes, deserialise_decoder, unsafe_deserialize, unsafe_deserialize_owned,
+    decode_full, decode_full_owned, decode_nested_cbor, decode_nested_cbor_bytes,
+    unsafe_deserialize, unsafe_deserialize_owned,
 };
 
 pub use crate::error::BinaryError;

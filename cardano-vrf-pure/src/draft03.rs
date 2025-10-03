@@ -247,6 +247,7 @@ impl VrfDraft03 {
     }
 
     /// Generate keypair from seed
+    #[must_use] 
     pub fn keypair_from_seed(
         seed: &[u8; SEED_SIZE],
     ) -> ([u8; SECRET_KEY_SIZE], [u8; PUBLIC_KEY_SIZE]) {

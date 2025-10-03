@@ -56,6 +56,7 @@ where
 {
     /// Produce the identity representation. The default delegates to
     /// [`Monoid::empty`].
+    #[must_use] 
     fn gmempty() -> Self::Repr {
         <Self::Repr as Monoid>::empty()
     }
@@ -76,15 +77,9 @@ impl Generic for () {
     where
         Self: 'a;
 
-    fn into_repr(self) -> Self::Repr {
-        ()
-    }
+    fn into_repr(self) -> Self::Repr {}
 
-    fn from_repr(_repr: Self::Repr) -> Self {
-        ()
-    }
+    fn from_repr(_repr: Self::Repr) -> Self {}
 
-    fn as_repr(&self) -> Self::ReprRef<'_> {
-        ()
-    }
+    fn as_repr(&self) -> Self::ReprRef<'_> {}
 }

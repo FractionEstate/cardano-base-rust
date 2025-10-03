@@ -19,16 +19,19 @@ impl<'a, const N: usize> SizedPtr<'a, N> {
     }
 
     /// Returns the raw pointer.
+    #[must_use] 
     pub fn as_ptr(self) -> *const u8 {
         self.ptr.as_ptr()
     }
 
     /// Returns the pointer as mutable. Callers must uphold aliasing rules.
+    #[must_use] 
     pub fn as_mut_ptr(self) -> *mut u8 {
         self.ptr.as_ptr()
     }
 
     /// Number of bytes referenced by this pointer.
+    #[must_use] 
     pub const fn len(self) -> usize {
         N
     }
@@ -49,14 +52,17 @@ impl<'a, const N: usize> SizedMutPtr<'a, N> {
         }
     }
 
+    #[must_use] 
     pub fn as_ptr(self) -> *const u8 {
         self.ptr.as_ptr()
     }
 
+    #[must_use] 
     pub fn as_mut_ptr(self) -> *mut u8 {
         self.ptr.as_ptr()
     }
 
+    #[must_use] 
     pub const fn len(self) -> usize {
         N
     }

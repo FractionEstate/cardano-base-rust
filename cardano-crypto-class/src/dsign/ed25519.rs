@@ -61,7 +61,7 @@ impl DirectDeserialise for Ed25519VerificationKey {
             pull(ptr, VERIFICATION_KEY_BYTES)
         });
         result?;
-        Ed25519VerificationKey::from_bytes(bytes.as_bytes()).ok_or_else(|| SizeCheckError {
+        Ed25519VerificationKey::from_bytes(bytes.as_bytes()).ok_or(SizeCheckError {
             expected_size: VERIFICATION_KEY_BYTES,
             actual_size: VERIFICATION_KEY_BYTES,
         })

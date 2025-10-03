@@ -74,6 +74,7 @@ pub enum VRFError {
 }
 
 impl VRFError {
+    #[must_use] 
     pub fn wrong_length(context: &'static str, expected: usize, actual: usize) -> Self {
         VRFError::WrongLength {
             context,
@@ -82,6 +83,7 @@ impl VRFError {
         }
     }
 
+    #[must_use] 
     pub fn value_too_large(expected: usize) -> Self {
         VRFError::ValueTooLarge { expected }
     }
@@ -137,16 +139,19 @@ impl<A: VRFAlgorithm> OutputVRF<A> {
     }
 
     /// Immutable view of the output bytes.
+    #[must_use] 
     pub fn as_bytes(&self) -> &[u8] {
         &self.bytes
     }
 
     /// Consume the wrapper and return the owned bytes.
+    #[must_use] 
     pub fn into_bytes(self) -> Vec<u8> {
         self.bytes
     }
 
     /// Interpret the output bytes as a natural number.
+    #[must_use] 
     pub fn to_natural(&self) -> BigUint {
         bytes_to_natural(&self.bytes)
     }
@@ -264,6 +269,7 @@ pub trait VRFAlgorithm {
         Self: Sized;
 
     /// Deterministically derive a signing key from the supplied seed.
+    #[must_use] 
     fn gen_key(seed: &Seed) -> Self::SigningKey
     where
         Self: Sized,
@@ -278,6 +284,7 @@ pub trait VRFAlgorithm {
         Self: Sized;
 
     /// Deterministically derive a keypair from the supplied seed.
+    #[must_use] 
     fn gen_keypair(seed: &Seed) -> (Self::SigningKey, Self::VerificationKey)
     where
         Self: Sized,

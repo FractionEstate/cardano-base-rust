@@ -4,8 +4,8 @@ use std::fmt;
 use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
 use cardano_binary::serialize;
+use ciborium::value::Value;
 use num_bigint::BigUint;
-use serde_cbor::value::Value;
 
 use crate::seed::{Seed, SeedRng};
 use crate::util::{splits_at, write_binary_natural};
@@ -124,7 +124,7 @@ impl SimplePoint {
                     let y3 = lambda.mul(x1.add(x3)).add(x3).add(y1);
                     SimplePoint::affine(x3, y3)
                 }
-            }
+            },
         }
     }
 
@@ -140,7 +140,7 @@ impl SimplePoint {
                     let y3 = x.square().add(lambda.add(FieldElement::one()).mul(x3));
                     SimplePoint::affine(x3, y3)
                 }
-            }
+            },
         }
     }
 
@@ -177,7 +177,7 @@ impl SimplePoint {
                     .add(FieldElement::new(CURVE_A).mul(x.square()))
                     .add(FieldElement::new(CURVE_B));
                 left == right
-            }
+            },
         }
     }
 
@@ -227,6 +227,7 @@ impl fmt::Debug for SimpleSigningKey {
 }
 
 impl SimpleSigningKey {
+    #[must_use]
     pub fn value(&self) -> u128 {
         self.0
     }
@@ -308,8 +309,10 @@ fn encode_bytes(bytes: &[u8]) -> Vec<u8> {
 }
 
 fn cbor_unsigned(value: u128) -> Value {
+    use ciborium::value::Integer;
+
     if value <= u64::MAX as u128 {
-        Value::Integer(value as i128)
+        Value::Integer(Integer::from(value as u64))
     } else {
         let bytes = value
             .to_be_bytes()
@@ -496,7 +499,7 @@ impl VRFAlgorithm for SimpleVRF {
                 let mut bytes = write_binary_natural(16, &BigUint::from(x.value()));
                 bytes.extend(write_binary_natural(16, &BigUint::from(y.value())));
                 bytes
-            }
+            },
         }
     }
 
@@ -533,7 +536,7 @@ impl VRFAlgorithm for SimpleVRF {
                 bytes.extend(write_binary_natural(16, &BigUint::from(proof.challenge())));
                 bytes.extend(write_binary_natural(16, &BigUint::from(proof.response())));
                 bytes
-            }
+            },
         }
     }
 
@@ -570,11 +573,13 @@ impl From<&SimpleSigningKey> for SimpleVerificationKey {
 }
 
 /// Convenience helper mirroring the Haskell API.
+#[must_use]
 pub fn gen_key(seed: &Seed) -> SimpleSigningKey {
     SimpleVRF::gen_key(seed)
 }
 
 /// Deterministically derive a keypair from a seed.
+#[must_use]
 pub fn gen_keypair(seed: &Seed) -> (SimpleSigningKey, SimpleVerificationKey) {
     SimpleVRF::gen_keypair(seed)
 }

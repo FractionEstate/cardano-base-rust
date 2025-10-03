@@ -202,16 +202,19 @@ impl MLockedBytes {
     }
 
     /// Length in bytes.
+    #[must_use] 
     pub fn len(&self) -> usize {
         self.region.len()
     }
 
     /// Returns `true` if the allocation is empty.
+    #[must_use] 
     pub fn is_empty(&self) -> bool {
         self.region.is_empty()
     }
 
     /// Immutable view of the underlying bytes.
+    #[must_use] 
     pub fn as_slice(&self) -> &[u8] {
         self.region.as_slice()
     }
@@ -222,6 +225,7 @@ impl MLockedBytes {
     }
 
     /// Raw pointer to the allocation.
+    #[must_use] 
     pub fn as_ptr(&self) -> *const u8 {
         self.region.as_ptr()
     }
@@ -244,7 +248,7 @@ impl MLockedBytes {
     /// Create a deep copy of this buffer.
     pub fn try_clone(&self) -> Result<Self, MLockedError> {
         let mut cloned = Self::new(self.len())?;
-        if self.len() > 0 {
+        if !self.is_empty() {
             // SAFETY: Both self.as_ptr() and cloned.as_mut_ptr() are valid for self.len() bytes.
             // Regions don't overlap (cloned was just allocated), satisfying copy_nonoverlapping requirements.
             unsafe {
@@ -292,21 +296,25 @@ impl<const N: usize> MLockedSizedBytes<N> {
     }
 
     /// Length in bytes.
+    #[must_use] 
     pub const fn len(&self) -> usize {
         N
     }
 
     /// Returns true if this represents an empty allocation.
+    #[must_use] 
     pub const fn is_empty(&self) -> bool {
         N == 0
     }
 
     /// Immutable view of the underlying bytes.
+    #[must_use] 
     pub fn as_slice(&self) -> &[u8] {
         self.region.as_slice()
     }
 
     /// Immutable view as a fixed-size array reference.
+    #[must_use] 
     pub fn as_array(&self) -> &[u8; N] {
         // SAFETY: self.region.as_ptr() points to at least N bytes (enforced by MLockedRegion::allocate(N)).
         // Casting to *const [u8; N] is valid because the memory layout matches.
@@ -375,18 +383,19 @@ impl MLockedAllocator {
 }
 
 /// Default allocator equivalent to `mlockedMalloc`.
+#[must_use] 
 pub fn mlocked_allocator() -> MLockedAllocator {
-    MLockedAllocator::default()
+    MLockedAllocator
 }
 
 /// Allocate an mlocked region with undefined contents.
 pub fn mlocked_alloc_bytes(len: usize) -> Result<MLockedBytes, MLockedError> {
-    MLockedAllocator::default().allocate(len)
+    MLockedAllocator.allocate(len)
 }
 
 /// Allocate a zeroed mlocked region.
 pub fn mlocked_alloc_bytes_zeroed(len: usize) -> Result<MLockedBytes, MLockedError> {
-    MLockedAllocator::default().allocate_zeroed(len)
+    MLockedAllocator.allocate_zeroed(len)
 }
 
 /// Allocate an mlocked region rounding up to the nearest multiple of `align`.

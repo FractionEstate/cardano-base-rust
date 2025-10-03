@@ -7,5 +7,7 @@ license = "Apache-2.0"
 description = "Runtime checks mirroring the Haskell nothunks package"
 repository = "https://github.com/input-output-hk/cardano-base"
 
+[lints]
+workspace = true
 [dependencies]
 base-deriving-via = { path = "../base-deriving-via" }

@@ -10,6 +10,8 @@ readme = "README.md"
 keywords = ["cardano", "git", "build", "revision"]
 categories = ["development-tools", "config"]
 
+[lints]
+workspace = true
 [dependencies]
 thiserror = "2.0.17"
 

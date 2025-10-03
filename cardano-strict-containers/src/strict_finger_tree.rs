@@ -35,13 +35,13 @@ impl_numeric_monoid!(u8, u16, u32, u64, usize, i32, i64, isize);
 
 impl Semigroup for () {
     fn combine(&self, _other: &Self) -> Self {
-        ()
+        
     }
 }
 
 impl Monoid for () {
     fn empty() -> Self {
-        ()
+        
     }
 }
 
@@ -129,6 +129,7 @@ where
     V: Monoid + Clone,
     A: Measured<V>,
 {
+    #[must_use] 
     pub fn empty() -> Self {
         Self {
             data: VecDeque::new(),
@@ -152,6 +153,7 @@ where
         }
     }
 
+    #[must_use] 
     pub fn from_strict(tree: VecDeque<A>) -> Self {
         Self {
             data: tree,
@@ -159,6 +161,7 @@ where
         }
     }
 
+    #[must_use] 
     pub fn force_to_strict(tree: VecDeque<A>) -> Self {
         Self {
             data: tree,
@@ -166,22 +169,27 @@ where
         }
     }
 
+    #[must_use] 
     pub fn into_inner(self) -> VecDeque<A> {
         self.data
     }
 
+    #[must_use] 
     pub fn len(&self) -> usize {
         self.data.len()
     }
 
+    #[must_use] 
     pub fn is_empty(&self) -> bool {
         self.data.is_empty()
     }
 
+    #[must_use] 
     pub fn null(&self) -> bool {
         self.data.is_empty()
     }
 
+    #[must_use] 
     pub fn viewl(&self) -> ViewL<V, A> {
         match self.data.front() {
             None => ViewL::EmptyL,
@@ -199,6 +207,7 @@ where
         }
     }
 
+    #[must_use] 
     pub fn viewr(&self) -> ViewR<V, A> {
         match self.data.back() {
             None => ViewR::EmptyR,
@@ -226,11 +235,13 @@ where
         self
     }
 
+    #[must_use] 
     pub fn concat(mut self, mut other: Self) -> Self {
         self.data.append(&mut other.data);
         self
     }
 
+    #[must_use] 
     pub fn reverse(&self) -> Self {
         Self {
             data: self.data.iter().cloned().rev().collect(),
@@ -238,6 +249,7 @@ where
         }
     }
 
+    #[must_use] 
     pub fn measure(&self) -> V {
         self.data
             .iter()
@@ -349,30 +361,31 @@ where
         self.split(predicate).1
     }
 
-    pub fn fmap<B, V2, F>(&self, mut f: F) -> StrictFingerTree<V2, B>
+    pub fn fmap<B, V2, F>(&self, f: F) -> StrictFingerTree<V2, B>
     where
         V2: Monoid + Clone,
         B: Measured<V2>,
         F: FnMut(&A) -> B,
     {
         StrictFingerTree {
-            data: self.data.iter().map(|item| f(item)).collect(),
+            data: self.data.iter().map(f).collect(),
             _marker: PhantomData,
         }
     }
 
-    pub fn unsafe_fmap<B, V2, F>(&self, mut f: F) -> StrictFingerTree<V2, B>
+    pub fn unsafe_fmap<B, V2, F>(&self, f: F) -> StrictFingerTree<V2, B>
     where
         V2: Monoid + Clone,
         B: Clone,
         F: FnMut(&A) -> B,
     {
         StrictFingerTree {
-            data: self.data.iter().map(|item| f(item)).collect(),
+            data: self.data.iter().map(f).collect(),
             _marker: PhantomData,
         }
     }
 
+    #[must_use] 
     pub fn iter(&self) -> std::collections::vec_deque::Iter<'_, A> {
         self.data.iter()
     }

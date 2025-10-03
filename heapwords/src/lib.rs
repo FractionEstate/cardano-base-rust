@@ -20,11 +20,13 @@ use time::{Date, OffsetDateTime};
 pub const WORD_SIZE: usize = 8;
 
 /// Convert a number of heap words into megabytes.
+#[must_use] 
 pub fn heap_size_mb(words: usize) -> usize {
     words.saturating_mul(WORD_SIZE) / (1024 * 1024)
 }
 
 /// Convert a number of heap words into kilobytes.
+#[must_use] 
 pub fn heap_size_kb(words: usize) -> usize {
     words.saturating_mul(WORD_SIZE) / 1024
 }
@@ -36,6 +38,7 @@ pub trait HeapWords {
 }
 
 #[inline]
+#[must_use] 
 pub fn heap_words0() -> usize {
     0
 }
@@ -370,12 +373,14 @@ where
 
 /// Estimate the heap words of an array of primitive values.
 #[inline]
+#[must_use] 
 pub fn heap_words_uarray(element_size_bytes: usize, len: usize) -> usize {
     13 + element_size_bytes.saturating_mul(len) / WORD_SIZE
 }
 
 /// Estimate the heap words of an unboxed vector.
 #[inline]
+#[must_use] 
 pub fn heap_words_uvector(element_size_bytes: usize, len: usize) -> usize {
     5 + element_size_bytes.saturating_mul(len) / WORD_SIZE
 }
@@ -490,7 +495,7 @@ where
     V: HeapWords,
 {
     fn heap_words(&self) -> usize {
-        self.0.iter().map(|(_, v)| 8 + v.heap_words()).sum()
+        self.0.values().map(|v| 8 + v.heap_words()).sum()
     }
 }
 

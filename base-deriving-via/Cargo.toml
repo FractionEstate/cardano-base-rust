@@ -10,4 +10,6 @@ readme = "README.md"
 keywords = ["algebra", "semigroup", "monoid", "generic"]
 categories = ["algorithms", "development-tools"]
 
+[lints]
+workspace = true
 [dependencies]

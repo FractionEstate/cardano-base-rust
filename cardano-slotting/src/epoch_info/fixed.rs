@@ -4,6 +4,7 @@ use crate::epoch_info::api::EpochInfo;
 use crate::slot::{EpochNo, EpochSize, SlotNo};
 use crate::time::{get_slot_length, mult_nominal_diff_time, RelativeTime, SlotLength};
 
+#[must_use] 
 pub fn fixed_epoch_info(epoch_size: EpochSize, slot_length: SlotLength) -> EpochInfo<Infallible> {
     EpochInfo::from_pure(
         move |_| epoch_size,
@@ -18,10 +19,12 @@ pub fn fixed_epoch_info(epoch_size: EpochSize, slot_length: SlotLength) -> Epoch
     )
 }
 
+#[must_use] 
 pub fn fixed_epoch_info_first(epoch_size: EpochSize, epoch: EpochNo) -> SlotNo {
     SlotNo(epoch.0 * epoch_size.0)
 }
 
+#[must_use] 
 pub fn fixed_epoch_info_epoch(epoch_size: EpochSize, slot: SlotNo) -> EpochNo {
     EpochNo(slot.0 / epoch_size.0)
 }
