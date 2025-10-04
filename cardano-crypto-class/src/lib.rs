@@ -67,7 +67,6 @@ pub use kes::{
     // CompactSingle KES
     CompactSingleKes,
     CompactSingleSig,
-    CompactSingleSigningKey,
     // CompactSum KES type aliases (using Blake2b256)
     CompactSum0Kes,
     CompactSum1Kes,
@@ -77,6 +76,7 @@ pub use kes::{
     CompactSum5Kes,
     CompactSum6Kes,
     CompactSum7Kes,
+    // Core KES traits and types
     KesAlgorithm,
     KesError,
     KesHashAlgorithm,
@@ -85,8 +85,6 @@ pub use kes::{
     Period,
     // Single KES
     SingleKes,
-    SingleSignature,
-    SingleSigningKey,
     // Sum KES type aliases (using Blake2b256)
     Sum0Kes,
     Sum1Kes,

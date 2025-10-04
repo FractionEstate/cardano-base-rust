@@ -18,12 +18,10 @@ pub mod verify_hash;
 pub use hash::{Blake2b256, Blake2b512, KesHashAlgorithm};
 
 // Re-export SingleKes types
-pub use single::{SingleKes, SingleSignature, SingleSigningKey};
+pub use single::SingleKes;
 
 // Re-export CompactSingleKes types
-pub use compact_single::{
-    CompactSingleKes, CompactSingleSig, CompactSingleSigningKey, OptimizedKesSignature,
-};
+pub use compact_single::{CompactSingleKes, CompactSingleSig, OptimizedKesSignature};
 
 // Re-export Sum type aliases (using Blake2b256)
 pub use sum::{Sum0Kes, Sum1Kes, Sum2Kes, Sum3Kes, Sum4Kes, Sum5Kes, Sum6Kes, Sum7Kes};
