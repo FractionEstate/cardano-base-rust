@@ -23,3 +23,4 @@ thiserror = "2.0.17"
 [dev-dependencies]
 serde_bytes = "0.11"
 proptest = "1.5"
+hex = "0.4"

@@ -74,6 +74,7 @@ dependencies = [
  "ciborium",
  "ciborium-io",
  "ciborium-ll",
+ "hex",
  "proptest",
  "serde",
  "serde_bytes",

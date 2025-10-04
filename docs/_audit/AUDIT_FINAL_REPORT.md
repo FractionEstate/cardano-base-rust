@@ -1,3 +1,9 @@
+---
+layout: page
+title: Audit Summary: cardano-base-rust vs Original
+permalink: /audit/audit-final-report/
+---
+
 # Audit Summary: cardano-base-rust vs Original
 
 **Date**: October 3, 2025
@@ -8,7 +14,7 @@
 
 ## Executive Summary
 
-The Rust implementation of `cardano-base` has been audited against the original Haskell repository at https://github.com/IntersectMBO/cardano-base.
+The Rust implementation of `cardano-base` has been audited against the original Haskell repository at <https://github.com/IntersectMBO/cardano-base.>
 
 **Overall Assessment**: ✅ **EXCELLENT** - High-quality implementation with improvements over original
 
@@ -33,6 +39,7 @@ After investigation, `cardano-crypto-praos` is **ONLY a VRF wrapper** around lib
 cardano-crypto-praos/
 ├── Praos.hs              ← VRF wrapper (libsodium FFI)
 └── PraosBatchCompat.hs   ← Batch verification support
+
 ```
 
 **Purpose**: Provides VRF via modified libsodium fork
@@ -94,6 +101,7 @@ cardano-crypto-praos/
 ### Improvements Over Original ✅
 
 1. **Memory Safety**
+
    - Original: Haskell GC + C FFI (unsafe)
    - Rust: Ownership system + no C code
    - **Impact**: Eliminates entire classes of vulnerabilities
@@ -116,6 +124,7 @@ cardano-crypto-praos/
 ### Remaining Security Tasks ⚠️
 
 1. **CBOR Compatibility Testing** (Recommended)
+
    - Test Rust serialization ↔ Haskell deserialization
    - Ensure byte-for-byte compatibility
    - Critical for network protocol compatibility
@@ -137,6 +146,7 @@ cardano-crypto-praos/
 ### Strengths ✅
 
 1. **Documentation**
+
    - ✅ Added `# Errors` sections to 13 functions
    - ✅ Comprehensive SAFETY comments on unsafe code
    - ✅ README and package docs complete
@@ -159,6 +169,7 @@ cardano-crypto-praos/
 ### Areas for Enhancement 🟡
 
 1. **Property Testing**
+
    - Original uses QuickCheck extensively
    - Rust could use `proptest` crate
    - Not critical, but would improve test coverage
@@ -198,12 +209,14 @@ Public APIs provide equivalent functionality:
 // Rust
 serialize<T: Serialize>(value: &T) -> Result<Vec<u8>, BinaryError>
 decode_full<T: DeserializeOwned>(bytes: &[u8]) -> Result<T, BinaryError>
+
 ```
 
 ```haskell
 -- Haskell
 serialize :: ToCBOR a => a -> ByteString
 deserialize :: FromCBOR a => ByteString -> Either DecoderError a
+
 ```
 
 **Verdict**: ✅ Functionally equivalent
@@ -277,6 +290,7 @@ The Rust implementation of `cardano-base` is:
 ### Caveats for Production Use
 
 1. **CBOR Compatibility** ⚠️
+
    - Recommend cross-validation testing
    - Ensure byte-for-byte compatibility with Haskell
    - Critical for network protocol
@@ -314,6 +328,7 @@ The Rust implementation of `cardano-base` is:
 ### For Development Teams
 
 ✅ **Use confidently** for:
+
 - Development and testing
 - Internal tools
 - Proof-of-concept applications
@@ -322,6 +337,7 @@ The Rust implementation of `cardano-base` is:
 ### For Production Deployments
 
 Complete these steps:
+
 1. Cross-validate CBOR serialization format
 2. Test cryptographic operations interoperability
 3. Run against Cardano testnet
@@ -331,6 +347,7 @@ Complete these steps:
 ### For Long-term Maintenance
 
 Consider:
+
 - Adding property tests (proptest crate)
 - Adding golden tests for format stability
 - Completing serde_cbor → ciborium migration
@@ -357,6 +374,7 @@ This Rust implementation represents **excellent engineering work**:
 **Production Readiness**: ✅ **High** (with standard due diligence)
 
 For questions or concerns, refer to:
+
 - AUDIT_FIXES_APPLIED.md (Security improvements)
 - WARNING_FIXES_SUMMARY.md (Code quality improvements)
 - CARGO_FIX_SUMMARY.md (Build system setup)

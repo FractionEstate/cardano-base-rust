@@ -1,3 +1,9 @@
+---
+layout: page
+title: Critical Fixes Applied - Audit Report
+permalink: /audit/audit-fixes-applied/
+---
+
 # Critical Fixes Applied - Audit Report
 
 ## Date: October 3, 2025
@@ -13,6 +19,7 @@ This document summarizes the critical fixes applied to the cardano-base-rust cod
 **Location**: `/workspaces/cardano-base-rust/Cargo.toml`
 
 **Changes**:
+
 - Added comprehensive workspace-level Clippy lints
 - Configured deny/warn levels for different lint categories
 - Enabled production code quality checks:
@@ -32,19 +39,23 @@ This document summarizes the critical fixes applied to the cardano-base-rust cod
 **Location**: `/workspaces/cardano-base-rust/cardano-binary/src/deserialize.rs`
 
 **Changes**:
+
 - Added `#[deprecated]` attribute with clear migration path
 - Enhanced documentation explaining panic behavior
 - Updated panic messages to direct users to safer alternatives
 - Added `#[allow(deprecated)]` in lib.rs for backwards compatibility
 
 **Before**:
+
 ```rust
 pub fn unsafe_deserialize<T: DeserializeOwned>(bytes: &[u8]) -> T {
     decode_full(bytes).expect("invalid CBOR input")
 }
+
 ```
 
 **After**:
+
 ```rust
 #[deprecated(
     since = "0.1.1",
@@ -53,6 +64,7 @@ pub fn unsafe_deserialize<T: DeserializeOwned>(bytes: &[u8]) -> T {
 pub fn unsafe_deserialize<T: DeserializeOwned>(bytes: &[u8]) -> T {
     decode_full(bytes).expect("CBOR deserialization failed - use decode_full() for error handling")
 }
+
 ```
 
 **Impact**: Users are now warned to use proper error handling, reducing panic-prone code paths.
@@ -64,6 +76,7 @@ pub fn unsafe_deserialize<T: DeserializeOwned>(bytes: &[u8]) -> T {
 **Location**: `/workspaces/cardano-base-rust/.github/workflows/ci.yml`
 
 **Features**:
+
 - **Test Suite Job**: Runs all workspace tests with caching
 - **Format Check**: Validates code formatting with `cargo fmt`
 - **Clippy Linting**: Enforces code quality with `-D warnings`
@@ -74,6 +87,7 @@ pub fn unsafe_deserialize<T: DeserializeOwned>(bytes: &[u8]) -> T {
 - **Summary Job**: Aggregates all job results
 
 **Cache Strategy**:
+
 - Cargo registry cache
 - Cargo git index cache
 - Build target cache
@@ -88,18 +102,23 @@ pub fn unsafe_deserialize<T: DeserializeOwned>(bytes: &[u8]) -> T {
 **Location**: `/workspaces/cardano-base-rust/cardano-crypto-class/src/vrf/praos_batch.rs`
 
 **Changes**:
+
 - Replaced bare `expect()` messages with descriptive error context
 - Added clear indication of failure cause (memory allocation)
 
 **Before**:
+
 ```rust
 bytes: self.bytes.try_clone().expect("failed to clone seed"),
+
 ```
 
 **After**:
+
 ```rust
 bytes: self.bytes.try_clone()
     .expect("mlocked seed cloning failed - memory allocation error"),
+
 ```
 
 **Impact**: Better error diagnostics when failures occur.
@@ -113,38 +132,47 @@ bytes: self.bytes.try_clone()
 **Changes Applied**:
 
 #### Memory Allocation (lines 38-90)
+
 ```rust
 // SAFETY: malloc(1) always returns a valid pointer or NULL.
 // We check for NULL immediately and return an error.
 let ptr = unsafe { libc::malloc(1) } as *mut u8;
+
 ```
 
 #### Slice Creation (lines 93-104)
+
 ```rust
 // SAFETY: self.ptr is valid for self.len bytes, allocated by malloc/calloc,
 // and remains valid for the lifetime of this MLockedRegion.
 unsafe { slice::from_raw_parts(self.ptr.as_ptr(), self.len) }
+
 ```
 
 #### Drop Implementation (lines 122-144)
+
 ```rust
 // SAFETY: self.ptr is valid for self.len bytes.
 // Zeroing memory for security before deallocation.
 unsafe {
     ptr::write_bytes(self.ptr.as_ptr(), 0, self.len);
 }
+
 ```
 
 #### Memory Copy Operations (lines 243-250)
+
 ```rust
 // SAFETY: Both self.as_ptr() and cloned.as_mut_ptr() are valid for self.len() bytes.
 // Regions don't overlap (cloned was just allocated), satisfying copy_nonoverlapping requirements.
 unsafe {
     ptr::copy_nonoverlapping(self.as_ptr(), cloned.as_mut_ptr(), self.len());
 }
+
 ```
 
 #### Public Unsafe Functions (lines 399-418)
+
 ```rust
 /// # Safety
 ///
@@ -153,6 +181,7 @@ unsafe {
 /// - `ptr` is properly aligned
 /// - The memory region [ptr, ptr+len) doesn't overlap with any borrowed references
 pub unsafe fn zero_mem(ptr: *mut u8, len: usize) { ... }
+
 ```
 
 **Impact**: Clear documentation of safety invariants for code review and maintenance.
@@ -162,14 +191,17 @@ pub unsafe fn zero_mem(ptr: *mut u8, len: usize) { ... }
 ### 6. Added Deprecation Warnings for serde_cbor ✅
 
 **Location**:
+
 - `/workspaces/cardano-base-rust/cardano-binary/Cargo.toml`
 - `/workspaces/cardano-base-rust/cardano-crypto-class/Cargo.toml`
 
 **Changes**:
+
 ```toml
 serde_cbor = { version = "0.11", features = ["tags"] }
+
 # NOTE: serde_cbor is deprecated. Migration to ciborium planned.
-# See: https://github.com/FractionEstate/cardano-base-rust/issues/XXX
+# See: <https://github.com/FractionEstate/cardano-base-rust/issues/XXX>
 ```
 
 **Status**: Marked for future migration. Full migration deferred due to API differences requiring careful testing.
@@ -181,12 +213,14 @@ serde_cbor = { version = "0.11", features = ["tags"] }
 ## 📊 Metrics
 
 ### Code Changes
+
 - **Files Modified**: 6
 - **Lines Added**: ~250
 - **Lines Modified**: ~50
 - **New Files**: 1 (CI workflow)
 
 ### Quality Improvements
+
 - **Clippy Lints Added**: 15+ new checks
 - **SAFETY Comments**: 10+ critical unsafe blocks documented
 - **Deprecated Functions**: 2 (with migration path)
@@ -202,6 +236,7 @@ serde_cbor = { version = "0.11", features = ["tags"] }
 **Reason Deferred**: Requires extensive API changes and testing
 
 **Plan**:
+
 1. Create feature branch
 2. Replace serde_cbor with ciborium
 3. Update all serialization/deserialization code
@@ -215,6 +250,7 @@ serde_cbor = { version = "0.11", features = ["tags"] }
 **Status**: Can be done incrementally
 
 **Locations**:
+
 - Test code (50+ instances) - lower priority
 - Non-critical paths - can use clippy warnings
 
@@ -224,6 +260,7 @@ serde_cbor = { version = "0.11", features = ["tags"] }
 **Cost**: $20k-50k (estimate)
 
 **Recommended Firms**:
+
 - Trail of Bits
 - NCC Group
 - Kudelski Security
@@ -233,6 +270,7 @@ serde_cbor = { version = "0.11", features = ["tags"] }
 **Effort**: 2-3 weeks
 
 **Targets**:
+
 - CBOR deserialization
 - VRF proof validation
 - Ed25519 signature verification
@@ -244,6 +282,7 @@ serde_cbor = { version = "0.11", features = ["tags"] }
 ### Run all new checks locally:
 
 ```bash
+
 # Format check
 cargo fmt --all -- --check
 
@@ -260,6 +299,7 @@ cargo audit
 # Code coverage (requires cargo-tarpaulin)
 cargo install cargo-tarpaulin
 cargo tarpaulin --workspace --out Html
+
 ```
 
 ---
@@ -267,21 +307,25 @@ cargo tarpaulin --workspace --out Html
 ## 📈 Impact Assessment
 
 ### Security: ⬆️ Improved
+
 - Deprecated panic-prone functions
 - Documented unsafe code invariants
 - Added dependency vulnerability scanning
 
 ### Code Quality: ⬆️⬆️ Significantly Improved
+
 - Comprehensive lint configuration
 - Automated formatting checks
 - Better error messages
 
 ### Maintainability: ⬆️⬆️ Significantly Improved
+
 - CI/CD automation
 - Clear SAFETY documentation
 - Deprecation warnings with migration paths
 
 ### Developer Experience: ⬆️ Improved
+
 - Faster feedback via CI
 - Clear compile-time warnings
 - Cached builds for speed
@@ -293,6 +337,7 @@ cargo tarpaulin --workspace --out Html
 **Status**: ✅ Critical fixes completed successfully
 
 The cardano-base-rust codebase has been significantly hardened with:
+
 - ✅ Comprehensive CI/CD pipeline
 - ✅ Enhanced code quality enforcement
 - ✅ Better error handling patterns
@@ -300,6 +345,7 @@ The cardano-base-rust codebase has been significantly hardened with:
 - ✅ Deprecated dangerous functions
 
 The codebase is now **production-ready** with the caveat that:
+
 1. serde_cbor migration should be prioritized
 2. Formal security audit recommended before mainnet deployment
 3. Fuzzing infrastructure should be added for additional confidence

@@ -27,6 +27,7 @@ docs/
     ├── CONTRIBUTING.md                 # How to contribute
     ├── CODE-OF-CONDUCT.md              # Community guidelines
     └── SECURITY.md                     # Security policy and reporting
+
 ```
 
 **Total:** 13 documentation files organized across 4 categories
@@ -68,6 +69,7 @@ cardano-crypto-class/
 └── README.md
 
 (... 9 more packages with similar structure)
+
 ```
 
 **Total:** 13 packages, each with CHANGELOG.md, some with README.md
@@ -87,6 +89,7 @@ cardano-crypto-class/
 ├── PULL_REQUEST_TEMPLATE.md            # PR template
 └── instructions/
     └── copilot.instructions.md         # AI assistant instructions
+
 ```
 
 ## Removed Files
@@ -106,10 +109,12 @@ Redundant documentation files deleted during cleanup:
 **Workflow:** `.github/workflows/sync-wiki.yml`
 
 **Triggers:**
+
 - Push to `master` branch with changes to `docs/**`
 - Manual trigger via `workflow_dispatch`
 
 **Process:**
+
 1. Checkout repository with docs/
 2. Checkout wiki repository
 3. Sync docs/ → wiki/ using `rsync --delete`
@@ -126,6 +131,7 @@ Redundant documentation files deleted during cleanup:
 ### Wiki URL Structure
 
 Documentation accessible at:
+
 - Wiki Home: `https://github.com/<owner>/cardano-base/wiki`
 - Example Pages:
   - `https://github.com/<owner>/cardano-base/wiki/API-Packages`
@@ -141,6 +147,7 @@ Documentation accessible at:
 
 ```
 Test Breakdown:
+
 - base-deriving-via:        2 tests
 - cardano-base:              2 tests
 - cardano-binary:           10 tests
@@ -156,6 +163,7 @@ Test Breakdown:
 - orphans-deriving-via:      2 tests
 
 Total: 148 tests passing
+
 ```
 
 **Command:** `cargo test --workspace`
@@ -173,10 +181,12 @@ Total: 148 tests passing
 2. Update `docs/README.md` to include link
 
 3. Commit and push to `master`:
+
    ```bash
    git add docs/
    git commit -m "docs: Add new documentation"
    git push origin master
+
    ```
 
 4. Workflow automatically syncs to wiki
@@ -186,10 +196,12 @@ Total: 148 tests passing
 1. Edit `.md` file in `docs/`
 
 2. Commit and push:
+
    ```bash
    git add docs/path/to/file.md
    git commit -m "docs: Update documentation"
    git push origin master
+
    ```
 
 3. Wiki automatically updated by workflow

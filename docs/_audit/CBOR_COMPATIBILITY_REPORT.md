@@ -1,3 +1,9 @@
+---
+layout: page
+title: CBOR Byte-for-Byte Compatibility Report
+permalink: /audit/cbor-compatibility-report/
+---
+
 # CBOR Byte-for-Byte Compatibility Report
 
 **Date**: October 3, 2025
@@ -106,16 +112,19 @@ Comprehensive byte-for-byte CBOR compatibility testing has been completed. The R
 ### 7. Byte String vs Array ✅
 
 **Important Discovery**:
+
 - `Vec<u8>` encodes as CBOR **array** (0x83 for 3 bytes)
 - `serde_bytes::ByteBuf` encodes as CBOR **byte string** (0x43 for 3 bytes)
 
 This distinction is correct and matches CBOR specification:
+
 - **Array**: Major type 4 (0x80-0x9f)
 - **Byte string**: Major type 2 (0x40-0x5f)
 
 ### 8. Struct Encoding ✅
 
 Structs encode as CBOR **maps** (major type 5):
+
 - Empty struct: `[0xa0]` (map of 0 entries)
 - 2-field struct: `[0xa2, ...]` (map of 2 entries)
 - 3-field struct: `[0xa3, ...]` (map of 3 entries)
@@ -123,6 +132,7 @@ Structs encode as CBOR **maps** (major type 5):
 ### 9. Tag 24 (Nested CBOR) ✅
 
 Nested CBOR encoding verified:
+
 - Starts with `[0xd8, 0x18]` (tag 24)
 - Followed by CBOR-encoded payload
 - Used in Cardano for nested structures
@@ -150,6 +160,7 @@ Nested CBOR encoding verified:
 **None for standard types.** Both implementations follow RFC 8949 exactly.
 
 The only encoding choice difference is:
+
 - Both use **definite-length encoding** (not indefinite)
 - Both use **canonical CBOR** for integers
 - Both encode structs as maps, arrays as arrays
@@ -161,6 +172,7 @@ The only encoding choice difference is:
 **Test**: Encode same data structure 3 times, compare byte sequences
 
 **Result**: ✅ **100% deterministic**
+
 - Same input always produces identical output
 - Byte-for-byte reproducible
 - Critical for blockchain applications
@@ -172,6 +184,7 @@ The only encoding choice difference is:
 **Test**: Encode array of 1000 elements
 
 **Result**: ✅ **Correct encoding**
+
 - Uses 2-byte length field (0x99)
 - All elements encoded correctly
 - Roundtrip successful
@@ -181,23 +194,27 @@ The only encoding choice difference is:
 ## Cardano-Specific Structures ✅
 
 ### Transaction-like Structure
+
 ```rust
 struct Transaction {
     inputs: Vec<u64>,
     outputs: Vec<u64>,
     fee: u64,
 }
+
 ```
 ✅ Encodes correctly as map(3)
 ✅ Roundtrip successful
 
 ### Address-like Structure
+
 ```rust
 struct Address {
     network: u8,
     payment: Vec<u8>,
     stake: Option<Vec<u8>>,
 }
+
 ```
 ✅ Encodes correctly with optional stake
 ✅ Roundtrip successful with and without stake
@@ -242,6 +259,7 @@ All encodings comply with **CBOR RFC 8949**:
 ### Definite vs Indefinite Length
 
 ✅ **We use definite-length encoding**
+
 - Arrays: 0x80-0x97 (not 0x9f)
 - Strings: 0x60-0x77 (not 0x7f)
 - Maps: 0xa0-0xb7 (not 0xbf)
@@ -251,6 +269,7 @@ This is the correct choice for Cardano (deterministic encoding required).
 ### Map Key Ordering
 
 Maps encode with keys in the order provided by the serializer.
+
 - For structs: Field declaration order
 - For HashMap: Iteration order (may vary)
 
@@ -263,6 +282,7 @@ Our implementation produces deterministic output for identical inputs.
 - `serde_bytes::ByteBuf` → Byte string
 
 Both are valid CBOR. Choose based on use case:
+
 - Use `ByteBuf` for binary data (more compact)
 - Use `Vec<u8>` when values are truly array items
 
@@ -288,8 +308,10 @@ Both are valid CBOR. Choose based on use case:
 **Tests**: 22 comprehensive byte-level compatibility tests
 
 **Run with**:
+
 ```bash
 cargo test -p cardano-binary cbor_compat
+
 ```
 
 ---
@@ -299,6 +321,7 @@ cargo test -p cardano-binary cbor_compat
 ### Summary
 
 ✅ **CBOR encoding is 100% compatible**
+
 - All 22 byte-level tests passing
 - RFC 8949 compliant
 - Deterministic encoding verified
@@ -320,6 +343,7 @@ cargo test -p cardano-binary cbor_compat
 **Very High** - Ready for production use
 
 The CBOR encoding is:
+
 - ✅ Specification-compliant
 - ✅ Byte-for-byte verified
 - ✅ Deterministic

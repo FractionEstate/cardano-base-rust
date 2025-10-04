@@ -29,8 +29,10 @@ merged back to master.
 
 Once you cloned the repository, it is recommended to run the following
 from the repository's root:
+
 ```bash
 git config blame.ignoreRevsFile .git-blame-ignore-revs
+
 ```
 This way `git blame` will ignore the commits specified in the `.git-blame-ignore-revs`
 file. This can come in handy if you want to exclude large commits
@@ -62,8 +64,10 @@ instructions on building.
 ## Updating dependencies
 
 Our Haskell packages come from two package repositories:
+
 - Hackage
 - [CHaP](https://github.com/input-output-hk/cardano-haskell-packages) (which is
+
   another alternative Hackage from Cardano)
 
 The `index-state` of each repository is pinned to a particular time in `cabal.project`.
@@ -81,12 +85,15 @@ the pinned index state you may need to call `cabal update` in order for `cabal` 
 
 The Nix code which builds our packages also cares about the index state.  This is
 represented by inputs managed by `nix flake`: You can update these by running:
+
 - `nix flake lock --update-input haskellNix/hackage` for Hackage
 - `nix flake lock --update-input CHaP` for CHaP
 
 If you fail to do this you may get an error like this from Nix:
+
 ```
 error: Unknown index-state 2021-08-08T00:00:00Z, the latest index-state I know about is 2021-08-06T00:00:00Z. You may need to update to a newer hackage.nix.
+
 ```
 
 ### Use of `source-repository-package`s
@@ -110,6 +117,7 @@ can be disabled on per project basis:
 ```shell
 cabal configure <package-name> --ghc-options="-Wwarn"
 cabal build <package-name>
+
 ```
 
 ### Additional documentation
@@ -181,4 +189,3 @@ reviewers, slowing them down, and makes it harder to integrate new changes.
 
 If you’re working on something that’s likely to conflict with someone else, talk to
 them. It’s not a race.
-

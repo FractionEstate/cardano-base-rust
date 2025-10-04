@@ -1,8 +1,14 @@
+---
+layout: page
+title: Audit: Rust Implementation vs Original Haskell cardano-base
+permalink: /audit/audit-comparison/
+---
+
 # Audit: Rust Implementation vs Original Haskell cardano-base
 
 **Date**: October 3, 2025
 **Status**: 🔍 In Progress
-**Original Repository**: https://github.com/IntersectMBO/cardano-base
+**Original Repository**: <https://github.com/IntersectMBO/cardano-base>
 **Rust Implementation**: FractionEstate/cardano-base-rust
 
 ---
@@ -10,6 +16,7 @@
 ## Executive Summary
 
 This audit compares the Rust implementation against the original Haskell `cardano-base` repository to verify:
+
 1. **Completeness**: All critical functionality is ported
 2. **Correctness**: Implementations match expected behavior
 3. **Security**: Cryptographic operations are secure
@@ -53,11 +60,13 @@ This audit compares the Rust implementation against the original Haskell `cardan
 #### 1. cardano-crypto-praos (Not Ported)
 
 **Original Purpose**: Praos-specific cryptographic operations
+
 - **Contains**: KES (Key Evolving Signatures), VRF implementations
 - **Status**: ⚠️ Partially replaced by cardano-vrf-pure
 - **Risk**: May be missing KES functionality
 
 **Action Required**:
+
 - [ ] Verify KES is implemented elsewhere or not needed
 - [ ] Check if Praos VRF is fully covered by cardano-vrf-pure
 - [ ] Document intentional omission if appropriate
@@ -65,11 +74,13 @@ This audit compares the Rust implementation against the original Haskell `cardan
 #### 2. cardano-crypto-tests (Not Ported)
 
 **Original Purpose**: Shared test utilities for crypto packages
+
 - **Contains**: Test vectors, property tests, golden tests
 - **Status**: ⚠️ Tests may be inline in Rust packages
 - **Risk**: May miss cross-package test coverage
 
 **Action Required**:
+
 - [ ] Verify all test vectors are ported
 - [ ] Check cross-package test coverage
 - [ ] Consider creating equivalent test utilities
@@ -86,12 +97,14 @@ This audit compares the Rust implementation against the original Haskell `cardan
 #### Structure Comparison
 
 **Original modules**:
+
 - Crypto.Hash (Blake2b, SHA256, etc.)
 - Crypto.DSIGN (Ed25519, etc.)
 - Crypto.VRF (VRF implementations)
 - Crypto.KES (Key Evolving Signatures)
 
 **Rust modules**:
+
 - `src/dsign/` - Digital signatures ✅
 - `src/vrf/` - VRF implementations ✅
 - `src/mlocked_bytes.rs` - Memory-locked allocations ✅
@@ -131,15 +144,19 @@ This audit compares the Rust implementation against the original Haskell `cardan
 #### API Comparison
 
 **Original Haskell functions** (approx):
+
 ```haskell
 serialize :: ToCBOR a => a -> ByteString
 deserialize :: FromCBOR a => ByteString -> Either DecoderError a
+
 ```
 
 **Rust equivalents**:
+
 ```rust
 pub fn serialize<T: Serialize>(value: &T) -> Result<Vec<u8>, BinaryError>
 pub fn decode_full<T: DeserializeOwned>(bytes: &[u8]) -> Result<T, BinaryError>
+
 ```
 
 **Status**: ✅ API equivalent, ⚠️ uses deprecated `serde_cbor`
@@ -160,10 +177,12 @@ pub fn decode_full<T: DeserializeOwned>(bytes: &[u8]) -> Result<T, BinaryError>
 #### VRF Variants
 
 **Implemented**:
+
 - ✅ IETF VRF Draft-03 (ECVRF-ED25519-SHA512-ELL2)
 - ✅ IETF VRF Draft-13 (ECVRF-ED25519-SHA512-TAI)
 
 **Test Coverage**:
+
 - ✅ 9 standard test vectors
 - ✅ Property tests
 - ✅ Batch verification tests
@@ -178,6 +197,7 @@ pub fn decode_full<T: DeserializeOwned>(bytes: &[u8]) -> Result<T, BinaryError>
 **Rust**: Direct port with equivalent functionality
 
 **Key Functions**:
+
 - Slot arithmetic ✅
 - Time conversions ✅
 - Epoch calculations ✅
@@ -231,12 +251,14 @@ pub fn decode_full<T: DeserializeOwned>(bytes: &[u8]) -> Result<T, BinaryError>
 ## Test Coverage Comparison
 
 ### Original (Haskell)
+
 - Unit tests in each package
 - cardano-crypto-tests shared utilities
 - Golden tests for serialization
 - Property tests with QuickCheck
 
 ### Rust Implementation
+
 - ✅ 148 unit tests passing
 - ✅ VRF test vectors (9 tests)
 - ⚠️ No shared test utilities package
@@ -413,6 +435,7 @@ The Rust implementation is **high quality** with significant improvements over t
 **Recommendation**: Before production use, must complete cross-validation testing and verify KES requirements.
 
 **Estimated completion for production-ready**:
+
 - High priority items: 2-4 weeks
 - Full compatibility testing: 4-6 weeks
 - Formal security audit: 6-8 weeks

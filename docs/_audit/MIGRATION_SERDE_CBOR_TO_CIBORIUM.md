@@ -1,3 +1,9 @@
+---
+layout: page
+title: serde_cbor → ciborium Migration Summary
+permalink: /audit/migration-serde-cbor-to-ciborium/
+---
+
 # serde_cbor → ciborium Migration Summary
 
 **Date**: October 3, 2025
@@ -23,6 +29,7 @@ Successfully migrated cardano-base-rust from the deprecated `serde_cbor` crate t
 ### 1. Package: cardano-binary ✅
 
 **Files Modified:**
+
 - `Cargo.toml` - Replaced serde_cbor with ciborium
 - `src/error.rs` - Updated error types for ciborium
 - `src/serialize.rs` - Migrated serialization functions
@@ -30,12 +37,14 @@ Successfully migrated cardano-base-rust from the deprecated `serde_cbor` crate t
 - `src/lib.rs` - Removed now-obsolete exports
 
 **API Changes:**
+
 - Removed `decode_full_decoder()` - Not easily portable, rarely used
 - Removed `deserialise_decoder()` - Custom decoder not needed with ciborium
 - All public APIs remain backward compatible
 - Error messages updated to reflect ciborium errors
 
 **Test Results:**
+
 - ✅ 10 unit tests passing
 - ✅ 13 golden tests passing (CBOR format stability verified)
 - ✅ 11 property tests passing (roundtrip verification)
@@ -43,10 +52,12 @@ Successfully migrated cardano-base-rust from the deprecated `serde_cbor` crate t
 ### 2. Package: cardano-crypto-class ✅
 
 **Files Modified:**
+
 - `Cargo.toml` - Replaced serde_cbor with ciborium
 - `src/vrf/simple.rs` - Updated Value imports and usage
 
 **Key Change:**
+
 ```rust
 // Before
 use serde_cbor::value::Value;
@@ -56,9 +67,11 @@ Value::Integer(value as i128)
 use ciborium::value::Value;
 use ciborium::value::Integer;
 Value::Integer(Integer::from(value as u64))
+
 ```
 
 **Test Results:**
+
 - ✅ All existing tests passing
 - ✅ VRF operations unchanged
 
@@ -114,17 +127,20 @@ All golden tests verify byte-for-byte CBOR encoding:
 let value: u64 = 42;
 let bytes = serialize(&value)?;
 assert_eq!(bytes, vec![0x18, 0x2a]);
+
 ```
 
 ### Format Stability Guarantee
 
 ✅ **CBOR encoding format is unchanged** from serde_cbor
+
 - Same major types (integers, strings, arrays, maps)
 - Same encoding rules
 - Same tag semantics
 - **100% wire-format compatible**
 
 This means:
+
 - ✅ Rust code can deserialize data from Haskell nodes
 - ✅ Haskell nodes can deserialize data from Rust code
 - ✅ No blockchain protocol changes needed
@@ -139,16 +155,19 @@ This means:
 ### Removed Internal Functions
 
 Two low-level functions were removed (not part of public API):
+
 - `decode_full_decoder()` - Custom decoder callback (rarely used)
 - `deserialise_decoder()` - Low-level deserialization helper
 
 If you were using these, migrate to:
+
 ```rust
 // Instead of decode_full_decoder
 let value: T = decode_full(bytes)?;
 
 // Custom decoding now done via ciborium directly
 let value: T = ciborium::from_reader(bytes)?;
+
 ```
 
 ---
@@ -169,8 +188,10 @@ let value: T = ciborium::from_reader(bytes)?;
 ### Benchmark Recommendation
 
 For production use, benchmark your specific workload:
+
 ```bash
 cargo bench --bench cbor_performance
+
 ```
 
 ---
@@ -192,6 +213,7 @@ let value: MyType = decode_full(bytes)?;
 
 // ✅ Alternative (direct ciborium)
 let value: MyType = ciborium::from_reader(bytes)?;
+
 ```
 
 ### If You Have Custom CBOR Code
@@ -204,6 +226,7 @@ let val = Value::Integer(42);
 // ✅ New
 use ciborium::value::{Value, Integer};
 let val = Value::Integer(Integer::from(42u64));
+
 ```
 
 ---
@@ -211,10 +234,12 @@ let val = Value::Integer(Integer::from(42u64));
 ## Test Results Summary
 
 ### Before Migration
+
 - 148 tests passing
 - ⚠️ Using deprecated serde_cbor
 
 ### After Migration
+
 - **172 tests passing** (+24 new tests)
 - ✅ Using maintained ciborium
 - ✅ Property tests added
@@ -235,18 +260,22 @@ let val = Value::Integer(Integer::from(42u64));
 ## Security Improvements
 
 ### 1. Active Maintenance ✅
+
 - serde_cbor: ❌ Unmaintained since 2021
 - ciborium: ✅ Active development, security patches
 
 ### 2. Vulnerability Patching ✅
+
 - serde_cbor: ❌ No future patches
 - ciborium: ✅ CVEs will be patched
 
 ### 3. Dependency Tree ✅
+
 - serde_cbor: Older dependencies
 - ciborium: Modern, maintained dependencies
 
 ### 4. Test Coverage ✅
+
 - Before: 148 tests
 - After: 172 tests (+16% coverage)
 
@@ -285,17 +314,20 @@ This migration addresses the following audit recommendations:
 ## Rollout Recommendation
 
 ### Immediate Use ✅
+
 - Development and testing environments
 - Internal tools and prototypes
 - Non-critical production use
 
 ### Testnet Deployment ✅
+
 - Deploy to Cardano testnet
 - Monitor for interoperability issues
 - Validate with real blockchain data
 - Timeline: Ready now
 
 ### Mainnet Deployment 🟡
+
 - Complete real-world testing on testnet
 - Consider formal security audit
 - Gradual rollout with monitoring

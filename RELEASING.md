@@ -60,12 +60,15 @@ added after the latest release was made. More on why this should always be true 
 section like this which will have a version that is strictly higher than `2.1.1.1`, eg:
 
 ```
+
 # Version history for `cardano-crypto-class`
 
 ## 2.1.1.1
 
 * Add ...
+
 ...
+
 ```
 
 It is quite common to experience conflicts in the changelog, since that will be the most
@@ -92,12 +95,14 @@ an entry is added according to these rules:
 * Every non-breaking change SHOULD appear in the `CHANGELOG.md`
 
 * Every change that does not affect the user facing semantics of the code (eg. changes to
+
   documentation, dependency bounds, test suites, addition of internal functions,
   performance improvements, etc.)  COULD be added to the `CHANGELOG.md`, but they are
   discouraged. Exceptions should be made for changes that could really be valuable to the
   downstream user.
 
 * Every change to a public sub-library of a package must be added to a separate section in
+
   the `CHANGELOG.md` and is versioned together with the main library. Eg. `testlib`:
 
   ```
@@ -110,7 +115,9 @@ an entry is added according to these rules:
   ### `testlib`
 
   * Add `Arbitrary` instance for ...
+
   ...
+
   ```
 
 ## Release Process
@@ -148,30 +155,34 @@ CHaP. (TODO: implement a script that lists all of the package that fit the above
 #### Release to CHaP
 
 1. Follow the [CHaP release
+
    instructions](https://github.com/intersectmbo/cardano-haskell-packages#-from-github)
 
    For example:
 
    ```shell
-   $ ./scripts/add-from-github.sh https://github.com/intersectmbo/cardano-base deadbeef libs/cardano-crypto-class ...
+   $ ./scripts/add-from-github.sh <https://github.com/intersectmbo/cardano-base> deadbeef libs/cardano-crypto-class ...
+
    ```
    It is important to supply a commit SHA instead of a branch name.
 
-2. Create and merge a PR to https://github.com/intersectmbo/cardano-haskell-packages
-   with the release(s). In case that a current release causes breakage on some downstream
+2. Create and merge a PR to <https://github.com/intersectmbo/cardano-haskell-packages> with the release(s). In case that a current release causes breakage on some downstream
    package due to that package lacking upper bounds, you will require to [add a revision
    for that package](https://github.com/intersectmbo/cardano-haskell-packages#how-to-add-a-new-package-metadata-revision) that fixes the bounds in the same PR as the release. Also it is
    necessary to notify the maintainers of the package via a bug report or a PR with a fix.
 
 3. Once the PR is merged then create a git tag with the same version for the same git SHA
+
    that was released, eg:
 
    ```
    $ git tag cardano-crypto-class-2.20.1.1 deadbeef...
    $ git push tag cardano-crypto-class-2.20.1.1
+
    ```
 
 4. Create a PR to `master` that updates `CHANGELOG.md` files for all of the packages that
+
    have just been released. The only addition to the file should be a markdown header
    section with the next patch version bumped, which must bring the `CHANGELOG.md` to the
    state of the top level section containing a version higher than the highest one ever
@@ -193,6 +204,7 @@ CHaP. (TODO: implement a script that lists all of the package that fit the above
    ## 2.20.1.1
 
    ...
+
    ```
 
    It is important to note that the version in the cabal file should *not* be changed at
@@ -207,6 +219,7 @@ version to be released from `master`. In other words a patch backporting. In suc
 scenario a few steps should be followed:
 
 1. Two ephemeral branches with a prefix `release/` need to be created from a git tag of a
+
    package version that is being updated. For example if a current version on `master` is
    `cardano-binary-1.13.10.0` then the latest released `cardano-binary-1.12.x` should be
    used as base, eg:
@@ -215,21 +228,25 @@ scenario a few steps should be followed:
    $ git checkout -b release/cardano-binary-1.12.6.2 cardano-binary-1.12.6.2
    $ git push -u origin release/cardano-binary-1.12.6.2
    $ git checkout -b release/cardano-binary-1.12.7.0 cardano-binary-1.12.6.2
+
    ```
 
    We'll need the first branch in order to use it as base when creating a PR for code
    review.
 
 2. Changes that need to be released should be `cherry-pick`ed from master. If a fix on
+
    `master` was implemented in some incompatible fashion to the current release, then it
    is fine to reimplement it anew, as long as the change being introduced is also present
    on master in some form. That requirement also concerns the changelog entry, it should
    be present in both the patched version and in the next version released from `master`.
 
 3. Regular release process should follow from here, except when PR is created it will not
+
    be `master` that is used as a base branch, but the one created in 1st step.
 
 4. Once the package has been released and a git tag for that release was created, both of
+
    the `release/` branches can be removed.
 
 This process does not accommodate backporting fixes to versions that are at least two major
