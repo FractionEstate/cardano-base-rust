@@ -138,10 +138,10 @@ and error may be required to make substantive changes!
 
 ### Code formatting
 
-Very soon we will start using [`fourmolu`](https://github.com/fourmolu/fourmolu) for
+Very soon we will start using [fourmolu](https://github.com/fourmolu/fourmolu) for
 formatting, but for now a rule of thumb is to follow whatever format is in a module that
 is being modified.  There is a script
-[here](https://github.com/input-output-hk/cardano-base/blob/master/scripts/fourmolize.sh)
+[available here](https://github.com/input-output-hk/cardano-base/blob/master/scripts/fourmolize.sh)
 which uses nix to format the appropriate directories.
 
 ### Compiler warnings

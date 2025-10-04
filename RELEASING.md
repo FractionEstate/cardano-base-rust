@@ -55,7 +55,7 @@ the `CHANGELOG.md` set to an unreleased version. That top most section will have
 the patch, minor or the major versions bumped, but not all three, when compared to the
 latest released version. Which one it will be depends on the recent changes that were
 added after the latest release was made. More on why this should always be true is in the
-[Release Process](#release-process) section. For instance, if the latest version of
+Release Process section below. For instance, if the latest version of
 `cardano-crypto-class` that was released to CHaPs is `2.1.1.0`, then there will be a
 section like this which will have a version that is strictly higher than `2.1.1.1`, eg:
 
@@ -167,13 +167,12 @@ CHaP. (TODO: implement a script that lists all of the package that fit the above
 
    It is important to supply a commit SHA instead of a branch name.
 
-2. Create and merge a PR to <<https://github.com/intersectmbo/cardano-haskell-packages>> with the release(s). In case that a current release causes breakage on some downstream
+1. Create and merge a PR to <<https://github.com/intersectmbo/cardano-haskell-packages>> with the release(s). In case that a current release causes breakage on some downstream
    package due to that package lacking upper bounds, you will require to [add a revision
    for that package](https://github.com/intersectmbo/cardano-haskell-packages#how-to-add-a-new-package-metadata-revision) that fixes the bounds in the same PR as the release. Also it is
    necessary to notify the maintainers of the package via a bug report or a PR with a fix.
 
-3. Once the PR is merged then create a git tag with the same version for the same git SHA
-
+2. Once the PR is merged then create a git tag with the same version for the same git SHA
    that was released, eg:
 
 ```bash
