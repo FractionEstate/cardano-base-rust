@@ -1,0 +1,125 @@
+use std::marker::PhantomData;
+
+use crate::dsign::DsignMAlgorithm;
+use crate::kes::{KesAlgorithm, KesError, KesMError, Period};
+
+/// SingleKES wraps a DSIGNM algorithm to provide a 1-period KES.
+///
+/// This is the base case for KES composition. It simply delegates to the
+/// underlying DSIGN algorithm and only supports period 0.
+pub struct SingleKes<D: DsignMAlgorithm>(PhantomData<D>);
+
+impl<D> KesAlgorithm for SingleKes<D>
+where
+    D: DsignMAlgorithm,
+{
+    type VerificationKey = D::VerificationKey;
+    type SigningKey = D::MLockedSigningKey;
+    type Signature = D::Signature;
+    type Context = D::Context;
+
+    const ALGORITHM_NAME: &'static str = D::ALGORITHM_NAME;
+    const SEED_SIZE: usize = D::SEED_SIZE;
+    const VERIFICATION_KEY_SIZE: usize = D::VERIFICATION_KEY_SIZE;
+    const SIGNING_KEY_SIZE: usize = D::SIGNING_KEY_SIZE;
+    const SIGNATURE_SIZE: usize = D::SIGNATURE_SIZE;
+
+    fn total_periods() -> Period {
+        1
+    }
+
+    fn derive_verification_key(
+        signing_key: &Self::SigningKey,
+    ) -> Result<Self::VerificationKey, KesMError> {
+        D::derive_verification_key_m(signing_key).map_err(|e| KesMError::Dsign(format!("{:?}", e)))
+    }
+
+    fn sign_kes(
+        context: &Self::Context,
+        period: Period,
+        message: &[u8],
+        signing_key: &Self::SigningKey,
+    ) -> Result<Self::Signature, KesMError> {
+        if period != 0 {
+            return Err(KesMError::Kes(KesError::PeriodOutOfRange {
+                period,
+                max_period: 1,
+            }));
+        }
+        D::sign_bytes_m(context, message, signing_key)
+            .map_err(|e| KesMError::Dsign(format!("{:?}", e)))
+    }
+
+    fn verify_kes(
+        context: &Self::Context,
+        verification_key: &Self::VerificationKey,
+        period: Period,
+        message: &[u8],
+        signature: &Self::Signature,
+    ) -> Result<(), KesError> {
+        if period != 0 {
+            return Err(KesError::PeriodOutOfRange {
+                period,
+                max_period: 1,
+            });
+        }
+        D::verify_bytes(context, verification_key, message, signature)
+            .map_err(|_| KesError::VerificationFailed)
+    }
+
+    fn update_kes(
+        _context: &Self::Context,
+        signing_key: Self::SigningKey,
+        period: Period,
+    ) -> Result<Option<Self::SigningKey>, KesMError> {
+        if period >= 1 {
+            // Key expired - we can't evolve beyond period 0
+            D::forget_signing_key_m(signing_key);
+            Ok(None)
+        } else {
+            // Still at period 0, return the same key
+            Ok(Some(signing_key))
+        }
+    }
+
+    fn gen_key_kes_from_seed_bytes(_seed: &[u8]) -> Result<Self::SigningKey, KesMError> {
+        // For DSIGNMAlgorithm, we construct the SeedMaterial type
+        // This requires that the SeedMaterial can be constructed from bytes
+        // For Ed25519, this is MLockedSeed<32> which has new_from_bytes
+
+        // We'll need a way to construct D::SeedMaterial from &[u8]
+        // For now, this is a limitation - we can't generically construct SeedMaterial
+        // We'd need another trait bound or associated function
+
+        // Temporary workaround: allocate, copy, then call gen_key_m
+        // This requires the concrete type knows how to do this
+
+        Err(KesMError::Dsign(
+            "gen_key_kes_from_seed_bytes not yet fully implemented for generic DSIGNM".to_owned(),
+        ))
+    }
+
+    fn raw_serialize_verification_key_kes(key: &Self::VerificationKey) -> Vec<u8> {
+        D::raw_serialize_verification_key(key)
+    }
+
+    fn raw_deserialize_verification_key_kes(bytes: &[u8]) -> Option<Self::VerificationKey> {
+        D::raw_deserialize_verification_key(bytes)
+    }
+
+    fn raw_serialize_signature_kes(signature: &Self::Signature) -> Vec<u8> {
+        D::raw_serialize_signature(signature)
+    }
+
+    fn raw_deserialize_signature_kes(bytes: &[u8]) -> Option<Self::Signature> {
+        D::raw_deserialize_signature(bytes)
+    }
+
+    fn forget_signing_key_kes(signing_key: Self::SigningKey) {
+        D::forget_signing_key_m(signing_key);
+    }
+}
+
+// Note: We don't implement UnsoundKesAlgorithm for SingleKes to maintain
+// the same security properties as the Haskell implementation - signing keys
+// should not be serialized.

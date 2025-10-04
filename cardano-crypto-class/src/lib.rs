@@ -7,6 +7,7 @@
 pub mod direct_serialise;
 pub mod dsign;
 pub mod ffi;
+pub mod kes;
 pub mod mlocked_bytes;
 pub mod mlocked_seed;
 pub mod packed_bytes;
