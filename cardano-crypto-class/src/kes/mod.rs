@@ -17,6 +17,18 @@ pub mod verify_hash;
 // Re-export hash algorithms for convenience
 pub use hash::{Blake2b256, Blake2b512, KesHashAlgorithm};
 
+// Re-export SingleKes types
+pub use single::{SingleKes, SingleSignature, SingleSigningKey};
+
+// Re-export CompactSingleKes types
+pub use compact_single::{CompactSingleKes, CompactSingleSig, CompactSingleSigningKey, OptimizedKesSignature};
+
+// Re-export Sum type aliases (using Blake2b256)
+pub use sum::{Sum0Kes, Sum1Kes, Sum2Kes, Sum3Kes, Sum4Kes, Sum5Kes, Sum6Kes, Sum7Kes};
+
+// Re-export CompactSum type aliases (using Blake2b256)
+pub use compact_sum::{CompactSum0Kes, CompactSum1Kes, CompactSum2Kes, CompactSum3Kes, CompactSum4Kes, CompactSum5Kes, CompactSum6Kes, CompactSum7Kes};
+
 /// The KES period. Periods are enumerated from zero.
 pub type Period = u64;
 

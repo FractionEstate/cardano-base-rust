@@ -60,4 +60,42 @@ pub use dsign::{
 pub use dsign::ed25519::{Ed25519, Ed25519Signature, Ed25519SigningKey, Ed25519VerificationKey};
 pub use dsign::ed25519_mlocked::Ed25519MLockedSigningKey;
 
+pub use kes::{
+    // Hash algorithms
+    Blake2b256,
+    Blake2b512,
+    // CompactSingle KES
+    CompactSingleKes,
+    CompactSingleSig,
+    CompactSingleSigningKey,
+    // CompactSum KES type aliases (using Blake2b256)
+    CompactSum0Kes,
+    CompactSum1Kes,
+    CompactSum2Kes,
+    CompactSum3Kes,
+    CompactSum4Kes,
+    CompactSum5Kes,
+    CompactSum6Kes,
+    CompactSum7Kes,
+    KesAlgorithm,
+    KesError,
+    KesHashAlgorithm,
+    KesMError,
+    OptimizedKesSignature,
+    Period,
+    // Single KES
+    SingleKes,
+    SingleSignature,
+    SingleSigningKey,
+    // Sum KES type aliases (using Blake2b256)
+    Sum0Kes,
+    Sum1Kes,
+    Sum2Kes,
+    Sum3Kes,
+    Sum4Kes,
+    Sum5Kes,
+    Sum6Kes,
+    Sum7Kes,
+};
+
 pub use vrf::{eval_certified, verify_certified, CertifiedVRF, OutputVRF, VRFAlgorithm, VRFError};
