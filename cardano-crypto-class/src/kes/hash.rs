@@ -24,13 +24,17 @@ pub trait KesHashAlgorithm: Clone + Send + Sync + 'static {
 
     /// Expand a seed into two seeds using the hash algorithm.
     /// This is used for seed expansion in Sum compositions.
+    /// Uses prefixes 1 and 2 to match Haskell cardano-base implementation:
+    /// - r0 = hash(1 || seed)
+    /// - r1 = hash(2 || seed)
     fn expand_seed(seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
         // Hash with different prefixes to get two independent seeds
-        let mut seed0_input = vec![0u8];
+        // Using 1 and 2 to match Haskell: BS.cons 1 and BS.cons 2
+        let mut seed0_input = vec![1u8];
         seed0_input.extend_from_slice(seed);
         let seed0 = Self::hash(&seed0_input);
 
-        let mut seed1_input = vec![1u8];
+        let mut seed1_input = vec![2u8];
         seed1_input.extend_from_slice(seed);
         let seed1 = Self::hash(&seed1_input);
 
