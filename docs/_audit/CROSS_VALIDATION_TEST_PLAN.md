@@ -4,7 +4,7 @@ title: Cross-Validation Test Plan
 permalink: /audit/cross-validation-test-plan/
 ---
 
-# Cross-Validation Test Plan
+
 
 ## Rust vs Haskell Implementation
 

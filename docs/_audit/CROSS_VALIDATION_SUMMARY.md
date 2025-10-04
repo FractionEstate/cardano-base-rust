@@ -4,16 +4,16 @@ title: Cross-Validation Testing Summary
 permalink: /audit/cross-validation-summary/
 ---
 
-# Cross-Validation Testing Summary
+
 
 ## ✅ ALL TESTS PASSING - 151/151
 
 ### Test Execution Results
 
 ```bash
-$ cargo test --workspace
+cargo test --workspace
 
-```
+```text
 
 **Total Tests:** 151
 **Passed:** 151 ✅
@@ -54,7 +54,7 @@ $ cargo test --workspace
 
 ### CBOR Cross-Validation
 
-```
+```text
 running 30 tests
 
 === Cross-Validation Test Summary ===
@@ -71,11 +71,11 @@ Rust CBOR implementation is byte-compatible with Haskell cardano-binary
 
 test result: ok. 30 passed; 0 failed; 0 ignored
 
-```
+```text
 
 ### VRF Cross-Validation
 
-```
+```text
 running 3 tests
 
 === VRF Cross-Validation Test Summary ===
@@ -86,7 +86,7 @@ VRF cross-validation tests passed!
 
 test result: ok. 3 passed; 0 failed; 0 ignored
 
-```
+```text
 
 ---
 
@@ -104,7 +104,7 @@ let haskell_bytes = [0x18, 0x2a];        // Haskell cborg
 
 assert_eq!(rust_bytes, haskell_bytes);   // ✅ PASS
 
-```
+```text
 
 **Tested Coverage:**
 
@@ -129,7 +129,7 @@ let output = VrfDraft03::verify(&public_key, &proof, message);  // 64 bytes
 
 // Matches Haskell output sizes and verification behavior
 
-```
+```text
 
 **Tested Coverage:**
 

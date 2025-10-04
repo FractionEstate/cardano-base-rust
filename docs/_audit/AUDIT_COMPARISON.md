@@ -4,7 +4,7 @@ title: Audit: Rust Implementation vs Original Haskell cardano-base
 permalink: /audit/audit-comparison/
 ---
 
-# Audit: Rust Implementation vs Original Haskell cardano-base
+
 
 **Date**: October 3, 2025
 **Status**: 🔍 In Progress
@@ -149,7 +149,7 @@ This audit compares the Rust implementation against the original Haskell `cardan
 serialize :: ToCBOR a => a -> ByteString
 deserialize :: FromCBOR a => ByteString -> Either DecoderError a
 
-```
+```text
 
 **Rust equivalents**:
 
@@ -157,7 +157,7 @@ deserialize :: FromCBOR a => ByteString -> Either DecoderError a
 pub fn serialize<T: Serialize>(value: &T) -> Result<Vec<u8>, BinaryError>
 pub fn decode_full<T: DeserializeOwned>(bytes: &[u8]) -> Result<T, BinaryError>
 
-```
+```text
 
 **Status**: ✅ API equivalent, ⚠️ uses deprecated `serde_cbor`
 
@@ -342,25 +342,25 @@ pub fn decode_full<T: DeserializeOwned>(bytes: &[u8]) -> Result<T, BinaryError>
 
 ### Short-term (High Priority)
 
-4. **Migrate serde_cbor** 🟡
+1. **Migrate serde_cbor** 🟡
    - Replace with `ciborium`
    - Already planned, needs execution
 
-5. **Add property tests** 🟡
+2. **Add property tests** 🟡
    - Use `proptest` crate
    - Port QuickCheck tests from original
 
-6. **Create golden tests** 🟡
+3. **Create golden tests** 🟡
    - Serialize known-good data
    - Verify future changes don't break format
 
 ### Long-term (Nice to Have)
 
-7. **Shared test utilities** 🟢
+1. **Shared test utilities** 🟢
    - Consider creating test-utils crate
    - Share fixtures across packages
 
-8. **Formal verification** 🟢
+2. **Formal verification** 🟢
    - Consider formal methods for crypto code
    - Use Rust's type system more extensively
 

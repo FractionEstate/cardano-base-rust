@@ -22,7 +22,7 @@
 
 ## 📁 Documentation Structure
 
-```
+```text
 docs/
 ├── README.md                    # Documentation index
 ├── Home.md                      # Wiki landing page
@@ -46,7 +46,7 @@ docs/
     ├── CODE-OF-CONDUCT.md       # Community guidelines
     └── SECURITY.md              # Security policy
 
-```
+```text
 
 **Total:** 14 markdown files across 4 categories
 
@@ -56,41 +56,41 @@ docs/
 
 ### Documentation Organization
 
-- ✅ Created `docs/` directory structure
-- ✅ Organized files into 4 categories (api, migration, development, contributing)
-- ✅ Created documentation index (`docs/README.md`)
-- ✅ Created wiki landing page (`docs/Home.md`)
-- ✅ Added comprehensive testing guide
-- ✅ Moved research notes to docs/development/
-- ✅ Moved development plan to docs/development/
-- ✅ Deleted 3 redundant files
-- ✅ Cleaned up empty directories
+* ✅ Created `docs/` directory structure
+* ✅ Organized files into 4 categories (api, migration, development, contributing)
+* ✅ Created documentation index (`docs/README.md`)
+* ✅ Created wiki landing page (`docs/Home.md`)
+* ✅ Added comprehensive testing guide
+* ✅ Moved research notes to docs/development/
+* ✅ Moved development plan to docs/development/
+* ✅ Deleted 3 redundant files
+* ✅ Cleaned up empty directories
 
 ### Root Files (Preserved)
 
-- ✅ `README.md` - Updated with wiki links
-- ✅ `CHANGELOG.md` - Project-wide changes
-- ✅ `CONTRIBUTING.md` - GitHub auto-discovery
-- ✅ `CODE-OF-CONDUCT.md` - GitHub auto-discovery
-- ✅ `SECURITY.md` - GitHub auto-discovery
-- ✅ `RELEASING.md` - Release procedures
+* ✅ `README.md` - Updated with wiki links
+* ✅ `CHANGELOG.md` - Project-wide changes
+* ✅ `CONTRIBUTING.md` - GitHub auto-discovery
+* ✅ `CODE-OF-CONDUCT.md` - GitHub auto-discovery
+* ✅ `SECURITY.md` - GitHub auto-discovery
+* ✅ `RELEASING.md` - Release procedures
 
 ### GitHub Integration
 
-- ✅ Wiki sync workflow exists (`.github/workflows/sync-wiki.yml`)
-- ✅ Workflow triggers on docs/ changes
-- ✅ Automatic flattening for wiki (api/File.md → API-File.md)
-- ✅ Main README references wiki pages
-- ✅ All wiki links properly formatted
+* ✅ Wiki sync workflow exists (`.github/workflows/sync-wiki.yml`)
+* ✅ Workflow triggers on docs/ changes
+* ✅ Automatic flattening for wiki (api/File.md → API-File.md)
+* ✅ Main README references wiki pages
+* ✅ All wiki links properly formatted
 
 ### Code Quality
 
-- ✅ All 148 tests passing
-- ✅ Zero C code remaining
-- ✅ Zero Haskell code remaining
-- ✅ 100% Pure Rust implementation
-- ✅ No compilation errors
-- ✅ No test failures
+* ✅ All 148 tests passing
+* ✅ Zero C code remaining
+* ✅ Zero Haskell code remaining
+* ✅ 100% Pure Rust implementation
+* ✅ No compilation errors
+* ✅ No test failures
 
 ---
 
@@ -98,24 +98,24 @@ docs/
 
 ### For Users
 
-- 📦 **Package Overview** - Complete list of all 13 packages
-- 🔐 **VRF API** - Verifiable Random Function usage
-- 📖 **Migration Guide** - Understand Haskell → Rust changes
-- 🧪 **Testing Guide** - How to verify correctness
+* 📦 **Package Overview** - Complete list of all 13 packages
+* 🔐 **VRF API** - Verifiable Random Function usage
+* 📖 **Migration Guide** - Understand Haskell → Rust changes
+* 🧪 **Testing Guide** - How to verify correctness
 
 ### For Contributors
 
-- 🛠️ **Development Plan** - Understand project roadmap
-- 🔬 **Research Notes** - Technical decisions and context
-- 🤝 **Contributing Guide** - How to submit changes
-- 🔒 **Security Policy** - How to report vulnerabilities
+* 🛠️ **Development Plan** - Understand project roadmap
+* 🔬 **Research Notes** - Technical decisions and context
+* 🤝 **Contributing Guide** - How to submit changes
+* 🔒 **Security Policy** - How to report vulnerabilities
 
 ### For Maintainers
 
-- 📋 **Comprehensive Structure** - Well-organized docs
-- 🔄 **Auto-Sync** - CI/CD keeps wiki updated
-- ✅ **Quality Standards** - All tests documented
-- 📊 **Complete Metrics** - Full project status
+* 📋 **Comprehensive Structure** - Well-organized docs
+* 🔄 **Auto-Sync** - CI/CD keeps wiki updated
+* ✅ **Quality Standards** - All tests documented
+* 📊 **Complete Metrics** - Full project status
 
 ---
 
@@ -141,17 +141,17 @@ docs/
 
 ### Test Coverage
 
-- **Library Tests:** 136 tests
-- **Integration Tests:** 12 tests
-- **Total:** 148 tests
-- **Success Rate:** 100%
+* **Library Tests:** 136 tests
+* **Integration Tests:** 12 tests
+* **Total:** 148 tests
+* **Success Rate:** 100%
 
 ### Code Migration
 
-- **C Code Removed:** 26 files, 9,716 lines
-- **Haskell Code Migrated:** 100%
-- **Pure Rust VRF:** cardano-vrf-pure (curve25519-dalek)
-- **Test Vectors:** 14 files regenerated with Rust proofs
+* **C Code Removed:** 26 files, 9,716 lines
+* **Haskell Code Migrated:** 100%
+* **Pure Rust VRF:** cardano-vrf-pure (curve25519-dalek)
+* **Test Vectors:** 14 files regenerated with Rust proofs
 
 ---
 
@@ -177,17 +177,17 @@ docs/
 # Via GitHub Actions UI
 Actions → Sync Documentation to Wiki → Run workflow
 
-```
+```text
 
 ### Wiki URLs
 
 All documentation accessible at:
 
-- `https://github.com/<owner>/cardano-base/wiki/Home`
-- `https://github.com/<owner>/cardano-base/wiki/API-Packages`
-- `https://github.com/<owner>/cardano-base/wiki/API-VRF-API`
-- `https://github.com/<owner>/cardano-base/wiki/Migration-Summary`
-- `https://github.com/<owner>/cardano-base/wiki/Development-Testing-Guide`
+* `<https://github.com/<owner>/cardano-base/wiki/Home`>
+* `<https://github.com/<owner>/cardano-base/wiki/API-Packages`>
+* `<https://github.com/<owner>/cardano-base/wiki/API-VRF-API`>
+* `<https://github.com/<owner>/cardano-base/wiki/Migration-Summary`>
+* `<https://github.com/<owner>/cardano-base/wiki/Development-Testing-Guide`>
 
 ---
 
@@ -224,13 +224,13 @@ All documentation accessible at:
 
 ### Best Practices
 
-- ✅ Use clear, descriptive titles
-- ✅ Add code examples where applicable
-- ✅ Link between related documents
-- ✅ Keep content up-to-date with code changes
-- ✅ Follow markdown formatting standards
-- ✅ Include tables for structured data
-- ✅ Use emoji sparingly for visual hierarchy
+* ✅ Use clear, descriptive titles
+* ✅ Add code examples where applicable
+* ✅ Link between related documents
+* ✅ Keep content up-to-date with code changes
+* ✅ Follow markdown formatting standards
+* ✅ Include tables for structured data
+* ✅ Use emoji sparingly for visual hierarchy
 
 ---
 
@@ -238,24 +238,24 @@ All documentation accessible at:
 
 ### Technical Excellence
 
-- ✅ **100% Pure Rust** - Zero C dependencies
-- ✅ **148 Tests Passing** - Comprehensive test coverage
-- ✅ **VRF Implementation** - curve25519-dalek based
-- ✅ **IETF Spec Compliant** - draft-irtf-cfrg-vrf-03/13
+* ✅ **100% Pure Rust** - Zero C dependencies
+* ✅ **148 Tests Passing** - Comprehensive test coverage
+* ✅ **VRF Implementation** - curve25519-dalek based
+* ✅ **IETF Spec Compliant** - draft-irtf-cfrg-vrf-03/13
 
 ### Documentation Quality
 
-- ✅ **Structured Organization** - 4-category system
-- ✅ **Automated Sync** - CI/CD wiki updates
-- ✅ **Comprehensive Guides** - API, migration, testing, contributing
-- ✅ **Clear Navigation** - README index and wiki sidebar
+* ✅ **Structured Organization** - 4-category system
+* ✅ **Automated Sync** - CI/CD wiki updates
+* ✅ **Comprehensive Guides** - API, migration, testing, contributing
+* ✅ **Clear Navigation** - README index and wiki sidebar
 
 ### Repository Hygiene
 
-- ✅ **No Redundant Files** - 3 files removed
-- ✅ **Standard Structure** - GitHub best practices
-- ✅ **Clean History** - All Haskell/C code removed
-- ✅ **Package Documentation** - Each crate documented
+* ✅ **No Redundant Files** - 3 files removed
+* ✅ **Standard Structure** - GitHub best practices
+* ✅ **Clean History** - All Haskell/C code removed
+* ✅ **Package Documentation** - Each crate documented
 
 ---
 
@@ -296,7 +296,7 @@ cargo doc --workspace --no-deps
 # View documentation
 cargo doc --workspace --no-deps --open
 
-```
+```text
 
 ---
 
@@ -315,11 +315,11 @@ The documentation is complete and ready for:
 
 This documentation organization was completed as part of the Cardano Base Haskell → Rust migration, achieving:
 
-- **100% Pure Rust** codebase
-- **Zero C dependencies** (26 files removed)
-- **Complete Haskell migration** (all files migrated)
-- **148 tests passing** (100% success rate)
-- **Comprehensive documentation** (14 organized files)
+* **100% Pure Rust** codebase
+* **Zero C dependencies** (26 files removed)
+* **Complete Haskell migration** (all files migrated)
+* **148 tests passing** (100% success rate)
+* **Comprehensive documentation** (14 organized files)
 
 ---
 
@@ -331,6 +331,6 @@ This documentation organization was completed as part of the Cardano Base Haskel
 
 For questions or issues, see:
 
-- [Contributing Guide](contributing/CONTRIBUTING.md)
-- [Security Policy](contributing/SECURITY.md)
-- [GitHub Issues](https://github.com/<owner>/cardano-base/issues)
+* [Contributing Guide](contributing/CONTRIBUTING.md)
+* [Security Policy](contributing/SECURITY.md)
+* [GitHub Issues](https://github.com/<owner>/cardano-base/issues)

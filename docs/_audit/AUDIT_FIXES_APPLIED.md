@@ -4,7 +4,7 @@ title: Critical Fixes Applied - Audit Report
 permalink: /audit/audit-fixes-applied/
 ---
 
-# Critical Fixes Applied - Audit Report
+
 
 ## Date: October 3, 2025
 
@@ -52,7 +52,7 @@ pub fn unsafe_deserialize<T: DeserializeOwned>(bytes: &[u8]) -> T {
     decode_full(bytes).expect("invalid CBOR input")
 }
 
-```
+```text
 
 **After**:
 
@@ -65,7 +65,7 @@ pub fn unsafe_deserialize<T: DeserializeOwned>(bytes: &[u8]) -> T {
     decode_full(bytes).expect("CBOR deserialization failed - use decode_full() for error handling")
 }
 
-```
+```text
 
 **Impact**: Users are now warned to use proper error handling, reducing panic-prone code paths.
 
@@ -111,7 +111,7 @@ pub fn unsafe_deserialize<T: DeserializeOwned>(bytes: &[u8]) -> T {
 ```rust
 bytes: self.bytes.try_clone().expect("failed to clone seed"),
 
-```
+```text
 
 **After**:
 
@@ -119,7 +119,7 @@ bytes: self.bytes.try_clone().expect("failed to clone seed"),
 bytes: self.bytes.try_clone()
     .expect("mlocked seed cloning failed - memory allocation error"),
 
-```
+```text
 
 **Impact**: Better error diagnostics when failures occur.
 
@@ -138,7 +138,7 @@ bytes: self.bytes.try_clone()
 // We check for NULL immediately and return an error.
 let ptr = unsafe { libc::malloc(1) } as *mut u8;
 
-```
+```text
 
 #### Slice Creation (lines 93-104)
 
@@ -147,7 +147,7 @@ let ptr = unsafe { libc::malloc(1) } as *mut u8;
 // and remains valid for the lifetime of this MLockedRegion.
 unsafe { slice::from_raw_parts(self.ptr.as_ptr(), self.len) }
 
-```
+```text
 
 #### Drop Implementation (lines 122-144)
 
@@ -158,7 +158,7 @@ unsafe {
     ptr::write_bytes(self.ptr.as_ptr(), 0, self.len);
 }
 
-```
+```text
 
 #### Memory Copy Operations (lines 243-250)
 
@@ -169,7 +169,7 @@ unsafe {
     ptr::copy_nonoverlapping(self.as_ptr(), cloned.as_mut_ptr(), self.len());
 }
 
-```
+```text
 
 #### Public Unsafe Functions (lines 399-418)
 
@@ -182,7 +182,7 @@ unsafe {
 /// - The memory region [ptr, ptr+len) doesn't overlap with any borrowed references
 pub unsafe fn zero_mem(ptr: *mut u8, len: usize) { ... }
 
-```
+```text
 
 **Impact**: Clear documentation of safety invariants for code review and maintenance.
 
@@ -202,7 +202,7 @@ serde_cbor = { version = "0.11", features = ["tags"] }
 
 # NOTE: serde_cbor is deprecated. Migration to ciborium planned.
 # See: <https://github.com/FractionEstate/cardano-base-rust/issues/XXX>
-```
+```text
 
 **Status**: Marked for future migration. Full migration deferred due to API differences requiring careful testing.
 
@@ -231,6 +231,7 @@ serde_cbor = { version = "0.11", features = ["tags"] }
 ## 🎯 Remaining Work (Deferred)
 
 ### 1. Complete serde_cbor Migration
+
 **Priority**: Medium
 **Effort**: 2-3 weeks
 **Reason Deferred**: Requires extensive API changes and testing
@@ -245,6 +246,7 @@ serde_cbor = { version = "0.11", features = ["tags"] }
 6. Performance benchmarking
 
 ### 2. Additional unwrap() Replacements
+
 **Priority**: Low-Medium
 **Effort**: 1-2 weeks
 **Status**: Can be done incrementally
@@ -255,6 +257,7 @@ serde_cbor = { version = "0.11", features = ["tags"] }
 - Non-critical paths - can use clippy warnings
 
 ### 3. Formal Security Audit
+
 **Priority**: High (for production)
 **Effort**: 4-6 weeks
 **Cost**: $20k-50k (estimate)
@@ -266,6 +269,7 @@ serde_cbor = { version = "0.11", features = ["tags"] }
 - Kudelski Security
 
 ### 4. Fuzzing Infrastructure
+
 **Priority**: Medium
 **Effort**: 2-3 weeks
 
@@ -279,7 +283,7 @@ serde_cbor = { version = "0.11", features = ["tags"] }
 
 ## 🔍 Verification Commands
 
-### Run all new checks locally:
+### Run all new checks locally
 
 ```bash
 
@@ -300,7 +304,7 @@ cargo audit
 cargo install cargo-tarpaulin
 cargo tarpaulin --workspace --out Html
 
-```
+```text
 
 ---
 

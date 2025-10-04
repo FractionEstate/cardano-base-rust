@@ -59,7 +59,7 @@ added after the latest release was made. More on why this should always be true 
 `cardano-crypto-class` that was released to CHaPs is `2.1.1.0`, then there will be a
 section like this which will have a version that is strictly higher than `2.1.1.1`, eg:
 
-```
+```text
 
 # Version history for `cardano-crypto-class`
 
@@ -69,7 +69,7 @@ section like this which will have a version that is strictly higher than `2.1.1.
 
 ...
 
-```
+```text
 
 It is quite common to experience conflicts in the changelog, since that will be the most
 common section of the codebase being updated at the same time. When it comes to conflicts
@@ -105,7 +105,7 @@ an entry is added according to these rules:
 
   the `CHANGELOG.md` and is versioned together with the main library. Eg. `testlib`:
 
-  ```
+```text
   # Version history for `cardano-crypto-class`
 
   ## 2.20.1.0
@@ -118,7 +118,7 @@ an entry is added according to these rules:
 
   ...
 
-  ```
+```text
 
 ## Release Process
 
@@ -161,12 +161,13 @@ CHaP. (TODO: implement a script that lists all of the package that fit the above
    For example:
 
    ```shell
-   $ ./scripts/add-from-github.sh <https://github.com/intersectmbo/cardano-base> deadbeef libs/cardano-crypto-class ...
+   ./scripts/add-from-github.sh <https://github.com/intersectmbo/cardano-base> deadbeef libs/cardano-crypto-class ...
 
    ```
+
    It is important to supply a commit SHA instead of a branch name.
 
-2. Create and merge a PR to <https://github.com/intersectmbo/cardano-haskell-packages> with the release(s). In case that a current release causes breakage on some downstream
+2. Create and merge a PR to <<https://github.com/intersectmbo/cardano-haskell-packages>> with the release(s). In case that a current release causes breakage on some downstream
    package due to that package lacking upper bounds, you will require to [add a revision
    for that package](https://github.com/intersectmbo/cardano-haskell-packages#how-to-add-a-new-package-metadata-revision) that fixes the bounds in the same PR as the release. Also it is
    necessary to notify the maintainers of the package via a bug report or a PR with a fix.
@@ -175,11 +176,11 @@ CHaP. (TODO: implement a script that lists all of the package that fit the above
 
    that was released, eg:
 
-   ```
-   $ git tag cardano-crypto-class-2.20.1.1 deadbeef...
-   $ git push tag cardano-crypto-class-2.20.1.1
+```bash
+   git tag cardano-crypto-class-2.20.1.1 deadbeef...
+   git push tag cardano-crypto-class-2.20.1.1
 
-   ```
+```text
 
 4. Create a PR to `master` that updates `CHANGELOG.md` files for all of the packages that
 
@@ -225,9 +226,9 @@ scenario a few steps should be followed:
    used as base, eg:
 
    ```shell
-   $ git checkout -b release/cardano-binary-1.12.6.2 cardano-binary-1.12.6.2
-   $ git push -u origin release/cardano-binary-1.12.6.2
-   $ git checkout -b release/cardano-binary-1.12.7.0 cardano-binary-1.12.6.2
+   git checkout -b release/cardano-binary-1.12.6.2 cardano-binary-1.12.6.2
+   git push -u origin release/cardano-binary-1.12.6.2
+   git checkout -b release/cardano-binary-1.12.7.0 cardano-binary-1.12.6.2
 
    ```
 

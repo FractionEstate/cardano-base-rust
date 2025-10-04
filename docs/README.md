@@ -36,7 +36,10 @@ Main documentation hub and quick start guide.
 - **Changelog**: [../CHANGELOG.md](../CHANGELOG.md)
 - **Release Process**: [../RELEASING.md](../RELEASING.md)
 
-## 📖 Getting Started
+- API documentation with code examples
+- Contributing guidelines
+
+## 🎯 Getting Started
 
 1. Start with [Home](Home.md)
 2. Review the [Package Overview](api/Packages.md)
@@ -49,7 +52,6 @@ Main documentation hub and quick start guide.
 3. [Migration Guides](migration/) - Haskell → Rust conversion
 4. [Development](development/) - Research and implementation notes
 5. [Contributing](contributing/) - How to contribute
-
 
 ## 🔄 CI/CD
 

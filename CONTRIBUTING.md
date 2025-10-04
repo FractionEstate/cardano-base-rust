@@ -34,6 +34,7 @@ from the repository's root:
 git config blame.ignoreRevsFile .git-blame-ignore-revs
 
 ```
+
 This way `git blame` will ignore the commits specified in the `.git-blame-ignore-revs`
 file. This can come in handy if you want to exclude large commits
 with only formatting changes.
@@ -65,8 +66,8 @@ instructions on building.
 
 Our Haskell packages come from two package repositories:
 
-- Hackage
-- [CHaP](https://github.com/input-output-hk/cardano-haskell-packages) (which is
+* Hackage
+* [CHaP](https://github.com/input-output-hk/cardano-haskell-packages) (which is
 
   another alternative Hackage from Cardano)
 
@@ -86,15 +87,15 @@ the pinned index state you may need to call `cabal update` in order for `cabal` 
 The Nix code which builds our packages also cares about the index state.  This is
 represented by inputs managed by `nix flake`: You can update these by running:
 
-- `nix flake lock --update-input haskellNix/hackage` for Hackage
-- `nix flake lock --update-input CHaP` for CHaP
+* `nix flake lock --update-input haskellNix/hackage` for Hackage
+* `nix flake lock --update-input CHaP` for CHaP
 
 If you fail to do this you may get an error like this from Nix:
 
-```
+```text
 error: Unknown index-state 2021-08-08T00:00:00Z, the latest index-state I know about is 2021-08-06T00:00:00Z. You may need to update to a newer hackage.nix.
 
-```
+```text
 
 ### Use of `source-repository-package`s
 
@@ -125,9 +126,9 @@ cabal build <package-name>
 You can find additional documentation on the nix infrastructure used in this
 repo in the following places:
 
-- [The haskell.nix user guide](https://github.com/input-output-hk/haskell.nix/blob/documentation/docs/user-guide.md)
-- [The nix-tools repository](https://github.com/input-output-hk/nix-tools)
-- [The iohk-nix repository](https://github.com/input-output-hk/iohk-nix)
+* [The haskell.nix user guide](https://github.com/input-output-hk/haskell.nix/blob/documentation/docs/user-guide.md)
+* [The nix-tools repository](https://github.com/input-output-hk/nix-tools)
+* [The iohk-nix repository](https://github.com/input-output-hk/iohk-nix)
 
 Note that the user guide linked above is incomplete and does not correctly refer
 to projects built using `iohk-nix`, as this one is. A certain amount of trial

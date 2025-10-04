@@ -4,7 +4,7 @@ title: VRF Test File Fix Summary
 permalink: /audit/vrf-test-fix-summary/
 ---
 
-# VRF Test File Fix Summary
+
 
 ## Issue
 

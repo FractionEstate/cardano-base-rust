@@ -4,7 +4,7 @@ title: Cross-Validation Test Report
 permalink: /audit/cross-validation-report/
 ---
 
-# Cross-Validation Test Report
+
 
 ## Rust cardano-base vs Haskell IntersectMBO/cardano-base
 
@@ -141,11 +141,11 @@ This report documents comprehensive cross-validation testing between the Rust im
 
 **Test Vector:** Known Ed25519 keypair from Haskell `cardano-crypto-praos`:
 
-```
+```text
 Secret Key: 9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60
             d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a
 
-```
+```text
 
 **Verification:**
 
@@ -290,7 +290,7 @@ let expected = [0x18, 0x2a];          // Haskell: cborg
 
 assert_eq!(rust_encoded, expected);   // ✅ PASS - Byte-identical
 
-```
+```text
 
 ### VRF Functional Equivalence
 
@@ -305,7 +305,7 @@ let output = VrfDraft03::verify(&public_key, &proof, message);
 assert_eq!(output.len(), 64);  // ✅ PASS - Matches Haskell output size
 assert_eq!(proof.len(), 80);   // ✅ PASS - Matches Haskell proof size
 
-```
+```text
 
 ---
 
@@ -441,8 +441,8 @@ The Rust implementation of `cardano-base` has achieved **byte-exact CBOR compati
 
 ## Appendix: Test Execution Log
 
-```
-$ cargo test --workspace
+```text
+cargo test --workspace
 
 Running 151 tests across all crates...
 
@@ -461,7 +461,7 @@ Total: 151/151 tests PASSED ✅
 
 Cross-validation verdict: BYTE-EXACT COMPATIBILITY CONFIRMED
 
-```
+```text
 
 ---
 

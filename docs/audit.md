@@ -1,10 +1,8 @@
 ---
 layout: page
-title: Audit Reports
+title: Audit & Verification Reports
 permalink: /audit/
 ---
-
-# Audit & Verification Reports
 
 Comprehensive audit and verification documentation for the Cardano Base Rust implementation.
 

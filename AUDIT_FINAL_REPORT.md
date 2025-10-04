@@ -1,10 +1,4 @@
----
-layout: page
-title: Audit Summary: cardano-base-rust vs Original
-permalink: /audit/audit-final-report/
----
-
-
+# Audit Summary: cardano-base-rust vs Original
 
 **Date**: October 3, 2025
 **Auditor**: AI Security Audit
@@ -35,7 +29,7 @@ The Rust implementation of `cardano-base` has been audited against the original 
 
 After investigation, `cardano-crypto-praos` is **ONLY a VRF wrapper** around libsodium:
 
-```
+```text
 cardano-crypto-praos/
 ├── Praos.hs              ← VRF wrapper (libsodium FFI)
 └── PraosBatchCompat.hs   ← Batch verification support

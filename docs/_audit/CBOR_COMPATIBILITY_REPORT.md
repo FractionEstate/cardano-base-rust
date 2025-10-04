@@ -4,7 +4,7 @@ title: CBOR Byte-for-Byte Compatibility Report
 permalink: /audit/cbor-compatibility-report/
 ---
 
-# CBOR Byte-for-Byte Compatibility Report
+
 
 **Date**: October 3, 2025
 **Status**: ✅ **VERIFIED COMPATIBLE**

@@ -4,7 +4,7 @@ title: serde_cbor → ciborium Migration Summary
 permalink: /audit/migration-serde-cbor-to-ciborium/
 ---
 
-# serde_cbor → ciborium Migration Summary
+
 
 **Date**: October 3, 2025
 **Status**: ✅ **COMPLETE**
