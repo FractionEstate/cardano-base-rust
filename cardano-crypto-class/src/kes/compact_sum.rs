@@ -1,8 +1,7 @@
 use std::marker::PhantomData;
 
-use blake2::{Blake2b512, Digest};
-
 use crate::kes::compact_single::OptimizedKesSignature;
+use crate::kes::hash::KesHashAlgorithm;
 use crate::kes::{KesAlgorithm, KesError, KesMError, Period};
 use crate::mlocked_bytes::MLockedBytes;
 use crate::seed::Seed;
@@ -28,50 +27,56 @@ use crate::seed::Seed;
 /// signature and D's VerKey. The signature for A contains B's signature and C's VerKey.
 ///
 /// This reduces storage from depth*2 keys to just depth keys.
-pub struct CompactSumKes<D>(PhantomData<D>)
-where
-    D: KesAlgorithm,
-    D::Signature: OptimizedKesSignature;
-
-/// Signing key for CompactSumKES.
-pub struct CompactSumSigningKey<D>
+pub struct CompactSumKes<D, H>(PhantomData<(D, H)>)
 where
     D: KesAlgorithm,
     D::Signature: OptimizedKesSignature,
+    H: KesHashAlgorithm;
+
+/// Signing key for CompactSumKES.
+pub struct CompactSumSigningKey<D, H>
+where
+    D: KesAlgorithm,
+    D::Signature: OptimizedKesSignature,
+    H: KesHashAlgorithm,
 {
     pub(crate) sk: D::SigningKey,
     pub(crate) r1_seed: Option<MLockedBytes>,
     pub(crate) vk0: D::VerificationKey,
     pub(crate) vk1: D::VerificationKey,
+    _phantom: PhantomData<H>,
 }
 
 /// Signature for CompactSumKES - only stores the "other" verification key.
 #[derive(Clone)]
-pub struct CompactSumSignature<D>
+pub struct CompactSumSignature<D, H>
 where
     D: KesAlgorithm,
     D::Signature: OptimizedKesSignature,
+    H: KesHashAlgorithm,
 {
     /// Signature from the active subtree (contains embedded vk)
     pub(crate) sigma: D::Signature,
     /// Verification key for the inactive subtree
     pub(crate) vk_other: D::VerificationKey,
+    _phantom: PhantomData<H>,
 }
 
-impl<D> KesAlgorithm for CompactSumKes<D>
+impl<D, H> KesAlgorithm for CompactSumKes<D, H>
 where
     D: KesAlgorithm,
     D::VerificationKey: Clone,
     D::Signature: OptimizedKesSignature<VerificationKey = D::VerificationKey> + Clone,
+    H: KesHashAlgorithm,
 {
     type VerificationKey = Vec<u8>; // Hash of (vk0, vk1)
-    type SigningKey = CompactSumSigningKey<D>;
-    type Signature = CompactSumSignature<D>;
+    type SigningKey = CompactSumSigningKey<D, H>;
+    type Signature = CompactSumSignature<D, H>;
     type Context = D::Context;
 
     const ALGORITHM_NAME: &'static str = D::ALGORITHM_NAME; // Could append "_compact"
     const SEED_SIZE: usize = D::SEED_SIZE;
-    const VERIFICATION_KEY_SIZE: usize = 64; // Blake2b-512 output
+    const VERIFICATION_KEY_SIZE: usize = H::OUTPUT_SIZE; // Now parameterized!
     const SIGNING_KEY_SIZE: usize =
         D::SIGNING_KEY_SIZE + D::SEED_SIZE + 2 * D::VERIFICATION_KEY_SIZE;
     // Compact signature: constituent signature + only ONE verification key
@@ -85,10 +90,9 @@ where
         signing_key: &Self::SigningKey,
     ) -> Result<Self::VerificationKey, KesMError> {
         // vk = H(vk0 || vk1)
-        let mut hasher = Blake2b512::new();
-        hasher.update(D::raw_serialize_verification_key_kes(&signing_key.vk0));
-        hasher.update(D::raw_serialize_verification_key_kes(&signing_key.vk1));
-        Ok(hasher.finalize().to_vec())
+        let vk0_bytes = D::raw_serialize_verification_key_kes(&signing_key.vk0);
+        let vk1_bytes = D::raw_serialize_verification_key_kes(&signing_key.vk1);
+        Ok(H::hash_concat(&vk0_bytes, &vk1_bytes))
     }
 
     fn sign_kes(
@@ -109,7 +113,11 @@ where
             (sig, signing_key.vk0.clone())
         };
 
-        Ok(CompactSumSignature { sigma, vk_other })
+        Ok(CompactSumSignature {
+            sigma,
+            vk_other,
+            _phantom: PhantomData,
+        })
     }
 
     fn verify_kes(
@@ -134,10 +142,9 @@ where
         };
 
         // Verify that H(vk0 || vk1) matches the provided verification key
-        let mut hasher = Blake2b512::new();
-        hasher.update(D::raw_serialize_verification_key_kes(&vk0));
-        hasher.update(D::raw_serialize_verification_key_kes(&vk1));
-        let computed_vk = hasher.finalize().to_vec();
+        let vk0_bytes = D::raw_serialize_verification_key_kes(&vk0);
+        let vk1_bytes = D::raw_serialize_verification_key_kes(&vk1);
+        let computed_vk = H::hash_concat(&vk0_bytes, &vk1_bytes);
 
         if &computed_vk != verification_key {
             return Err(KesError::VerificationFailed);
@@ -180,6 +187,7 @@ where
                 r1_seed: None,
                 vk0: signing_key.vk0,
                 vk1: signing_key.vk1,
+                _phantom: PhantomData,
             }))
         } else if period + 1 < t_half {
             // Still in left subtree
@@ -190,6 +198,7 @@ where
                     r1_seed: signing_key.r1_seed,
                     vk0: signing_key.vk0,
                     vk1: signing_key.vk1,
+                    _phantom: PhantomData,
                 })),
                 None => Ok(None),
             }
@@ -203,6 +212,7 @@ where
                     r1_seed: None,
                     vk0: signing_key.vk0,
                     vk1: signing_key.vk1,
+                    _phantom: PhantomData,
                 })),
                 None => Ok(None),
             }
@@ -210,37 +220,28 @@ where
     }
 
     fn gen_key_kes_from_seed_bytes(seed: &[u8]) -> Result<Self::SigningKey, KesMError> {
-        // Split seed into r0 and r1 using hash
-        let mut hasher = Blake2b512::new();
-        hasher.update(&[1u8]);
-        hasher.update(seed);
-        let r0_hash = hasher.finalize();
-        let r0_bytes = &r0_hash[..D::SEED_SIZE];
-
-        let mut hasher = Blake2b512::new();
-        hasher.update(&[2u8]);
-        hasher.update(seed);
-        let r1_hash = hasher.finalize();
-        let r1_bytes = &r1_hash[..D::SEED_SIZE];
+        // Split seed into r0 and r1 using the hash algorithm
+        let (r0_bytes, r1_bytes) = H::expand_seed(seed);
 
         // Generate sk_0 from r0
-        let sk0 = D::gen_key_kes_from_seed_bytes(r0_bytes)?;
+        let sk0 = D::gen_key_kes_from_seed_bytes(&r0_bytes)?;
         let vk0 = D::derive_verification_key(&sk0)?;
 
         // Generate sk_1 from r1 (only to derive vk1, then forget)
-        let sk1 = D::gen_key_kes_from_seed_bytes(r1_bytes)?;
+        let sk1 = D::gen_key_kes_from_seed_bytes(&r1_bytes)?;
         let vk1 = D::derive_verification_key(&sk1)?;
         D::forget_signing_key_kes(sk1);
 
         // Store r1 in mlocked memory
         let mut r1_mlocked = MLockedBytes::new(r1_bytes.len())?;
-        r1_mlocked.as_mut_slice().copy_from_slice(r1_bytes);
+        r1_mlocked.as_mut_slice().copy_from_slice(&r1_bytes);
 
         Ok(CompactSumSigningKey {
             sk: sk0,
             r1_seed: Some(r1_mlocked),
             vk0,
             vk1,
+            _phantom: PhantomData,
         })
     }
 
@@ -273,7 +274,11 @@ where
         let sigma = D::raw_deserialize_signature_kes(sig_bytes)?;
         let vk_other = D::raw_deserialize_verification_key_kes(vk_bytes)?;
 
-        Some(CompactSumSignature { sigma, vk_other })
+        Some(CompactSumSignature {
+            sigma,
+            vk_other,
+            _phantom: PhantomData,
+        })
     }
 
     fn forget_signing_key_kes(signing_key: Self::SigningKey) {
@@ -284,27 +289,28 @@ where
 // Type aliases for nested CompactSum compositions
 use crate::dsign::ed25519::Ed25519;
 use crate::kes::compact_single::CompactSingleKes;
+use crate::kes::hash::Blake2b256;
 
 /// Base case: CompactSingleKES wrapping Ed25519
 pub type CompactSum0Kes = CompactSingleKes<Ed25519>;
 
 /// 2^1 = 2 periods (compact)
-pub type CompactSum1Kes = CompactSumKes<CompactSum0Kes>;
+pub type CompactSum1Kes = CompactSumKes<CompactSum0Kes, Blake2b256>;
 
 /// 2^2 = 4 periods (compact)
-pub type CompactSum2Kes = CompactSumKes<CompactSum1Kes>;
+pub type CompactSum2Kes = CompactSumKes<CompactSum1Kes, Blake2b256>;
 
 /// 2^3 = 8 periods (compact)
-pub type CompactSum3Kes = CompactSumKes<CompactSum2Kes>;
+pub type CompactSum3Kes = CompactSumKes<CompactSum2Kes, Blake2b256>;
 
 /// 2^4 = 16 periods (compact)
-pub type CompactSum4Kes = CompactSumKes<CompactSum3Kes>;
+pub type CompactSum4Kes = CompactSumKes<CompactSum3Kes, Blake2b256>;
 
 /// 2^5 = 32 periods (compact)
-pub type CompactSum5Kes = CompactSumKes<CompactSum4Kes>;
+pub type CompactSum5Kes = CompactSumKes<CompactSum4Kes, Blake2b256>;
 
 /// 2^6 = 64 periods (compact)
-pub type CompactSum6Kes = CompactSumKes<CompactSum5Kes>;
+pub type CompactSum6Kes = CompactSumKes<CompactSum5Kes, Blake2b256>;
 
 /// 2^7 = 128 periods (compact, standard Cardano KES)
-pub type CompactSum7Kes = CompactSumKes<CompactSum6Kes>;
+pub type CompactSum7Kes = CompactSumKes<CompactSum6Kes, Blake2b256>;

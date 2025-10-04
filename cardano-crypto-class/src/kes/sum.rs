@@ -1,7 +1,6 @@
 use std::marker::PhantomData;
 
-use blake2::{Blake2b512, Digest};
-
+use crate::kes::hash::KesHashAlgorithm;
 use crate::kes::{KesAlgorithm, KesError, KesMError, Period};
 use crate::mlocked_bytes::MLockedBytes;
 use crate::seed::Seed;
@@ -16,11 +15,18 @@ use crate::seed::Seed;
 /// - r_1: seed for generating sk_1 (second half)
 /// - vk_0, vk_1: verification keys for both halves
 ///
-/// The verification key is: H(vk_0 || vk_1)
-pub struct SumKes<D: KesAlgorithm>(PhantomData<D>);
+/// The verification key is: H(vk_0 || vk_1) where H is the hash algorithm parameter.
+pub struct SumKes<D, H>(PhantomData<(D, H)>)
+where
+    D: KesAlgorithm,
+    H: KesHashAlgorithm;
 
 /// Signing key for SumKES contains both constituent keys.
-pub struct SumSigningKey<D: KesAlgorithm> {
+pub struct SumSigningKey<D, H>
+where
+    D: KesAlgorithm,
+    H: KesHashAlgorithm,
+{
     /// Current signing key (either for left or right subtree)
     pub(crate) sk: D::SigningKey,
     /// Seed for the right subtree (mlocked)
@@ -29,29 +35,36 @@ pub struct SumSigningKey<D: KesAlgorithm> {
     pub(crate) vk0: D::VerificationKey,
     /// Verification key for right subtree
     pub(crate) vk1: D::VerificationKey,
+    _phantom: PhantomData<H>,
 }
 
 /// Signature for SumKES includes constituent signature and both verification keys.
 #[derive(Clone)]
-pub struct SumSignature<D: KesAlgorithm> {
+pub struct SumSignature<D, H>
+where
+    D: KesAlgorithm,
+    H: KesHashAlgorithm,
+{
     pub(crate) sigma: D::Signature,
     pub(crate) vk0: D::VerificationKey,
     pub(crate) vk1: D::VerificationKey,
+    _phantom: PhantomData<H>,
 }
 
-impl<D> KesAlgorithm for SumKes<D>
+impl<D, H> KesAlgorithm for SumKes<D, H>
 where
     D: KesAlgorithm,
     D::VerificationKey: Clone,
+    H: KesHashAlgorithm,
 {
     type VerificationKey = Vec<u8>; // Hash of (vk0, vk1)
-    type SigningKey = SumSigningKey<D>;
-    type Signature = SumSignature<D>;
+    type SigningKey = SumSigningKey<D, H>;
+    type Signature = SumSignature<D, H>;
     type Context = D::Context;
 
     const ALGORITHM_NAME: &'static str = D::ALGORITHM_NAME; // Could append "_sum"
     const SEED_SIZE: usize = D::SEED_SIZE;
-    const VERIFICATION_KEY_SIZE: usize = 64; // Blake2b-512 output
+    const VERIFICATION_KEY_SIZE: usize = H::OUTPUT_SIZE; // Now parameterized by hash!
     const SIGNING_KEY_SIZE: usize =
         D::SIGNING_KEY_SIZE + D::SEED_SIZE + 2 * D::VERIFICATION_KEY_SIZE;
     const SIGNATURE_SIZE: usize = D::SIGNATURE_SIZE + 2 * D::VERIFICATION_KEY_SIZE;
@@ -64,10 +77,9 @@ where
         signing_key: &Self::SigningKey,
     ) -> Result<Self::VerificationKey, KesMError> {
         // vk = H(vk0 || vk1)
-        let mut hasher = Blake2b512::new();
-        hasher.update(D::raw_serialize_verification_key_kes(&signing_key.vk0));
-        hasher.update(D::raw_serialize_verification_key_kes(&signing_key.vk1));
-        Ok(hasher.finalize().to_vec())
+        let vk0_bytes = D::raw_serialize_verification_key_kes(&signing_key.vk0);
+        let vk1_bytes = D::raw_serialize_verification_key_kes(&signing_key.vk1);
+        Ok(H::hash_concat(&vk0_bytes, &vk1_bytes))
     }
 
     fn sign_kes(
@@ -90,6 +102,7 @@ where
             sigma,
             vk0: signing_key.vk0.clone(),
             vk1: signing_key.vk1.clone(),
+            _phantom: PhantomData,
         })
     }
 
@@ -101,10 +114,9 @@ where
         signature: &Self::Signature,
     ) -> Result<(), KesError> {
         // Verify that H(vk0 || vk1) matches the provided verification key
-        let mut hasher = Blake2b512::new();
-        hasher.update(D::raw_serialize_verification_key_kes(&signature.vk0));
-        hasher.update(D::raw_serialize_verification_key_kes(&signature.vk1));
-        let computed_vk = hasher.finalize().to_vec();
+        let vk0_bytes = D::raw_serialize_verification_key_kes(&signature.vk0);
+        let vk1_bytes = D::raw_serialize_verification_key_kes(&signature.vk1);
+        let computed_vk = H::hash_concat(&vk0_bytes, &vk1_bytes);
 
         if &computed_vk != verification_key {
             return Err(KesError::VerificationFailed);
@@ -159,6 +171,7 @@ where
                 r1_seed: None, // Already used
                 vk0: signing_key.vk0,
                 vk1: signing_key.vk1,
+                _phantom: PhantomData,
             }))
         } else if period + 1 < t_half {
             // Still in left subtree, update sk_0
@@ -169,6 +182,7 @@ where
                     r1_seed: signing_key.r1_seed,
                     vk0: signing_key.vk0,
                     vk1: signing_key.vk1,
+                    _phantom: PhantomData,
                 })),
                 None => Ok(None),
             }
@@ -182,6 +196,7 @@ where
                     r1_seed: None,
                     vk0: signing_key.vk0,
                     vk1: signing_key.vk1,
+                    _phantom: PhantomData,
                 })),
                 None => Ok(None),
             }
@@ -189,18 +204,10 @@ where
     }
 
     fn gen_key_kes_from_seed_bytes(seed: &[u8]) -> Result<Self::SigningKey, KesMError> {
-        // Split seed into r0 and r1 using hash
-        let mut hasher = Blake2b512::new();
-        hasher.update(&[1u8]);
-        hasher.update(seed);
-        let r0_hash = hasher.finalize();
-        let r0_bytes = &r0_hash[..D::SEED_SIZE];
-
-        let mut hasher = Blake2b512::new();
-        hasher.update(&[2u8]);
-        hasher.update(seed);
-        let r1_hash = hasher.finalize();
-        let r1_bytes = &r1_hash[..D::SEED_SIZE];
+        // Split seed into r0 and r1 using the hash algorithm
+        let (r0_hash, r1_hash) = H::expand_seed(seed);
+        let r0_bytes = &r0_hash[..D::SEED_SIZE.min(r0_hash.len())];
+        let r1_bytes = &r1_hash[..D::SEED_SIZE.min(r1_hash.len())];
 
         // Generate sk_0 from r0
         let sk0 = D::gen_key_kes_from_seed_bytes(r0_bytes)?;
@@ -220,6 +227,7 @@ where
             r1_seed: Some(r1_mlocked),
             vk0,
             vk1,
+            _phantom: PhantomData,
         })
     }
 
@@ -255,7 +263,12 @@ where
         let vk0 = D::raw_deserialize_verification_key_kes(&bytes[vk0_offset..vk1_offset])?;
         let vk1 = D::raw_deserialize_verification_key_kes(&bytes[vk1_offset..])?;
 
-        Some(SumSignature { sigma, vk0, vk1 })
+        Some(SumSignature {
+            sigma,
+            vk0,
+            vk1,
+            _phantom: PhantomData,
+        })
     }
 
     fn forget_signing_key_kes(signing_key: Self::SigningKey) {
@@ -266,28 +279,29 @@ where
 
 // Type aliases for nested compositions
 use crate::dsign::ed25519::Ed25519;
+use crate::kes::hash::Blake2b256;
 use crate::kes::single::SingleKes;
 
 /// Base case: SingleKES wrapping Ed25519
 pub type Sum0Kes = SingleKes<Ed25519>;
 
-/// 2^1 = 2 periods
-pub type Sum1Kes = SumKes<Sum0Kes>;
+/// 2^1 = 2 periods (using Blake2b-256 to match Haskell)
+pub type Sum1Kes = SumKes<Sum0Kes, Blake2b256>;
 
 /// 2^2 = 4 periods
-pub type Sum2Kes = SumKes<Sum1Kes>;
+pub type Sum2Kes = SumKes<Sum1Kes, Blake2b256>;
 
 /// 2^3 = 8 periods
-pub type Sum3Kes = SumKes<Sum2Kes>;
+pub type Sum3Kes = SumKes<Sum2Kes, Blake2b256>;
 
 /// 2^4 = 16 periods
-pub type Sum4Kes = SumKes<Sum3Kes>;
+pub type Sum4Kes = SumKes<Sum3Kes, Blake2b256>;
 
 /// 2^5 = 32 periods
-pub type Sum5Kes = SumKes<Sum4Kes>;
+pub type Sum5Kes = SumKes<Sum4Kes, Blake2b256>;
 
 /// 2^6 = 64 periods
-pub type Sum6Kes = SumKes<Sum5Kes>;
+pub type Sum6Kes = SumKes<Sum5Kes, Blake2b256>;
 
 /// 2^7 = 128 periods (standard Cardano KES)
-pub type Sum7Kes = SumKes<Sum6Kes>;
+pub type Sum7Kes = SumKes<Sum6Kes, Blake2b256>;

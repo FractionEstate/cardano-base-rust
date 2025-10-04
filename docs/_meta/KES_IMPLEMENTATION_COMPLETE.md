@@ -73,7 +73,7 @@ Defines the `KesAlgorithm` trait with:
 
 ### 2. Binary Tree Structure
 
-```
+```text
 Period:     0   1   2   3   4   5   6   7
 Tree:       [SK_0]  [SK_1]  [SK_2]  [SK_3]
             \______/  \______/  \______/
@@ -172,7 +172,7 @@ CompactSum7Kes = CompactSumKes<CompactSum6Kes> // 128 periods (Cardano)
 
 ## Files Created
 
-```
+```tree
 cardano-crypto-class/src/kes/
 ├── mod.rs              # KESAlgorithm trait, errors, helpers
 ├── single.rs           # SingleKes<D> (1 period)

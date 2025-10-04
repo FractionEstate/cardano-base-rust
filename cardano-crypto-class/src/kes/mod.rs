@@ -9,8 +9,13 @@ use crate::util::SignableRepresentation;
 
 pub mod compact_single;
 pub mod compact_sum;
+pub mod hash;
 pub mod single;
 pub mod sum;
+pub mod verify_hash;
+
+// Re-export hash algorithms for convenience
+pub use hash::{Blake2b256, Blake2b512, KesHashAlgorithm};
 
 /// The KES period. Periods are enumerated from zero.
 pub type Period = u64;
