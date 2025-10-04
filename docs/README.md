@@ -1,104 +1,63 @@
-# cardano-base-rust Documentation# Cardano Base - Documentation
+# cardano-base-rust Documentation
 
-Welcome to the comprehensive documentation for the **cardano-base-rust** project - a pure Rust implementation of Cardano's foundational cryptographic primitives.This directory contains comprehensive documentation for the Cardano Base Rust project.
+Welcome to the comprehensive documentation for the **cardano-base-rust** project - a pure Rust implementation of Cardano's foundational cryptographic primitives.
 
-## 📚 Documentation Structure## 📚 Documentation Structure
+## 📚 Documentation Structure
 
-### 🚀 Getting Started### [Home](Home.md)
+### 🚀 Getting Started
 
-- [**Main README**](../README.md) – Project overview, quick start, and installationMain documentation hub and quick start guide.
-
+- [**Main README**](../README.md) – Project overview, quick start, and installation
 - [**Contributing Guide**](../CONTRIBUTING.md) – How to contribute to the project
-
-- [**Code of Conduct**](../CODE-OF-CONDUCT.md) – Community guidelines### API Documentation
-
+- [**Code of Conduct**](../CODE-OF-CONDUCT.md) – Community guidelines
 - [**Security Policy**](../SECURITY.md) – Security practices and vulnerability reporting
 
-- [Package Overview](api/Packages.md) - Overview of all workspace packages
+### 📦 API Documentation
 
-### 📦 API Documentation- [VRF API](api/VRF-API.md) - Verifiable Random Function API reference
-
-- [**API Reference**](api/) – Detailed API documentation for all packages### Migration Guides
-
+- [**API Reference**](api/) – Detailed API documentation for all packages
   - Auto-generated from Rust docs via `cargo doc`
+  - Access locally: `cargo doc --workspace --no-deps --open`
+  - Online: <https://docs.rs/cardano-crypto-class>
 
-  - Access locally: `cargo doc --workspace --no-deps --open`- [Migration Summary](migration/Migration-Summary.md) - Complete Haskell → Rust migration overview
+### 🔐 Cryptography
 
-  - Online: <https://docs.rs/cardano-crypto-class>- [VRF Implementation](migration/VRF-Implementation.md) - Pure Rust VRF conversion details
-
-### 🔐 Cryptography### Development
-
-- [**Cryptography Guide**](development/CRYPTOGRAPHY.md) – Implementation details for VRF, KES, and DSIGN- [Research Notes](development/Research-Notes.md) - Technical research and decisions
-
-- [**VRF Implementation**](development/VRF.md) – IETF Draft-03 and Draft-13 compliance- [Development Plan](development/Development-Plan.md) - Project roadmap and implementation plan
-
-- [**KES Implementation**](development/KES.md) – Key evolving signatures with forward secrecy- [Testing Guide](development/Testing-Guide.md) - How to run tests and verify correctness
-
+- [**Cryptography Guide**](development/CRYPTOGRAPHY.md) – Implementation details for VRF, KES, and DSIGN
+- [**VRF Implementation**](development/VRF.md) – IETF Draft-03 and Draft-13 compliance
+- [**KES Implementation**](development/KES.md) – Key evolving signatures with forward secrecy
 - [**DSIGN Implementation**](development/DSIGN.md) – Ed25519 digital signatures
-
-### Contributing
 
 ### 🔍 Audit & Verification
 
-- [Contributing Guide](contributing/CONTRIBUTING.md) - How to contribute to this project
-
-- [**Audit Reports**](audit/) – Comprehensive security audits and verification reports- [Code of Conduct](contributing/CODE-OF-CONDUCT.md) - Community guidelines
-
-  - [**Cross-Validation Report**](audit/CROSS_VALIDATION_REPORT.md) – **⭐ Key Document** – Proves Haskell binary compatibility- [Security Policy](contributing/SECURITY.md) - Security vulnerability reporting
-
+- [**Audit Reports**](audit/) – Comprehensive security audits and verification reports
+  - [**Cross-Validation Report**](audit/CROSS_VALIDATION_REPORT.md) – **⭐ Key Document** – Proves Haskell binary compatibility
   - [**Comprehensive Checklist**](audit/COMPREHENSIVE_AUDIT_CHECKLIST.md) – Complete verification checklist (100%)
+  - [**Component Verification**](audit/) – Individual verification reports for VRF, KES, DSIGN, CBOR
 
-  - [**Component Verification**](audit/) – Individual verification reports for VRF, KES, DSIGN, CBOR## 🚀 Quick Links
+### 🔄 Migration
 
-### 🔄 Migration- **Main README**: [../README.md](../README.md)
-
-- **Changelog**: [../CHANGELOG.md](../CHANGELOG.md)
-
-- [**Migration Guide**](migration/) – Guide for migrating from Haskell cardano-base- **Release Process**: [../RELEASING.md](../RELEASING.md)
-
+- [**Migration Guide**](migration/) – Guide for migrating from Haskell cardano-base
   - CBOR Compatibility
-
-  - Type Mapping- API documentation with code examples
-
-  - API Differences- Contributing guidelines
-
+  - Type Mapping
+  - API Differences
   - Performance Considerations
-
-## 🎯 Getting Started
 
 ### 🛠️ Development
 
-1. Start with [Home](Home.md)
-
-- [**Development Guide**](development/) – Technical development documentation2. Review the [Package Overview](api/Packages.md)
-
-  - [**Publishing Guide**](development/PUBLISH_GUIDE.md) – How to publish crates to crates.io3. Check the [Migration Summary](migration/Migration-Summary.md) for conversion details
-
+- [**Development Guide**](development/) – Technical development documentation
+  - [**Publishing Guide**](development/PUBLISH_GUIDE.md) – How to publish crates to crates.io
   - [**Release Process**](development/RELEASING.md) – Versioning and release procedures
-
-  - Architecture decisions## 📚 Documentation Paths
-
+  - Architecture decisions
   - Testing strategies
+  - Performance optimization notes
 
-  - Performance optimization notes1. [Home](Home.md) - Overview and installation
+### 🤝 Contributing
 
-2. [API Documentation](api/) - Package references
-
-### 🤝 Contributing3. [Migration Guides](migration/) - Haskell → Rust conversion
-
-4. [Development](development/) - Research and implementation notes
-
-- [**Contributing Guidelines**](contributing/) – Detailed contribution workflow5. [Contributing](contributing/) - How to contribute
-
+- [**Contributing Guidelines**](contributing/) – Detailed contribution workflow
   - Setup development environment
-
-  - Code style and standards## 🔄 CI/CD
-
+  - Code style and standards
   - Pull request process
+  - Issue reporting
 
-  - Issue reportingThis documentation is automatically synchronized to the GitHub Wiki via GitHub Actions.
-
-## 📖 Quick LinksSee `.github/workflows/sync-wiki.yml` for the sync configuration
+## 📖 Quick Links
 
 ### For Users
 
@@ -125,10 +84,10 @@ Welcome to the comprehensive documentation for the **cardano-base-rust** project
 
 ### Must-Read Documents
 
-1. **[Main README](../README.md)** – Start here for project overview
-2. **[Cross-Validation Report](audit/CROSS_VALIDATION_REPORT.md)** – Proof of Haskell compatibility
-3. **[Security Policy](../SECURITY.md)** – Security practices and reporting
-4. **[Contributing Guide](../CONTRIBUTING.md)** – How to contribute
+1. [Main README](../README.md) – Start here for project overview
+2. [Cross-Validation Report](audit/CROSS_VALIDATION_REPORT.md) – Proof of Haskell compatibility
+3. [Security Policy](../SECURITY.md) – Security practices and reporting
+4. [Contributing Guide](../CONTRIBUTING.md) – How to contribute
 
 ### Cryptography Deep Dives
 
@@ -162,25 +121,19 @@ Welcome to the comprehensive documentation for the **cardano-base-rust** project
 ### Generate API Docs
 
 ```bash
-# All packages
 cargo doc --workspace --no-deps --open
-
-# Specific package
 cargo doc --package cardano-crypto-class --open
-
-# With private items
 cargo doc --workspace --document-private-items --open
 ```
 
 ### View Documentation Locally
 
 ```bash
-# Serve documentation with a local server
 cd target/doc
 python3 -m http.server 8000
-
-# Open browser to http://localhost:8000
 ```
+
+Then open browser to <http://localhost:8000>
 
 ## 🌐 Online Resources
 
@@ -198,7 +151,7 @@ This documentation is maintained alongside the code. When making changes:
 3. Check for broken links and outdated info
 4. Update version numbers if needed
 
-## 🙏 Acknowledgments
+## �� Acknowledgments
 
 This documentation structure is inspired by the Rust community's best practices and the original Haskell cardano-base documentation.
 

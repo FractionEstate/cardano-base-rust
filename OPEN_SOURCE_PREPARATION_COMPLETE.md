@@ -131,7 +131,7 @@ categories = ["cryptography", "encoding", "data-structures"]
 
 **Created New Documentation Structure**:
 
-```
+```text
 docs/
 ├── README.md                    [NEW] - Comprehensive docs index
 ├── audit/

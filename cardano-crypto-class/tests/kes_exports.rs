@@ -6,15 +6,9 @@ fn test_kes_exports() {
         // Hash algorithms
         Blake2b256,
         Blake2b512,
-        CompactSingleKes,
-        // CompactSum type aliases
-        CompactSum1Kes,
-        CompactSum7Kes,
         // Core traits
         KesAlgorithm,
         KesHashAlgorithm,
-        // Concrete types
-        SingleKes,
         // Sum type aliases
         Sum1Kes,
         Sum7Kes,

@@ -37,18 +37,18 @@ The Rust implementation successfully implements:
 
 | Feature | Haskell `KESAlgorithm` | Rust `KesAlgorithm` | Status |
 |---------|------------------------|---------------------|--------|
-| **Associated Types** |
+| **Associated Types** | | | |
 | `VerKeyKES` | ✓ | `VerificationKey` ✓ | ✅ Match |
 | `SignKeyKES` | ✓ | `SigningKey` ✓ | ✅ Match |
 | `SigKES` | ✓ | `Signature` ✓ | ✅ Match |
 | `ContextKES` | ✓ (default `()`) | `Context` ✓ (default `()`) | ✅ Match |
 | `Signable` | ✓ constraint | Via `SignableRepresentation` | ✅ Equivalent |
-| **Size Constants** |
+| **Size Constants** | | | |
 | `SeedSizeKES` | ✓ (type-level Nat) | `SEED_SIZE` ✓ (const usize) | ✅ Equivalent |
 | `SizeVerKeyKES` | ✓ (type-level Nat) | `VERIFICATION_KEY_SIZE` ✓ | ✅ Equivalent |
 | `SizeSignKeyKES` | ✓ (type-level Nat) | `SIGNING_KEY_SIZE` ✓ | ✅ Equivalent |
 | `SizeSigKES` | ✓ (type-level Nat) | `SIGNATURE_SIZE` ✓ | ✅ Equivalent |
-| **Core Methods** |
+| **Core Methods** | | | |
 | `algorithmNameKES` | ✓ | `ALGORITHM_NAME` ✓ | ✅ Equivalent (const vs method) |
 | `totalPeriodsKES` | ✓ | `total_periods()` ✓ | ✅ Match |
 | `verifyKES` | ✓ | `verify_kes()` ✓ | ✅ Match |
@@ -57,7 +57,7 @@ The Rust implementation successfully implements:
 | `updateKESWith` | ✓ (with allocator) | `update_kes()` ✓ | ✅ Match |
 | `genKeyKESWith` | ✓ (with allocator) | `gen_key_kes()` ✓ | ✅ Match |
 | `forgetSignKeyKESWith` | ✓ (with allocator) | `forget_signing_key_kes()` ✓ | ✅ Match |
-| **Serialization** |
+| **Serialization** | | | |
 | `rawSerialiseVerKeyKES` | ✓ → ByteString | `raw_serialize_verification_key_kes()` ✓ | ✅ Match |
 | `rawSerialiseSignKeyKES` | ✓ → m ByteString | Via `UnsoundKesAlgorithm` | ⚠️ Different location |
 | `rawSerialiseSigKES` | ✓ → ByteString | `raw_serialize_signature_kes()` ✓ | ✅ Match |
@@ -86,7 +86,7 @@ The Rust implementation successfully implements:
 | `UnsoundKESAlgorithm` trait | ✓ | `UnsoundKesAlgorithm` ✓ | ✅ Match |
 | `rawSerialiseSignKeyKES` | ✓ (in UnsoundKESAlgorithm) | ✓ (in UnsoundKesAlgorithm) | ✅ Match |
 | `rawDeserialiseSignKeyKES` | ✓ | ✓ | ✅ Match |
-| **Pure Variant** |
+| **Pure Variant** | | | |
 | `UnsoundPureKESAlgorithm` | ✓ | ❌ **Missing** | 🔴 **Major Gap** |
 | `UnsoundPureSignKeyKES` | ✓ data type | ❌ Missing | 🔴 **Major Gap** |
 | `unsoundPureSignKES` | ✓ | ❌ Missing | 🔴 **Major Gap** |
@@ -130,27 +130,28 @@ The Rust implementation successfully implements:
 
 | Aspect | Haskell | Rust | Accuracy |
 |--------|---------|------|----------|
-| **Signing key structure** |
+| **Signing key structure** | | | |
 | Current SK | `sk_0` | `sk` | ✅ Same concept |
-| Right seed | `r_1` (MLockedSeed) | `r1_seed` (Option<MLockedBytes>) | ✅ Equivalent |
+| Right seed | `r_1` (MLockedSeed) | `r1_seed` (Option\<MLockedBytes\>) | ✅ Equivalent |
 | Left VK | `vk_0` | `vk0` | ✅ Match |
 | Right VK | `vk_1` | `vk1` | ✅ Match |
-| **Signature structure** |
+| **Signature structure** | | | |
 | Constituent sig | `sigma` | `sigma` | ✅ Match |
 | VK storage | `vk_0, vk_1` | `vk0, vk1` | ✅ Match |
 | **Verification key** | `H(vk_0 ∥ vk_1)` | `H(vk0 ∥ vk1)` Blake2b-512 | ✅ Match |
 | **Hash function** | Type parameter `h` | Hardcoded Blake2b512 | ⚠️ Less flexible |
+| **Period calculation** | | | |
 | **Period calculation** | `2 * totalPeriodsKES d` | `2 * D::total_periods()` | ✅ Match |
-| **Sign routing** |
+| **Sign routing** | | | |
 | Left subtree | `t < _T` → sign with `t` | Same | ✅ Match |
 | Right subtree | `t >= _T` → sign with `t - _T` | Same | ✅ Match |
 | **Verify routing** | Same logic | Same logic | ✅ Match |
-| **Update logic** |
+| **Update logic** | | | |
 | Left tree update | `t + 1 < _T` | Same | ✅ Match |
 | Transition | `t + 1 == _T` | Generate sk1 from r1_seed | ✅ Match |
 | Right tree update | `t + 1 > _T` | Same | ✅ Match |
 | **Seed expansion** | `expandHashWith` | Manual Blake2b splitting | ⚠️ Different impl |
-| **Key generation** |
+| **Key generation** | | | |
 | Seed split | r0, r1 from `expandHashWith` | Blake2b-based splitting | ⚠️ **Verify compatibility** |
 | Generate sk0 | ✓ | ✓ | ✅ Match |
 | Generate sk1 | ✓ (then forget) | ✓ (then forget) | ✅ Match |
@@ -172,7 +173,7 @@ The Rust implementation successfully implements:
 |--------|---------|------|----------|
 | **Signature structure** | `sigma, vk_other` | `sigma, vk_other` | ✅ Match |
 | **Size optimization** | Stores 1 VK instead of 2 | Same | ✅ Match |
-| **VK reconstruction** |
+| **VK reconstruction** | | | |
 | Extract from sigma | `verKeyFromSigKES` | `sigma.extract_verification_key()` | ✅ Match |
 | Determine left/right | Based on period `t < _T` | Same logic | ✅ Match |
 | Hash pair | `hashPairOfVKeys (vk_0, vk_1)` | `Blake2b512::new()` then update | ✅ Equivalent |
@@ -231,8 +232,8 @@ pub type CompactSum7 = CompactSumKes<CompactSum6>;
 
 **Period Counts:**
 
-| Level | Periods | Haskell Name | Rust Name |
-|-------|---------|--------------|-----------|
+| Level | Periods | Haskell Name | Rust Name | Status |
+|-------|---------|--------------|-----------|--------|
 | 0 | 1 | Sum0KES | Sum0 | ✅ |
 | 1 | 2 | Sum1KES | Sum1 | ✅ |
 | 2 | 4 | Sum2KES | Sum2 | ✅ |
@@ -300,29 +301,29 @@ pub type CompactSum7 = CompactSumKes<CompactSum6>;
 
 ### ⚠️ Medium Gaps
 
-4. **Hash Algorithm Flexibility**
+1. **Hash Algorithm Flexibility**
    - **Issue:** SumKES hardcodes Blake2b-512, Haskell parameterizes hash algorithm
    - **Impact:** May not be compatible with non-Blake2b instances (if they exist)
    - **Recommendation:** Make hash algorithm a type parameter
 
-5. **OptimizedKESAlgorithm Pattern**
+2. **OptimizedKESAlgorithm Pattern**
    - **Issue:** Rust uses trait on signatures, Haskell uses trait on algorithms
    - **Impact:** API surface differs, but functionality equivalent
    - **Recommendation:** Document design choice, consider helper functions
 
-6. **hashVerKeyKES Method Missing**
+3. **hashVerKeyKES Method Missing**
    - **Issue:** `hashVerKeyKES` not in Rust trait
    - **Impact:** Minor - can hash manually
    - **Recommendation:** Add convenience method
 
 ### ⚠️ Minor Gaps
 
-7. **gen_key_kes_from_seed_bytes Limitation**
+1. **gen_key_kes_from_seed_bytes Limitation**
    - **Issue:** Cannot construct `D::SeedMaterial` generically
    - **Impact:** Limited, workaround exists
    - **Recommendation:** Add trait bound or helper
 
-8. **No Comprehensive Test Suite**
+2. **No Comprehensive Test Suite**
    - **Issue:** No equivalent to `Test.Crypto.KES`
    - **Recommendation:** Port Haskell tests to Rust
 

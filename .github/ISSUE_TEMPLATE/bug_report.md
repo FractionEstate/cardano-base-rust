@@ -37,11 +37,11 @@ What actually happened instead.
 
 ```rust
 // Minimal code example that reproduces the issue
-```
+```text
 
 ## Error Output
 
-```
+```text
 Paste error output here
 ```
 

@@ -128,15 +128,15 @@ pub type CompactSum1Kes = CompactSumKes<CompactSum0Kes, Blake2b256>;
 
 ### Short-term (Next 2 Weeks)
 
-4. **IMPLEMENT TESTS** - Port Haskell test suite
-5. **ADD UNSOUND PURE** - Enable property-based testing
-6. **WRITE DOCS** - API reference and examples
+1. **IMPLEMENT TESTS** - Port Haskell test suite
+2. **ADD UNSOUND PURE** - Enable property-based testing
+3. **WRITE DOCS** - API reference and examples
 
 ### Before Production
 
-7. **SECURITY AUDIT** - Professional review
-8. **PERFORMANCE BENCHMARK** - Compare with Haskell
-9. **INTEGRATION TEST** - Test with Cardano node
+1. **SECURITY AUDIT** - Professional review
+2. **PERFORMANCE BENCHMARK** - Compare with Haskell
+3. **INTEGRATION TEST** - Test with Cardano node
 
 ---
 

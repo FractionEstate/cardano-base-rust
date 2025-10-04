@@ -86,17 +86,17 @@ where
 }
 
 // Type aliases with explicit hash
-pub type Sum0<H> = SingleKes<Ed25519>;
-pub type Sum1<H> = SumKes<Sum0<H>, H>;
-pub type Sum2<H> = SumKes<Sum1<H>, H>;
+pub type Sum0\<H\> = SingleKes\<Ed25519\>;
+pub type Sum1\<H\> = SumKes\<Sum0\<H\>, H\>;
+pub type Sum2\<H\> = SumKes\<Sum1\<H\>, H\>;
 // ...
 
 // Concrete types for Cardano
-pub type CardanoSum1 = Sum1<Blake2b256>;
-pub type CardanoSum2 = Sum2<Blake2b256>;
+pub type CardanoSum1 = Sum1\<Blake2b256\>;
+pub type CardanoSum2 = Sum2\<Blake2b256\>;
 // ...
 
-```
+```rust
 
 ---
 
