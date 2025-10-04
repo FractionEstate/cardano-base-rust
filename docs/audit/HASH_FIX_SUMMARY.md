@@ -45,7 +45,7 @@ cargo test --package cardano-crypto-class --lib kes::verify_hash -- --nocapture
 
 Output:
 
-```
+```text
 Sum1Kes VK Size: 32 bytes (expected: 32)
 Sum7Kes VK Size: 32 bytes (expected: 32)
 ✅ All KES Sum types now use Blake2b-256 (32 bytes) matching Haskell's Blake2b_256

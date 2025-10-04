@@ -17,6 +17,16 @@ members = [
 
 resolver = "2"
 
+[workspace.metadata]
+authors = ["FractionEstate"]
+repository = "https://github.com/FractionEstate/cardano-base-rust"
+homepage = "https://github.com/FractionEstate/cardano-base-rust"
+license = "Apache-2.0 OR MIT"
+edition = "2021"
+rust-version = "1.70"
+keywords = ["cardano", "blockchain", "cryptography", "vrf", "rust"]
+categories = ["cryptography", "encoding", "data-structures"]
+
 [workspace.lints.clippy]
 # Lint groups (with lower priority so individual lints can override)
 all = { level = "warn", priority = -1 }

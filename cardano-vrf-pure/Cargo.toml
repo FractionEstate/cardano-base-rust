@@ -2,10 +2,15 @@
 name = "cardano-vrf-pure"
 version = "0.1.0"
 edition = "2021"
-authors = ["Cardano Base Contributors"]
-license = "Apache-2.0"
-description = "Pure Rust implementation of VRF (Verifiable Random Function) for Cardano"
-repository = "https://github.com/IntersectMBO/cardano-base"
+authors = ["FractionEstate"]
+license = "Apache-2.0 OR MIT"
+description = "Pure Rust VRF (Verifiable Random Function) for Cardano - IETF Draft-03 and Draft-13 compliant"
+repository = "https://github.com/FractionEstate/cardano-base-rust"
+homepage = "https://github.com/FractionEstate/cardano-base-rust"
+documentation = "https://docs.rs/cardano-vrf-pure"
+keywords = ["cardano", "vrf", "cryptography", "verifiable-random-function", "blockchain"]
+categories = ["cryptography", "no-std"]
+rust-version = "1.70"
 
 [lints]
 workspace = true

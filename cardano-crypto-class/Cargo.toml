@@ -2,9 +2,15 @@
 name = "cardano-crypto-class"
 version = "0.1.0"
 edition = "2021"
-description = "Cardano cryptography primitives and utilities"
-license = "Apache-2.0"
-authors = ["Cardano Rust Port"]
+description = "Cardano cryptography primitives and utilities - VRF, KES, DSIGN, and hashing algorithms"
+license = "Apache-2.0 OR MIT"
+authors = ["FractionEstate"]
+repository = "https://github.com/FractionEstate/cardano-base-rust"
+homepage = "https://github.com/FractionEstate/cardano-base-rust"
+documentation = "https://docs.rs/cardano-crypto-class"
+keywords = ["cardano", "cryptography", "vrf", "kes", "blockchain"]
+categories = ["cryptography", "no-std"]
+rust-version = "1.70"
 build = "build.rs"
 
 [lints]

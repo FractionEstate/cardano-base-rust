@@ -2,13 +2,16 @@
 name = "cardano-binary"
 version = "0.1.0"
 edition = "2021"
-authors = ["Cardano Engineering"]
-description = "Binary serialisation and deserialisation helpers for Cardano"
-license = "Apache-2.0"
-repository = "https://github.com/FractionEstate/cardano-base"
+authors = ["FractionEstate"]
+description = "Binary serialization and deserialization for Cardano - CBOR encoding with Haskell compatibility"
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/FractionEstate/cardano-base-rust"
+homepage = "https://github.com/FractionEstate/cardano-base-rust"
+documentation = "https://docs.rs/cardano-binary"
 readme = "README.md"
-keywords = ["cardano", "cbor", "serialization"]
+keywords = ["cardano", "cbor", "serialization", "encoding", "blockchain"]
 categories = ["encoding"]
+rust-version = "1.70"
 
 [lints]
 workspace = true
