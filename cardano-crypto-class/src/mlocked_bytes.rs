@@ -181,6 +181,12 @@ pub struct MLockedBytes {
 
 impl MLockedBytes {
     /// Allocate a new mlocked buffer with undefined contents.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Memory allocation fails
+    /// - `mlock()` system call fails
     pub fn new(len: usize) -> Result<Self, MLockedError> {
         Ok(Self {
             region: MLockedRegion::allocate(len, false)?,
@@ -188,6 +194,12 @@ impl MLockedBytes {
     }
 
     /// Allocate a new zeroed mlocked buffer.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Memory allocation fails
+    /// - `mlock()` system call fails
     pub fn new_zeroed(len: usize) -> Result<Self, MLockedError> {
         Ok(Self {
             region: MLockedRegion::allocate(len, true)?,
@@ -195,6 +207,13 @@ impl MLockedBytes {
     }
 
     /// Allocate a new buffer rounding the size up to a multiple of `align`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Memory allocation fails
+    /// - `mlock()` system call fails
+    /// - `align` is not a power of two
     pub fn new_aligned(len: usize, align: usize) -> Result<Self, MLockedError> {
         Ok(Self {
             region: MLockedRegion::allocate_aligned(len, false, Some(align))?,
@@ -246,6 +265,12 @@ impl MLockedBytes {
     }
 
     /// Create a deep copy of this buffer.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Memory allocation fails
+    /// - `mlock()` system call fails
     pub fn try_clone(&self) -> Result<Self, MLockedError> {
         let mut cloned = Self::new(self.len())?;
         if !self.is_empty() {
@@ -277,16 +302,34 @@ impl<const N: usize> MLockedSizedBytes<N> {
     }
 
     /// Allocate a new mlocked buffer with undefined contents.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Memory allocation fails
+    /// - `mlock()` system call fails
     pub fn new() -> Result<Self, MLockedError> {
         Self::allocate(false)
     }
 
     /// Allocate a new zeroed mlocked buffer.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Memory allocation fails
+    /// - `mlock()` system call fails
     pub fn new_zeroed() -> Result<Self, MLockedError> {
         Self::allocate(true)
     }
 
     /// Create a deep copy of this buffer.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Memory allocation fails
+    /// - `mlock()` system call fails
     pub fn try_clone(&self) -> Result<Self, MLockedError> {
         let mut cloned = Self::new()?;
         if N > 0 {
@@ -365,16 +408,35 @@ pub struct MLockedAllocator;
 
 impl MLockedAllocator {
     /// Allocate a buffer with undefined contents.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Memory allocation fails
+    /// - `mlock()` system call fails
     pub fn allocate(&self, len: usize) -> Result<MLockedBytes, MLockedError> {
         MLockedBytes::new(len)
     }
 
     /// Allocate a zeroed buffer.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Memory allocation fails
+    /// - `mlock()` system call fails
     pub fn allocate_zeroed(&self, len: usize) -> Result<MLockedBytes, MLockedError> {
         MLockedBytes::new_zeroed(len)
     }
 
     /// Allocate a buffer rounding the size up to the requested alignment.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Memory allocation fails
+    /// - `mlock()` system call fails
+    /// - `align` is not a power of two
     pub fn allocate_aligned(&self, len: usize, align: usize) -> Result<MLockedBytes, MLockedError> {
         Ok(MLockedBytes {
             region: MLockedRegion::allocate_aligned(len, false, Some(align))?,
@@ -389,16 +451,35 @@ pub fn mlocked_allocator() -> MLockedAllocator {
 }
 
 /// Allocate an mlocked region with undefined contents.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - Memory allocation fails
+/// - `mlock()` system call fails
 pub fn mlocked_alloc_bytes(len: usize) -> Result<MLockedBytes, MLockedError> {
     MLockedAllocator.allocate(len)
 }
 
 /// Allocate a zeroed mlocked region.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - Memory allocation fails
+/// - `mlock()` system call fails
 pub fn mlocked_alloc_bytes_zeroed(len: usize) -> Result<MLockedBytes, MLockedError> {
     MLockedAllocator.allocate_zeroed(len)
 }
 
 /// Allocate an mlocked region rounding up to the nearest multiple of `align`.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - Memory allocation fails
+/// - `mlock()` system call fails
+/// - `align` is not a power of two
 pub fn mlocked_alloc_bytes_aligned(len: usize, align: usize) -> Result<MLockedBytes, MLockedError> {
     Ok(MLockedBytes {
         region: MLockedRegion::allocate_aligned(len, false, Some(align))?,

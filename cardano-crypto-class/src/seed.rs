@@ -54,6 +54,10 @@ impl Seed {
 
     /// Take `n` bytes from the start of the seed, returning the bytes and a
     /// new seed representing the remainder.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if fewer than `n` bytes are available in the seed.
     pub fn take(&self, n: usize) -> Result<(Vec<u8>, Seed), SeedBytesExhausted> {
         get_bytes_from_seed_either(n, self.clone())
     }
@@ -204,6 +208,10 @@ impl SeedRng {
     }
 
     /// Fill the provided buffer with bytes from the RNG.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if insufficient bytes remain in the seed.
     pub fn fill_bytes_checked(&mut self, dest: &mut [u8]) -> Result<(), SeedBytesExhausted> {
         let bytes = self.consume(dest.len())?;
         dest.copy_from_slice(bytes);
@@ -211,6 +219,10 @@ impl SeedRng {
     }
 
     /// Produce an owned vector of the requested number of bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if insufficient bytes remain in the seed.
     pub fn random_bytes(&mut self, len: usize) -> Result<Vec<u8>, SeedBytesExhausted> {
         let bytes = self.consume(len)?;
         Ok(bytes.to_vec())
@@ -246,6 +258,10 @@ impl RngCore for SeedRng {
 impl CryptoRng for SeedRng {}
 
 /// Run a deterministic action using [`SeedRng`].
+///
+/// # Errors
+///
+/// Returns an error if the action returns an error or if seed bytes are exhausted.
 pub fn run_with_seed<F, R>(seed: Seed, mut f: F) -> Result<R, SeedBytesExhausted>
 where
     F: FnMut(&mut SeedRng) -> Result<R, SeedBytesExhausted>,

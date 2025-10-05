@@ -119,6 +119,10 @@ impl<A: VRFAlgorithm> fmt::Debug for OutputVRF<A> {
 
 impl<A: VRFAlgorithm> OutputVRF<A> {
     /// Construct an output from raw bytes, validating the expected size.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the byte length does not match the expected output size for the VRF algorithm.
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self, VRFError> {
         if bytes.len() != A::OUTPUT_SIZE {
             return Err(VRFError::wrong_length(
@@ -134,6 +138,10 @@ impl<A: VRFAlgorithm> OutputVRF<A> {
     }
 
     /// Construct an output by copying the provided slice.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the byte length does not match the expected output size for the VRF algorithm.
     pub fn copy_from_slice(bytes: &[u8]) -> Result<Self, VRFError> {
         Self::from_bytes(bytes.to_vec())
     }
@@ -157,6 +165,10 @@ impl<A: VRFAlgorithm> OutputVRF<A> {
     }
 
     /// Construct an output from a natural number, big-endian encoded to the expected length.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the natural number is too large to fit in the expected output size.
     pub fn from_natural(value: &BigUint) -> Result<Self, VRFError> {
         let mut bytes = natural_to_bytes(A::OUTPUT_SIZE, value);
         if bytes.len() > A::OUTPUT_SIZE {

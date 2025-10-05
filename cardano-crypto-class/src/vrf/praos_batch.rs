@@ -63,6 +63,11 @@ impl fmt::Debug for PraosBatchCompatSeed {
 }
 
 impl PraosBatchCompatSeed {
+    /// Generates a new random Praos batch-compatible seed.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if memory-locked allocation fails.
     pub fn generate() -> Result<Self, PraosBatchConstructionError> {
         let mut bytes = MLockedBytes::new_zeroed(seed_size())?;
         // Use Rust's rand crate
@@ -72,6 +77,13 @@ impl PraosBatchCompatSeed {
         Ok(Self { bytes })
     }
 
+    /// Creates a Praos batch-compatible seed from raw bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - The byte length is not 32 bytes
+    /// - Memory-locked allocation fails
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, PraosBatchConstructionError> {
         if bytes.len() != seed_size() {
             return Err(PraosBatchConstructionError::WrongLength {
@@ -106,6 +118,11 @@ impl Clone for PraosBatchCompatSeed {
     }
 }
 
+/// Generates a new random Praos batch-compatible seed.
+///
+/// # Errors
+///
+/// Returns an error if memory-locked allocation fails.
 pub fn gen_seed() -> Result<PraosBatchCompatSeed, PraosBatchConstructionError> {
     PraosBatchCompatSeed::generate()
 }
@@ -121,6 +138,13 @@ impl fmt::Debug for PraosBatchCompatSigningKey {
 }
 
 impl PraosBatchCompatSigningKey {
+    /// Creates a Praos batch-compatible signing key from raw bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - The byte length is not 64 bytes (standard) or 32 bytes (alternative)
+    /// - Memory-locked allocation fails
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, PraosBatchConstructionError> {
         let len = bytes.len();
         let expected = signing_key_size();
@@ -151,6 +175,12 @@ impl PraosBatchCompatSigningKey {
         self.secret.as_slice().to_vec()
     }
 
+    /// Derives the verification key from this signing key.
+    ///
+    /// # Errors
+    ///
+    /// This function should not fail under normal circumstances as it performs
+    /// deterministic cryptographic key derivation.
     pub fn derive_verification_key(
         &self,
     ) -> Result<PraosBatchCompatVerificationKey, PraosBatchConstructionError> {
@@ -161,6 +191,11 @@ impl PraosBatchCompatSigningKey {
         Ok(PraosBatchCompatVerificationKey { bytes: pk.to_vec() })
     }
 
+    /// Extracts the seed (first 32 bytes) from this signing key.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if memory-locked allocation fails.
     pub fn to_seed(&self) -> Result<PraosBatchCompatSeed, PraosBatchConstructionError> {
         // Extract seed from first 32 bytes
         let mut seed = MLockedBytes::new_zeroed(seed_size())?;
@@ -168,6 +203,11 @@ impl PraosBatchCompatSigningKey {
         Ok(PraosBatchCompatSeed { bytes: seed })
     }
 
+    /// Generates a VRF proof for the given message.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the VRF proof generation fails.
     pub fn prove(
         &self,
         message: &[u8],
@@ -202,6 +242,11 @@ impl fmt::Debug for PraosBatchCompatVerificationKey {
 }
 
 impl PraosBatchCompatVerificationKey {
+    /// Creates a Praos batch-compatible verification key from raw bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the byte length is not 32 bytes (standard) or 32 bytes (alternative).
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, PraosBatchConstructionError> {
         let len = bytes.len();
         let expected = verification_key_size();
@@ -278,6 +323,11 @@ impl fmt::Debug for PraosBatchCompatProof {
 }
 
 impl PraosBatchCompatProof {
+    /// Creates a Praos batch-compatible VRF proof from raw bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the byte length is not 80 bytes.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, PraosBatchConstructionError> {
         if bytes.len() != proof_size() {
             return Err(PraosBatchConstructionError::WrongLength {
@@ -300,6 +350,12 @@ impl PraosBatchCompatProof {
         self.bytes.clone()
     }
 
+    /// Extracts the VRF output bytes from this proof.
+    ///
+    /// # Errors
+    ///
+    /// This function should not fail under normal circumstances as extraction
+    /// is deterministic. Returns `Ok(None)` if the proof is malformed.
     pub fn to_output_bytes(&self) -> Result<Option<Vec<u8>>, PraosBatchConstructionError> {
         // Use VrfDraft13::proof_to_hash
         let proof_bytes: [u8; 128] = self.bytes.as_slice().try_into().unwrap();
@@ -310,6 +366,11 @@ impl PraosBatchCompatProof {
     }
 }
 
+/// Generates a Praos batch-compatible keypair from a seed.
+///
+/// # Errors
+///
+/// Returns an error if memory-locked allocation fails.
 pub fn keypair_from_seed(
     seed: &PraosBatchCompatSeed,
 ) -> Result<
@@ -332,6 +393,14 @@ pub fn keypair_from_seed(
     ))
 }
 
+/// Generates a Praos batch-compatible keypair from seed bytes.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The seed byte length is not 32 bytes
+/// - Memory-locked allocation fails
+/// - Key derivation fails
 pub fn keypair_from_seed_bytes(
     seed_bytes: &[u8],
 ) -> Result<
@@ -348,6 +417,13 @@ pub fn signing_key_from_seed(seed: &Seed) -> PraosBatchCompatSigningKey {
     signing_key_from_bytes(&material).expect("seed produced invalid praos batch signing key")
 }
 
+/// Creates a Praos batch-compatible signing key from raw bytes.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The byte length is not 64 bytes (standard) or 32 bytes (alternative)
+/// - Memory-locked allocation fails
 pub fn signing_key_from_bytes(
     bytes: &[u8],
 ) -> Result<PraosBatchCompatSigningKey, PraosBatchConstructionError> {
@@ -359,6 +435,11 @@ pub fn signing_key_to_bytes(signing_key: &PraosBatchCompatSigningKey) -> Vec<u8>
     signing_key.to_vec()
 }
 
+/// Creates a Praos batch-compatible verification key from raw bytes.
+///
+/// # Errors
+///
+/// Returns an error if the byte length is not 32 bytes (standard) or 32 bytes (alternative).
 pub fn verification_key_from_bytes(
     bytes: &[u8],
 ) -> Result<PraosBatchCompatVerificationKey, PraosBatchConstructionError> {
@@ -370,6 +451,11 @@ pub fn verification_key_to_bytes(verification_key: &PraosBatchCompatVerification
     verification_key.to_vec()
 }
 
+/// Creates a Praos batch-compatible VRF proof from raw bytes.
+///
+/// # Errors
+///
+/// Returns an error if the byte length is not 80 bytes.
 pub fn proof_from_bytes(
     bytes: &[u8],
 ) -> Result<PraosBatchCompatProof, PraosBatchConstructionError> {
@@ -381,6 +467,13 @@ pub fn proof_to_bytes(proof: &PraosBatchCompatProof) -> Vec<u8> {
     proof.to_vec()
 }
 
+/// Creates a Praos batch-compatible seed from raw bytes.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The byte length is not 32 bytes
+/// - Memory-locked allocation fails
 pub fn seed_from_bytes(bytes: &[u8]) -> Result<PraosBatchCompatSeed, PraosBatchConstructionError> {
     PraosBatchCompatSeed::from_bytes(bytes)
 }

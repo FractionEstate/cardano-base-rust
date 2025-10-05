@@ -1,244 +1,83 @@
 # cardano-base-rust
 
-[![Pure Rust](https://img.shields.io/badge/## 📚 Documentation
+A pure-Rust port of selected components from the Haskell
+[`cardano-base`](https://github.com/IntersectMBO/cardano-base) project. The workspace
+provides cryptographic primitives (VRF, KES, DSIGN), Cardano-specific slotting utilities,
+CBOR serialisation helpers, and strictness libraries that underpin Rust services in the
+Cardano ecosystem.
 
-- [**📖 API Documentation**](docs/api/) – Comprehensive API reference for all packages
-- [**🎯 PROJECT_STATUS.md**](PROJECT_STATUS.md) – **Current status & next steps** ⭐ START HERE
-- [**📋 QUICK_REFERENCE.md**](QUICK_REFERENCE.md) – One-page quick reference
-- [**🔍 GAP_ANALYSIS_SUMMARY.md**](GAP_ANALYSIS_SUMMARY.md) – Gap analysis summary (95% complete!)
-- [**📂 PROJECT_INDEX.md**](PROJECT_INDEX.md) – Complete project navigation
-- [**📚 docs/archive/**](docs/archive/) – Historical session documentation
-- [**🔐 Cryptography Guide**](docs/development/CRYPTOGRAPHY.md) – VRF, KES, and DSIGN implementations
-- [**✅ KES Implementation Status**](docs/audit/KES_STATUS.md) – Current status of KES implementation (October 2025)
-- [**🔄 Migration Guide**](docs/migration/) – Migrating from Haskell cardano-base
-- [**🛡️ Security Practices**](SECURITY.md) – Security policies and vulnerability reporting
-- [**🤝 Contributing**](CONTRIBUTING.md) – How to contribute to this project
-- [**📋 Audit Reports**](docs/audit/) – Security audits and verification (includes historical documents)-100%25-orange.svg)](https://www.rust-lang.org/)
-[![Tests](https://img.shields.io/badge/Tests-234_Passing-brightgreen.svg)](https://github.com/FractionEstate/cardano-base-rust/actions)
-[![Zero C Dependencies](https://img.shields.io/badge/C_Dependencies-0-blue.svg)](Cargo.toml)
-[![License](https://img.shields.io/badge/License-Apache--2.0%20OR%20MIT-blue.svg)](LICENSE)
-[![Security Hardened](https://img.shields.io/badge/Security-Audited-green.svg)](docs/audit/)
+## Highlights
 
-> **Pure Rust implementation of Cardano's foundational cryptographic primitives**
+- **Cryptography**: Ed25519, Ed25519 (mlocked), ECDSA secp256k1, Schnorr secp256k1, and
+  Praos VRF implementations in [`cardano-crypto-class`](cardano-crypto-class/src).
+- **Key Evolving Signatures**: `SingleKes`, `Sum{0-7}Kes`, and compact variants with
+  Blake2b hashing and serialisation helpers.
+- **VRF reference implementation**: Draft-03 and Draft-13 VRFs over Curve25519 in
+  [`cardano-vrf-pure`](cardano-vrf-pure/src).
+- **CBOR tooling**: Strict CBOR serialisation with tag-24 helpers in
+  [`cardano-binary`](cardano-binary/src).
+- **Slotting primitives**: Epoch and time arithmetic in
+  [`cardano-slotting`](cardano-slotting/src).
+- **Strictness utilities**: Strict containers, `NoThunks`, `NFData`, and deriving helpers
+  for predictable evaluation.
 
-A complete, production-ready Rust port of [Haskell cardano-base](https://github.com/IntersectMBO/cardano-base), providing cryptographic foundations for Cardano blockchain applications with 100% memory safety and zero unsafe code in critical paths.
+## Build and test
 
-## ✨ Features
-
-- 🦀 **100% Pure Rust** – No C or Haskell dependencies, fully native Rust implementation
-- 🔐 **Production-Grade Crypto** – VRF (IETF Draft-03/13), KES, DSIGN, and more
-- ✅ **Haskell-Compatible** – Binary-compatible with original Haskell implementation
-- 🧪 **234 Tests Passing** – Comprehensive test coverage including cross-validation with Haskell
-- 🔒 **Security Audited** – Multiple security audits and hardening passes completed
-- �� **13 Modular Packages** – Use only what you need
-
-## 🚀 Quick Start
-
-**Prerequisites:**
-
-- Rust 1.70 or later ([install via rustup](https://rustup.rs/))
-- Cargo (comes with Rust)
-
-**Installation:**
-
-Add dependencies to your `Cargo.toml`:
-
-```toml
-[dependencies]
-cardano-crypto-class = "0.1"
-cardano-binary = "0.1"
-cardano-vrf-pure = "0.1"
-```
-
-**Example Usage:**
-
-```rust
-use cardano_crypto_class::hash::Blake2b256;
-use cardano_binary::{Serialize, Deserialize};
-
-// Blake2b hashing
-let data = b"Hello, Cardano!";
-let hash = Blake2b256::hash(data);
-
-// CBOR serialization (Haskell-compatible)
-let encoded = my_data.serialize()?;
-let decoded = MyType::deserialize(&encoded)?;
-```
-
-**Building from Source:**
+Prerequisites: Rust 1.70 or newer with `cargo`, installed via
+[rustup](https://rustup.rs/).
 
 ```bash
-git clone https://github.com/FractionEstate/cardano-base-rust.git
-cd cardano-base-rust
-cargo build --workspace --release
+cargo build --workspace
 cargo test --workspace
-cargo doc --workspace --no-deps --open
-```
-
-## 📚 Documentation
-
-- [**📖 API Documentation**](docs/api/) – Comprehensive API reference for all packages
-- [**🔐 Cryptography Guide**](docs/development/CRYPTOGRAPHY.md) – VRF, KES, and DSIGN implementations
-- [**✅ KES Implementation Status**](docs/audit/KES_STATUS.md) – Current status of KES implementation (October 2025)
-- [**🔄 Migration Guide**](docs/migration/) – Migrating from Haskell cardano-base
-- [**🛡️ Security Practices**](SECURITY.md) – Security policies and vulnerability reporting
-- [**🤝 Contributing**](CONTRIBUTING.md) – How to contribute to this project
-- [**� Audit Reports**](docs/audit/) – Security audits and verification (includes historical documents)
-
-## 📦 Workspace Packages
-
-### Core Cryptographic Libraries
-
-| Package | Description | Version |
-|---------|-------------|---------|
-| [**cardano-crypto-class**](cardano-crypto-class/) | Main cryptographic primitives (VRF, KES, DSIGN, hashing) | 0.1.0 |
-| [**cardano-vrf-pure**](cardano-vrf-pure/) | Pure Rust VRF (IETF Draft-03 & Draft-13 compliant) | 0.1.0 |
-
-### Core Data & Serialization
-
-| Package | Description | Version |
-|---------|-------------|---------|
-| [**cardano-base**](cardano-base/) | Base types and common utilities | 0.1.0 |
-| [**cardano-binary**](cardano-binary/) | CBOR encoding/decoding with Haskell compatibility | 0.1.0 |
-| [**cardano-slotting**](cardano-slotting/) | Time and slot management for blockchain | 0.1.0 |
-| [**cardano-strict-containers**](cardano-strict-containers/) | Strict evaluation containers | 0.1.0 |
-
-### Utility Libraries
-
-| Package | Description | Version |
-|---------|-------------|---------|
-| [**base-deriving-via**](base-deriving-via/) | Generic deriving helpers | 0.1.0 |
-| [**deepseq**](deepseq/) | Deep evaluation utilities | 0.1.0 |
-| [**nothunks**](nothunks/) | Thunk detection for space leak prevention | 0.1.0 |
-| [**heapwords**](heapwords/) | Heap allocation tracking | 0.1.0 |
-| [**measures**](measures/) | Measurement abstractions | 0.1.0 |
-| [**orphans-deriving-via**](orphans-deriving-via/) | Orphan instance helpers | 0.1.0 |
-| [**cardano-git-rev**](cardano-git-rev/) | Git revision tracking for builds | 0.1.0 |
-
-## 🔐 Cryptographic Primitives
-
-### VRF (Verifiable Random Functions)
-
-Pure Rust implementation of IETF VRF standards:
-
-- **ECVRF-ED25519-SHA512-ELL2** (Draft-03) – 80-byte proofs
-- **ECVRF-ED25519-SHA512-TAI** (Draft-13) – 128-byte proofs with batch compatibility
-- Powered by `curve25519-dalek` v4.1 for security and performance
-- 14 IETF test vectors validated + 20+ property-based tests
-
-### KES (Key Evolving Signatures)
-
-Forward-secure signatures with period-based key evolution:
-
-- Binary tree structure for efficient key evolution
-- Multiple hash algorithms: Blake2b-256, Blake2b-512, SHA-256
-- 194 property-based tests ensuring correctness
-- Haskell-compatible serialization
-
-### DSIGN (Digital Signatures)
-
-Ed25519 signatures via `ed25519-dalek`:
-
-- RFC 8032 compliant
-- Batch verification support
-- Zero-copy operations where possible
-
-### Hashing
-
-Multiple cryptographic hash functions:
-
-- **Blake2b** (256-bit and 512-bit variants)
-- **Blake2s** (256-bit)
-- **SHA-256**
-- **Keccak-256**
-
-See [CRYPTOGRAPHY.md](docs/development/CRYPTOGRAPHY.md) for detailed implementation notes.
-
-## 🛠️ Development
-
-### Building and Testing
-
-```bash
-cargo check --workspace
-cargo test --workspace
-cargo test --workspace -- --nocapture
-cargo test --package cardano-crypto-class
-cargo build --workspace --release
-```
-
-### Code Quality and Linting
-
-```bash
 cargo fmt --all
 cargo clippy --workspace --all-targets -- -D warnings
-cargo audit
-cargo deny check
 ```
 
-### Documentation
+The full test suite includes VRF and KES golden tests that depend on vectors in
+[`test_vectors/`](test_vectors).
 
-```bash
-cargo doc --workspace --no-deps --open
-cargo doc --package cardano-vrf-pure --open
-```
+## Documentation
 
-### Quality Standards
+Authoritative documentation lives under [`docs/`](docs):
 
-The workspace enforces strict quality standards:
+- [Architecture overview](docs/architecture.md)
+- [Cryptography reference](docs/cryptography.md)
+- [Development: testing checklist](docs/development/testing.md)
+- [Development: release checklist](docs/development/releasing.md)
 
-- **Clippy lints**: `correctness=deny`, `unwrap_used=warn`, `panic=warn`
-- **Format checking**: rustfmt configuration enforced
-- **Security scanning**: Automated vulnerability detection via `cargo audit`
-- **License compliance**: Dependency license validation via `cargo deny`
-- **Pre-commit checks**: See [PRE_COMMIT_CHECKLIST.md](PRE_COMMIT_CHECKLIST.md)
+Security and conduct policies remain at the repository root:
+[`SECURITY.md`](SECURITY.md) and [`CODE-OF-CONDUCT.md`](CODE-OF-CONDUCT.md).
 
-See [SECURITY_PRACTICES.md](SECURITY_PRACTICES.md) for detailed security guidelines.
+## Workspace crates
 
-## 🤝 Contributing
+| Crate | Description |
+|-------|-------------|
+| [`cardano-crypto-class`](cardano-crypto-class/src) | Cryptographic primitives, secure memory, hashing |
+| [`cardano-vrf-pure`](cardano-vrf-pure/src) | Curve25519 VRF implementations |
+| [`cardano-binary`](cardano-binary/src) | CBOR serialisation helpers |
+| [`cardano-slotting`](cardano-slotting/src) | Epoch and slot arithmetic |
+| [`cardano-base`](cardano-base/src) | Feature-flag wiring |
+| [`cardano-strict-containers`](cardano-strict-containers/src) | Strict container types |
+| [`deepseq`](deepseq/src/lib.rs), [`nothunks`](nothunks/src/lib.rs) | Evaluation traits |
+| [`measures`](measures/src/measure.rs), [`heapwords`](heapwords/src/lib.rs) | Measurement helpers |
+| [`base-deriving-via`](base-deriving-via/src/lib.rs), [`orphans-deriving-via`](orphans-deriving-via/src/lib.rs) | Deriving utilities |
+| [`cardano-git-rev`](cardano-git-rev/src/lib.rs) | Embeds build git revision |
 
-We welcome contributions! Before contributing, please:
+See [docs/architecture.md](docs/architecture.md) for crate relationships and feature
+flags.
 
-1. Read our [Contributing Guide](CONTRIBUTING.md)
-2. Review the [Code of Conduct](CODE-OF-CONDUCT.md)
-3. Check our [Security Policy](SECURITY.md) for security-related contributions
-4. Follow the [Pre-Commit Checklist](PRE_COMMIT_CHECKLIST.md)
+## Contributing
 
-### Reporting Issues
+Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) for workflow guidance. Pull requests
+should:
 
-- **Security vulnerabilities**: See [SECURITY.md](SECURITY.md) for responsible disclosure
-- **Bug reports**: Use GitHub Issues with detailed reproduction steps
-- **Feature requests**: Open a discussion in GitHub Discussions first
+- Update documentation alongside code changes where relevant.
+- Pass `cargo fmt`, `cargo clippy`, and the full test suite shown above.
+- Include new tests or vectors when introducing cryptographic behaviour changes.
 
-## 📄 License
+Security-sensitive reports should follow [`SECURITY.md`](SECURITY.md).
 
-This project is dual-licensed under:
+## License
 
-- **Apache License, Version 2.0** ([LICENSE-APACHE](LICENSE) or <http://www.apache.org/licenses/LICENSE-2.0>)
-- **MIT License** ([LICENSE-MIT](LICENSE) or <http://opensource.org/licenses/MIT>)
-
-You may choose either license for your use. See individual package `LICENSE` files for details.
-
-## 🎯 Project Status
-
-| Aspect | Status |
-|--------|--------|
-| **Migration** | ✅ 100% Complete (Haskell → Rust) |
-| **Tests** | ✅ 234/234 Passing (100%) |
-| **Security** | ✅ Multiple audits completed |
-| **Haskell Compatibility** | ✅ Binary-compatible CBOR |
-| **Production Ready** | ✅ Yes |
-
-## 🔗 Links
-
-- **GitHub Repository**: [FractionEstate/cardano-base-rust](https://github.com/FractionEstate/cardano-base-rust)
-- **Original Haskell Implementation**: [IntersectMBO/cardano-base](https://github.com/IntersectMBO/cardano-base)
-- **Issues & Discussions**: [GitHub Issues](https://github.com/FractionEstate/cardano-base-rust/issues)
-- **Security Policy**: [SECURITY.md](SECURITY.md)
-
-## 🙏 Acknowledgments
-
-This project is a pure Rust port of the Haskell [`cardano-base`](https://github.com/IntersectMBO/cardano-base) library maintained by [Intersect MBO](https://github.com/IntersectMBO). We maintain binary compatibility with the original implementation while providing the safety and performance benefits of Rust.
-
----
-
-Built with ❤️ by FractionEstate in pure Rust for the Cardano ecosystem
+Dual-licensed under the Apache License, Version 2.0 and the MIT license. See
+[`LICENSE`](LICENSE) and [`NOTICE`](NOTICE) for details.

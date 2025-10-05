@@ -41,6 +41,10 @@ pub trait DirectDeserialise: Sized {
 
 /// Helper that writes into a destination buffer, ensuring no more than
 /// `dst_len` bytes are produced. Returns the number of bytes written.
+///
+/// # Errors
+///
+/// Returns an error if more than `dst_len` bytes are written.
 pub fn direct_serialise_to<T: DirectSerialise>(
     mut write: impl FnMut(usize, *const u8, usize) -> DirectResult<()>,
     dst_len: usize,
@@ -66,6 +70,12 @@ pub fn direct_serialise_to<T: DirectSerialise>(
 }
 
 /// Size-checked variant ensuring exactly `dst_len` bytes are written.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - More than `dst_len` bytes are written
+/// - Fewer than `dst_len` bytes are written
 pub fn direct_serialise_to_checked<T: DirectSerialise>(
     write: impl FnMut(usize, *const u8, usize) -> DirectResult<()>,
     dst_len: usize,
@@ -83,6 +93,10 @@ pub fn direct_serialise_to_checked<T: DirectSerialise>(
 }
 
 /// Serialise to an in-memory buffer.
+///
+/// # Errors
+///
+/// Returns an error if more than `dst_len` bytes are written.
 pub fn direct_serialise_buf<T: DirectSerialise>(
     dst: NonNull<u8>,
     dst_len: usize,
@@ -105,6 +119,12 @@ pub fn direct_serialise_buf<T: DirectSerialise>(
 }
 
 /// Serialise to an in-memory buffer, ensuring the buffer is filled exactly.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - More than `dst_len` bytes are written
+/// - Fewer than `dst_len` bytes are written
 pub fn direct_serialise_buf_checked<T: DirectSerialise>(
     dst: NonNull<u8>,
     dst_len: usize,
@@ -128,6 +148,10 @@ pub fn direct_serialise_buf_checked<T: DirectSerialise>(
 /// Helper that reads from a source buffer, ensuring no more than `src_len`
 /// bytes are consumed. Returns the deserialised value and the number of bytes
 /// read.
+///
+/// # Errors
+///
+/// Returns an error if more than `src_len` bytes are read.
 pub fn direct_deserialise_from<T: DirectDeserialise>(
     mut read: impl FnMut(usize, *mut u8, usize) -> DirectResult<()>,
     src_len: usize,
@@ -152,6 +176,12 @@ pub fn direct_deserialise_from<T: DirectDeserialise>(
 }
 
 /// Size-checked variant ensuring all `src_len` bytes are consumed.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - More than `src_len` bytes are read
+/// - Fewer than `src_len` bytes are read
 pub fn direct_deserialise_from_checked<T: DirectDeserialise>(
     read: impl FnMut(usize, *mut u8, usize) -> DirectResult<()>,
     src_len: usize,
@@ -168,6 +198,10 @@ pub fn direct_deserialise_from_checked<T: DirectDeserialise>(
 }
 
 /// Deserialise from an in-memory buffer with bounds checking.
+///
+/// # Errors
+///
+/// Returns an error if more than `src_len` bytes are read.
 pub fn direct_deserialise_buf<T: DirectDeserialise>(
     src: NonNull<u8>,
     src_len: usize,
@@ -188,6 +222,12 @@ pub fn direct_deserialise_buf<T: DirectDeserialise>(
 }
 
 /// Deserialise from an in-memory buffer, ensuring the buffer is consumed.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - More than `src_len` bytes are read
+/// - Fewer than `src_len` bytes are read
 pub fn direct_deserialise_buf_checked<T: DirectDeserialise>(
     src: NonNull<u8>,
     src_len: usize,

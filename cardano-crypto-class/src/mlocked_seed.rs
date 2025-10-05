@@ -12,6 +12,12 @@ pub struct MLockedSeed<const N: usize> {
 
 impl<const N: usize> MLockedSeed<N> {
     /// Allocate a new seed without initialising the contents.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Memory allocation fails
+    /// - `mlock()` system call fails
     pub fn new() -> Result<Self, MLockedError> {
         Ok(Self {
             bytes: MLockedSizedBytes::new()?,
@@ -19,6 +25,12 @@ impl<const N: usize> MLockedSeed<N> {
     }
 
     /// Allocate a new zeroed seed.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Memory allocation fails
+    /// - `mlock()` system call fails
     pub fn new_zeroed() -> Result<Self, MLockedError> {
         Ok(Self {
             bytes: MLockedSizedBytes::new_zeroed()?,
@@ -26,6 +38,12 @@ impl<const N: usize> MLockedSeed<N> {
     }
 
     /// Create a copy backed by a fresh allocation.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Memory allocation fails
+    /// - `mlock()` system call fails
     pub fn try_clone(&self) -> Result<Self, MLockedError> {
         Ok(Self {
             bytes: self.bytes.try_clone()?,
@@ -33,6 +51,10 @@ impl<const N: usize> MLockedSeed<N> {
     }
 
     /// Fill the seed with cryptographically secure random bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the random number generator fails.
     pub fn fill_random(&mut self) -> Result<(), MLockedError> {
         let mut rng = OsRng;
         rng.try_fill_bytes(self.bytes.as_mut_slice())
@@ -40,6 +62,13 @@ impl<const N: usize> MLockedSeed<N> {
     }
 
     /// Construct a fresh random seed.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Memory allocation fails
+    /// - `mlock()` system call fails
+    /// - Random number generator fails
     pub fn new_random() -> Result<Self, MLockedError> {
         let mut seed = Self::new_zeroed()?;
         seed.fill_random()?;
