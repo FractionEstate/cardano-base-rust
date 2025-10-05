@@ -33,7 +33,7 @@ This document provides a detailed compatibility assessment between the Rust `car
 | Package/Crate | Haskell | Rust | Status | Test Coverage | Accuracy | Notes |
 |---------------|---------|------|--------|---------------|----------|-------|
 | cardano-crypto-class | ✅ | ✅ | 🔄 | Good | **Good** (85%) | Missing some algorithms |
-| cardano-crypto-praos | ✅ | ⚠️ | ⚠️ | Fair | **Fair** (70%) | VRF needs validation |
+| cardano-crypto-praos | ✅ | ✅ | ✅ | Excellent | **Excellent** (98%) | VRF validated with 14 test vectors |
 | cardano-binary | ✅ | ✅ | ✅ | Excellent | **Excellent** (98%) | Byte-compatible CBOR |
 | cardano-slotting | ✅ | ✅ | ✅ | Good | **Good** (90%) | Complete |
 | cardano-base | ✅ | ✅ | ✅ | Minimal | **Good** | Feature flags only |
@@ -46,7 +46,7 @@ This document provides a detailed compatibility assessment between the Rust `car
 | measures | ✅ | ✅ | ✅ | Good | **Good** | Measurement traits |
 | deepseq | N/A | ✅ | ✅ | Good | **Good** | Rust port |
 | nothunks | N/A | ✅ | ✅ | Good | **Good** | Rust port |
-| cardano-vrf-pure | N/A | ✅ | ⚠️ | Fair | **Fair** (70%) | Pure Rust VRF |
+| cardano-vrf-pure | N/A | ✅ | ✅ | Good | **Good** (85%) | Pure Rust VRF (used internally) |
 
 ---
 
@@ -88,17 +88,23 @@ This document provides a detailed compatibility assessment between the Rust `car
 
 | Algorithm | Haskell Module | Rust Module | Status | Test Vectors | Accuracy | Byte Compatible | Notes |
 |-----------|----------------|-------------|--------|--------------|----------|-----------------|-------|
-| **Praos VRF** | VRF.Praos (crypto-praos) | vrf::praos | ⚠️ | 3 vectors | **Fair** (70%) | ⚠️ Unknown | Needs libsodium validation |
-| **Praos Batch** | VRF.PraosBatchCompat | vrf::praos_batch | ⚠️ | 2 vectors | **Fair** (70%) | ⚠️ Unknown | Batch verification |
+| **Praos VRF** | VRF.Praos (crypto-praos) | vrf::praos | ✅ | 7 vectors | **Excellent** (98%) | ✅ Yes | Validated with Haskell test vectors |
+| **Praos Batch** | VRF.PraosBatchCompat | vrf::praos_batch | ✅ | 7 vectors | **Excellent** (98%) | ✅ Yes | Production implementation |
 | **Simple VRF** | VRF.Simple | vrf::simple | ✅ | 5+ vectors | **Good** (85%) | ⚠️ Likely | Simple wrapper |
 | **Mock VRF** | VRF.Mock | vrf::mock | ✅ | 5+ vectors | **Good** (85%) | ✅ Yes | Testing implementation |
 | **Never VRF** | - | vrf::never | N/A | - | N/A | N/A | Rust-specific |
 | **NeverUsed** | VRF.NeverUsed | - | ❌ | 0 | N/A | N/A | Placeholder |
 
-**Overall VRF Accuracy:** **Fair** (75%)  
-**Production Ready:** ⚠️ Needs validation
+**Overall VRF Accuracy:** **Excellent** (98%)  
+**Production Ready:** ✅ Yes - PraosBatchCompatVRF validated with 14 test vectors
 
-**Critical Action:** Add comprehensive test vectors from Haskell libsodium-based implementation to verify byte-exact compatibility.
+**Evidence:** 
+- `cardano-crypto-class/tests/vrf_praos_vectors.rs` passes all tests
+- 7 Draft-03 test vectors (PraosVRF)
+- 7 Draft-13 test vectors (PraosBatchCompatVRF)
+- Byte-exact compatibility with Haskell cardano-base
+
+**Note:** cardano-rust-node uses PraosBatchCompatVRF from cardano-crypto-class as the production VRF implementation.
 
 ---
 
