@@ -15,6 +15,7 @@
 #![deny(unsafe_code)]
 #![warn(missing_docs)]
 
+pub mod cardano_compat;
 pub mod common;
 pub mod draft03;
 pub mod draft13;
