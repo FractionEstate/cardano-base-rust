@@ -151,51 +151,86 @@ impl FieldElement {
     /// assert_eq!(bytes[0], 1);
     /// ```
     pub fn to_bytes(&self) -> [u8; 32] {
-        let h = self.reduce();
+        // First, do standard reduction
+        let mut h = self.reduce().0;
+        
+        // Freeze: reduce to canonical form in [0, p)
+        // This matches libsodium's fe25519_tobytes which does a final reduction
+        
+        // Reduce top limb one more time
+        let mut q = (h[9] + (1 << 24)) >> 25;
+        for _ in 0..2 {
+            q = ((h[0] + 19 * q) + (1 << 25)) >> 26;
+            q = ((h[1] + q) + (1 << 24)) >> 25;
+            q = ((h[2] + q) + (1 << 25)) >> 26;
+            q = ((h[3] + q) + (1 << 24)) >> 25;
+            q = ((h[4] + q) + (1 << 25)) >> 26;
+            q = ((h[5] + q) + (1 << 24)) >> 25;
+            q = ((h[6] + q) + (1 << 25)) >> 26;
+            q = ((h[7] + q) + (1 << 24)) >> 25;
+            q = ((h[8] + q) + (1 << 25)) >> 26;
+            q = ((h[9] + q) + (1 << 24)) >> 25;
+        }
+        
+        // Final reduction: subtract q*p
+        h[0] += 19 * q;
+        
+        // Carry propagation
+        let mut carry = h[0] >> 26; h[1] += carry; h[0] -= carry << 26;
+        carry = h[1] >> 25; h[2] += carry; h[1] -= carry << 25;
+        carry = h[2] >> 26; h[3] += carry; h[2] -= carry << 26;
+        carry = h[3] >> 25; h[4] += carry; h[3] -= carry << 25;
+        carry = h[4] >> 26; h[5] += carry; h[4] -= carry << 26;
+        carry = h[5] >> 25; h[6] += carry; h[5] -= carry << 25;
+        carry = h[6] >> 26; h[7] += carry; h[6] -= carry << 26;
+        carry = h[7] >> 25; h[8] += carry; h[7] -= carry << 25;
+        carry = h[8] >> 26; h[9] += carry; h[8] -= carry << 26;
+        h[9] -= (h[9] >> 25) << 25;
+        
         let mut output = [0u8; 32];
 
         // Pack limbs into bytes according to radix 2^25.5
-        output[0] = (h.0[0] & 0xff) as u8;
-        output[1] = ((h.0[0] >> 8) & 0xff) as u8;
-        output[2] = ((h.0[0] >> 16) & 0xff) as u8;
-        output[3] = ((h.0[0] >> 24) & 0x3f) as u8 | ((h.0[1] << 6) & 0xc0) as u8;
+        output[0] = (h[0] & 0xff) as u8;
+        output[1] = ((h[0] >> 8) & 0xff) as u8;
+        output[2] = ((h[0] >> 16) & 0xff) as u8;
+        output[3] = ((h[0] >> 24) & 0x3f) as u8 | ((h[1] << 6) & 0xc0) as u8;
         
-        output[4] = ((h.0[1] >> 2) & 0xff) as u8;
-        output[5] = ((h.0[1] >> 10) & 0xff) as u8;
-        output[6] = ((h.0[1] >> 18) & 0xff) as u8;
-        output[7] = ((h.0[1] >> 26) & 0x01) as u8 | ((h.0[2] << 1) & 0xfe) as u8;
+        output[4] = ((h[1] >> 2) & 0xff) as u8;
+        output[5] = ((h[1] >> 10) & 0xff) as u8;
+        output[6] = ((h[1] >> 18) & 0xff) as u8;
+        output[7] = ((h[1] >> 26) & 0x01) as u8 | ((h[2] << 1) & 0xfe) as u8;
         
-        output[8] = ((h.0[2] >> 7) & 0xff) as u8;
-        output[9] = ((h.0[2] >> 15) & 0xff) as u8;
-        output[10] = ((h.0[2] >> 23) & 0x07) as u8 | ((h.0[3] << 3) & 0xf8) as u8;
+        output[8] = ((h[2] >> 7) & 0xff) as u8;
+        output[9] = ((h[2] >> 15) & 0xff) as u8;
+        output[10] = ((h[2] >> 23) & 0x07) as u8 | ((h[3] << 3) & 0xf8) as u8;
         
-        output[11] = ((h.0[3] >> 5) & 0xff) as u8;
-        output[12] = ((h.0[3] >> 13) & 0xff) as u8;
-        output[13] = ((h.0[3] >> 21) & 0x0f) as u8 | ((h.0[4] << 4) & 0xf0) as u8;
+        output[11] = ((h[3] >> 5) & 0xff) as u8;
+        output[12] = ((h[3] >> 13) & 0xff) as u8;
+        output[13] = ((h[3] >> 21) & 0x0f) as u8 | ((h[4] << 4) & 0xf0) as u8;
         
-        output[14] = ((h.0[4] >> 4) & 0xff) as u8;
-        output[15] = ((h.0[4] >> 12) & 0xff) as u8;
-        output[16] = ((h.0[4] >> 20) & 0x3f) as u8 | ((h.0[5] << 6) & 0xc0) as u8;
+        output[14] = ((h[4] >> 4) & 0xff) as u8;
+        output[15] = ((h[4] >> 12) & 0xff) as u8;
+        output[16] = ((h[4] >> 20) & 0x3f) as u8 | ((h[5] << 6) & 0xc0) as u8;
         
-        output[17] = ((h.0[5] >> 2) & 0xff) as u8;
-        output[18] = ((h.0[5] >> 10) & 0xff) as u8;
-        output[19] = ((h.0[5] >> 18) & 0xff) as u8;
-        output[20] = ((h.0[5] >> 26) & 0x01) as u8 | ((h.0[6] << 1) & 0xfe) as u8;
+        output[17] = ((h[5] >> 2) & 0xff) as u8;
+        output[18] = ((h[5] >> 10) & 0xff) as u8;
+        output[19] = ((h[5] >> 18) & 0xff) as u8;
+        output[20] = ((h[5] >> 26) & 0x01) as u8 | ((h[6] << 1) & 0xfe) as u8;
         
-        output[21] = ((h.0[6] >> 7) & 0xff) as u8;
-        output[22] = ((h.0[6] >> 15) & 0xff) as u8;
-        output[23] = ((h.0[6] >> 23) & 0x07) as u8 | ((h.0[7] << 3) & 0xf8) as u8;
+        output[21] = ((h[6] >> 7) & 0xff) as u8;
+        output[22] = ((h[6] >> 15) & 0xff) as u8;
+        output[23] = ((h[6] >> 23) & 0x07) as u8 | ((h[7] << 3) & 0xf8) as u8;
         
-        output[24] = ((h.0[7] >> 5) & 0xff) as u8;
-        output[25] = ((h.0[7] >> 13) & 0xff) as u8;
-        output[26] = ((h.0[7] >> 21) & 0x0f) as u8 | ((h.0[8] << 4) & 0xf0) as u8;
+        output[24] = ((h[7] >> 5) & 0xff) as u8;
+        output[25] = ((h[7] >> 13) & 0xff) as u8;
+        output[26] = ((h[7] >> 21) & 0x0f) as u8 | ((h[8] << 4) & 0xf0) as u8;
         
-        output[27] = ((h.0[8] >> 4) & 0xff) as u8;
-        output[28] = ((h.0[8] >> 12) & 0xff) as u8;
-        output[29] = ((h.0[8] >> 20) & 0x3f) as u8 | ((h.0[9] << 6) & 0xc0) as u8;
+        output[27] = ((h[8] >> 4) & 0xff) as u8;
+        output[28] = ((h[8] >> 12) & 0xff) as u8;
+        output[29] = ((h[8] >> 20) & 0x3f) as u8 | ((h[9] << 6) & 0xc0) as u8;
         
-        output[30] = ((h.0[9] >> 2) & 0xff) as u8;
-        output[31] = ((h.0[9] >> 10) & 0xff) as u8;
+        output[30] = ((h[9] >> 2) & 0xff) as u8;
+        output[31] = ((h[9] >> 10) & 0xff) as u8;
 
         output
     }
@@ -307,23 +342,23 @@ impl FieldElement {
         let z2 = self.square();
         let z8 = z2.square().square();
         let z9 = (*self * z8);
-        let z11 = (z2 * z9);
+        let z11 = z2 * z9;
         let z22 = z11.square();
-        let z_5_0 = (z9 * z22);
+        let z_5_0 = z9 * z22;
         let z_10_5 = (0..5).fold(z_5_0, |acc, _| acc.square());
-        let z_10_0 = (z_10_5 * z_5_0);
-        let z_20_10 = (0..10).fold(z_10_0, |acc, _| acc.square());
-        let z_20_0 = (z_20_10 * z_10_0);
-        let z_40_20 = (0..20).fold(z_20_0, |acc, _| acc.square());
-        let z_40_0 = (z_40_20 * z_20_0);
-        let z_50_10 = (0..10).fold(z_40_0, |acc, _| acc.square());
-        let z_50_0 = (z_50_10 * z_10_0);
-        let z_100_50 = (0..50).fold(z_50_0, |acc, _| acc.square());
-        let z_100_0 = (z_100_50 * z_50_0);
-        let z_200_100 = (0..100).fold(z_100_0, |acc, _| acc.square());
-        let z_200_0 = (z_200_100 * z_100_0);
-        let z_250_50 = (0..50).fold(z_200_0, |acc, _| acc.square());
-        let z_250_0 = (z_250_50 * z_50_0);
+        let z_10_0 = z_10_5 * z_5_0;
+        let z_20_10 = (0..10).fold(z_10_0, |acc, _| acc.square()).reduce(); // Reduce after 10 squares
+        let z_20_0 = z_20_10 * z_10_0;
+        let z_40_20 = (0..20).fold(z_20_0, |acc, _| acc.square()).reduce(); // Reduce after 20 squares
+        let z_40_0 = z_40_20 * z_20_0;
+        let z_50_10 = (0..10).fold(z_40_0, |acc, _| acc.square()).reduce(); // Reduce after 10 squares
+        let z_50_0 = z_50_10 * z_10_0;
+        let z_100_50 = (0..50).fold(z_50_0, |acc, _| acc.square()).reduce(); // Reduce after 50 squares
+        let z_100_0 = z_100_50 * z_50_0;
+        let z_200_100 = (0..100).fold(z_100_0, |acc, _| acc.square()).reduce(); // Reduce after 100 squares
+        let z_200_0 = z_200_100 * z_100_0;
+        let z_250_50 = (0..50).fold(z_200_0, |acc, _| acc.square()).reduce(); // Reduce after 50 squares
+        let z_250_0 = z_250_50 * z_50_0;
         let z_252_2 = z_250_0.square().square();
         (z_252_2 * *self).reduce()
     }
