@@ -45,6 +45,16 @@ Authoritative documentation lives under [`docs/`](docs):
 - [Development: testing checklist](docs/development/testing.md)
 - [Development: release checklist](docs/development/releasing.md)
 
+### Code Audit and Compatibility
+
+Comprehensive audit documentation comparing this Rust implementation with the official
+Haskell cardano-base:
+
+- [**Audit Report**](AUDIT_REPORT.md) - Detailed comparison and accuracy assessment
+- [**Compatibility Matrix**](COMPATIBILITY_MATRIX.md) - Algorithm-by-algorithm compatibility
+- [**Missing Features**](MISSING_FEATURES.md) - Tracking of unimplemented features
+- [**Action Plan**](ACTION_PLAN.md) - Prioritized recommendations and timeline
+
 Security and conduct policies remain at the repository root:
 [`SECURITY.md`](SECURITY.md) and [`CODE-OF-CONDUCT.md`](CODE-OF-CONDUCT.md).
 
