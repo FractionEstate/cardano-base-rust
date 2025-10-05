@@ -462,10 +462,27 @@ impl FieldElement {
     pub fn invert(&self) -> Self {
         // Use Fermat's little theorem: x^(p-2) = x^(-1) mod p
         // For p = 2^255-19: x^(-1) = x^(2^255-21)
-        let z2_1_0 = self.pow22523().reduce();
-        let z2_2_0 = (z2_1_0.square().square() * *self).reduce();
-        let result = (z2_2_0.square() * *self).reduce();
-        result
+        //
+        // Using the chain from curve25519-dalek which is proven correct:
+        // We build up the exponent bit by bit
+        
+        let z2 = self.square();
+        let z9 = z2.square().square() * *self;
+        let z11 = z2 * z9;
+        let z2_5_0 = (z9.square() * z11).reduce();
+        let z2_10_0 = (0..5).fold(z2_5_0, |acc, _| acc.square()).reduce() * z2_5_0;
+        let z2_20_0 = (0..10).fold(z2_10_0, |acc, _| acc.square()).reduce() * z2_10_0;
+        let z2_40_0 = (0..20).fold(z2_20_0, |acc, _| acc.square()).reduce() * z2_20_0;
+        let z2_50_0 = (0..10).fold(z2_40_0, |acc, _| acc.square()).reduce() * z2_10_0;
+        let z2_100_0 = (0..50).fold(z2_50_0, |acc, _| acc.square()).reduce() * z2_50_0;
+        let z2_200_0 = (0..100).fold(z2_100_0, |acc, _| acc.square()).reduce() * z2_100_0;
+        let z2_250_0 = (0..50).fold(z2_200_0, |acc, _| acc.square()).reduce() * z2_50_0;
+        
+        // z2_250_0 = x^(2^250-1)
+        // We need x^(2^255-21) = x^(2^255-19-2) = x^(p-2)
+        // = (x^(2^250-1))^(2^5) * x^11
+        let result = (0..5).fold(z2_250_0, |acc, _| acc.square()).reduce() * z11;
+        result.reduce()
     }
 
     /// Conditional select: return `a` if `choice == 1`, else `b`
