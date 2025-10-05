@@ -3,6 +3,7 @@ use std::fmt;
 use cardano_vrf_pure::{common, VrfDraft03, VrfError as VrfPureError};
 use thiserror::Error;
 
+use crate::direct_serialise::{DirectDeserialise, DirectResult, DirectSerialise, SizeCheckError};
 use crate::mlocked_bytes::{MLockedBytes, MLockedError};
 use crate::seed::Seed;
 
@@ -74,12 +75,12 @@ impl PraosSeed {
         Ok(Self { bytes: mlocked })
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn as_bytes(&self) -> &[u8] {
         self.bytes.as_slice()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn to_vec(&self) -> Vec<u8> {
         self.bytes.as_slice().to_vec()
     }
@@ -119,12 +120,12 @@ impl PraosSigningKey {
         Ok(Self { secret })
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn as_bytes(&self) -> &[u8] {
         self.secret.as_slice()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn to_vec(&self) -> Vec<u8> {
         self.secret.as_slice().to_vec()
     }
@@ -184,12 +185,12 @@ impl PraosVerificationKey {
         })
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn as_bytes(&self) -> &[u8] {
         &self.bytes
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn to_vec(&self) -> Vec<u8> {
         self.bytes.clone()
     }
@@ -234,6 +235,75 @@ impl PartialEq for PraosVerificationKey {
 
 impl Eq for PraosVerificationKey {}
 
+// CBOR Serialization for PraosVerificationKey
+#[cfg(feature = "serde")]
+impl serde::Serialize for PraosVerificationKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_bytes(&self.bytes)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for PraosVerificationKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct BytesVisitor;
+
+        impl<'de> serde::de::Visitor<'de> for BytesVisitor {
+            type Value = PraosVerificationKey;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                write!(formatter, "Praos VRF verification key bytes")
+            }
+
+            fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                PraosVerificationKey::from_bytes(v)
+                    .map_err(|e| E::custom(format!("invalid Praos verification key: {}", e)))
+            }
+
+            fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_bytes(&v)
+            }
+        }
+
+        deserializer.deserialize_bytes(BytesVisitor)
+    }
+}
+
+// DirectSerialise implementation for zero-copy serialization
+impl DirectSerialise for PraosVerificationKey {
+    fn direct_serialise(
+        &self,
+        push: &mut dyn FnMut(*const u8, usize) -> DirectResult<()>,
+    ) -> DirectResult<()> {
+        push(self.bytes.as_ptr(), verification_key_size())
+    }
+}
+
+impl DirectDeserialise for PraosVerificationKey {
+    fn direct_deserialise(
+        pull: &mut dyn FnMut(*mut u8, usize) -> DirectResult<()>,
+    ) -> DirectResult<Self> {
+        let mut bytes = vec![0u8; verification_key_size()];
+        pull(bytes.as_mut_ptr(), verification_key_size())?;
+        Self::from_bytes(&bytes).map_err(|_| SizeCheckError {
+            expected_size: verification_key_size(),
+            actual_size: bytes.len(),
+        })
+    }
+}
+
 #[derive(Clone, PartialEq, Eq)]
 pub struct PraosProof {
     bytes: Vec<u8>,
@@ -260,12 +330,12 @@ impl PraosProof {
         })
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn as_bytes(&self) -> &[u8] {
         &self.bytes
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn to_vec(&self) -> Vec<u8> {
         self.bytes.clone()
     }
@@ -277,6 +347,75 @@ impl PraosProof {
             Ok(output) => Ok(Some(output.to_vec())),
             Err(_) => Ok(None),
         }
+    }
+}
+
+// CBOR Serialization for PraosProof
+#[cfg(feature = "serde")]
+impl serde::Serialize for PraosProof {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_bytes(&self.bytes)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for PraosProof {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct BytesVisitor;
+
+        impl<'de> serde::de::Visitor<'de> for BytesVisitor {
+            type Value = PraosProof;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                write!(formatter, "Praos VRF proof bytes")
+            }
+
+            fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                PraosProof::from_bytes(v)
+                    .map_err(|e| E::custom(format!("invalid Praos proof: {}", e)))
+            }
+
+            fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_bytes(&v)
+            }
+        }
+
+        deserializer.deserialize_bytes(BytesVisitor)
+    }
+}
+
+// DirectSerialise implementation for zero-copy serialization
+impl DirectSerialise for PraosProof {
+    fn direct_serialise(
+        &self,
+        push: &mut dyn FnMut(*const u8, usize) -> DirectResult<()>,
+    ) -> DirectResult<()> {
+        push(self.bytes.as_ptr(), proof_size())
+    }
+}
+
+impl DirectDeserialise for PraosProof {
+    fn direct_deserialise(
+        pull: &mut dyn FnMut(*mut u8, usize) -> DirectResult<()>,
+    ) -> DirectResult<Self> {
+        let mut bytes = vec![0u8; proof_size()];
+        pull(bytes.as_mut_ptr(), proof_size())?;
+        Self::from_bytes(&bytes).map_err(|_| SizeCheckError {
+            expected_size: proof_size(),
+            actual_size: bytes.len(),
+        })
     }
 }
 
@@ -306,7 +445,7 @@ pub fn keypair_from_seed_bytes(
     keypair_from_seed(&seed)
 }
 
-#[must_use] 
+#[must_use]
 pub fn signing_key_from_seed(seed: &Seed) -> PraosSigningKey {
     let (material, _) = crate::seed::get_bytes_from_seed_t(signing_key_size(), seed.clone());
     signing_key_from_bytes(&material).expect("seed produced invalid signing key")
@@ -316,7 +455,7 @@ pub fn signing_key_from_bytes(bytes: &[u8]) -> Result<PraosSigningKey, PraosCons
     PraosSigningKey::from_bytes(bytes)
 }
 
-#[must_use] 
+#[must_use]
 pub fn signing_key_to_bytes(signing_key: &PraosSigningKey) -> Vec<u8> {
     signing_key.to_vec()
 }
@@ -327,7 +466,7 @@ pub fn verification_key_from_bytes(
     PraosVerificationKey::from_bytes(bytes)
 }
 
-#[must_use] 
+#[must_use]
 pub fn verification_key_to_bytes(verification_key: &PraosVerificationKey) -> Vec<u8> {
     verification_key.to_vec()
 }
@@ -336,7 +475,7 @@ pub fn proof_from_bytes(bytes: &[u8]) -> Result<PraosProof, PraosConstructionErr
     PraosProof::from_bytes(bytes)
 }
 
-#[must_use] 
+#[must_use]
 pub fn proof_to_bytes(proof: &PraosProof) -> Vec<u8> {
     proof.to_vec()
 }
@@ -345,7 +484,7 @@ pub fn seed_from_bytes(bytes: &[u8]) -> Result<PraosSeed, PraosConstructionError
     PraosSeed::from_bytes(bytes)
 }
 
-#[must_use] 
+#[must_use]
 pub fn seed_to_bytes(seed: &PraosSeed) -> Vec<u8> {
     seed.to_vec()
 }
@@ -368,7 +507,7 @@ pub fn output_from_proof(
                     actual,
                 })?;
             Ok(Some(output))
-        }
+        },
         None => Ok(None),
     }
 }

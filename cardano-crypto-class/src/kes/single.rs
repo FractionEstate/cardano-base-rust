@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::dsign::DsignMAlgorithm;
+use crate::dsign::{DsignMAlgorithm, UnsoundDsignMAlgorithm};
 use crate::kes::{KesAlgorithm, KesError, KesMError, Period};
 
 /// SingleKES wraps a DSIGNM algorithm to provide a 1-period KES.
@@ -11,7 +11,7 @@ pub struct SingleKes<D: DsignMAlgorithm>(PhantomData<D>);
 
 impl<D> KesAlgorithm for SingleKes<D>
 where
-    D: DsignMAlgorithm,
+    D: DsignMAlgorithm + UnsoundDsignMAlgorithm,
 {
     type VerificationKey = D::VerificationKey;
     type SigningKey = D::MLockedSigningKey;
@@ -82,21 +82,12 @@ where
         }
     }
 
-    fn gen_key_kes_from_seed_bytes(_seed: &[u8]) -> Result<Self::SigningKey, KesMError> {
-        // For DSIGNMAlgorithm, we construct the SeedMaterial type
-        // This requires that the SeedMaterial can be constructed from bytes
-        // For Ed25519, this is MLockedSeed<32> which has new_from_bytes
-
-        // We'll need a way to construct D::SeedMaterial from &[u8]
-        // For now, this is a limitation - we can't generically construct SeedMaterial
-        // We'd need another trait bound or associated function
-
-        // Temporary workaround: allocate, copy, then call gen_key_m
-        // This requires the concrete type knows how to do this
-
-        Err(KesMError::Dsign(
-            "gen_key_kes_from_seed_bytes not yet fully implemented for generic DSIGNM".to_owned(),
-        ))
+    fn gen_key_kes_from_seed_bytes(seed: &[u8]) -> Result<Self::SigningKey, KesMError> {
+        // Use the UnsoundDsignMAlgorithm trait which provides raw_deserialize_signing_key_m
+        // This constructs an MLocked signing key directly from seed bytes
+        // Note: This is marked "Unsound" because it exposes key material serialization,
+        // but it's the correct way to construct keys from seed bytes
+        D::raw_deserialize_signing_key_m(seed).map_err(|e| KesMError::Dsign(format!("{:?}", e)))
     }
 
     fn raw_serialize_verification_key_kes(key: &Self::VerificationKey) -> Vec<u8> {

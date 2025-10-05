@@ -1,0 +1,65 @@
+{
+  "description": "Single KES cross-compatibility test vectors",
+  "algorithm": "SingleKes<Ed25519>",
+  "cbor_spec": {
+    "verification_key": "CBOR bytes tag (major type 2) + 32-byte Ed25519 verification key",
+    "signature": "CBOR bytes tag (major type 2) + 64-byte Ed25519 signature"
+  },
+  "vectors": [
+    {
+      "name": "all_zeros_seed",
+      "seed": "0000000000000000000000000000000000000000000000000000000000000000",
+      "message": "48656c6c6f2c20576f726c6421",
+      "period": 0,
+      "description": "32-byte seed of all zeros, message 'Hello, World!', period 0",
+      "expected_vk_cbor": "58203b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29",
+      "expected_sig_cbor": "5840bb1a53a55494a41cd7f98302d1a156cf9a1ac046eced43b2b565e2debe4a336ccb5e2a03f7bd57bf33fa4bd154b64494a4a695e2d7993fc0727ad35d89413207",
+      "notes": "Generated from Rust cardano-crypto-class"
+    },
+    {
+      "name": "all_ones_seed",
+      "seed": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "message": "5465737420566563746f72",
+      "period": 0,
+      "description": "32-byte seed of all ones (0xFF), message 'Test Vector', period 0",
+      "expected_vk_cbor": "582076a1592044a6e4f511265bca73a604d90b0529d1df602be30a19a9257660d1f5",
+      "expected_sig_cbor": "5840b53569eee968ab4d34d7b714ef4704132c220521d285d3809155e2cdd76a783caad23ba940919d33cc313359786cca502bc7f7a764bf0c2f8ee685b20a50370f",
+      "notes": "Generated from Rust cardano-crypto-class"
+    },
+    {
+      "name": "sequential_seed",
+      "seed": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "message": "43617264616e6f",
+      "period": 0,
+      "description": "32-byte sequential seed (0x00..0x1F), message 'Cardano', period 0",
+      "expected_vk_cbor": "582003a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+      "expected_sig_cbor": "5840cd55e216c3504a97e337d858a03f933ad9942e88a8db1e43eff742e214a1009eee0353f06ed07cd3217cc95357228f9eac9a58f7d0d7c5b52861125655103b08",
+      "notes": "Generated from Rust cardano-crypto-class"
+    },
+    {
+      "name": "test_seed_42",
+      "seed": "2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a",
+      "message": "4b455320746573742076616c69646174696f6e",
+      "period": 0,
+      "description": "32-byte seed of 0x2A (42 decimal) repeated, message 'KES test validation', period 0",
+      "expected_vk_cbor": "5820197f6b23e16c8532c6abc838facd5ea789be0c76b2920334039bfa8b3d368d61",
+      "expected_sig_cbor": "5840397f2dd72905acf738b8379f862e31474587967efb75e36deaa6929492c85ee17f53c411f95c7f1932599a095d2c679881b39ae4ad544679a6f33a9e2d9b560f",
+      "notes": "Generated from Rust cardano-crypto-class"
+    },
+    {
+      "name": "empty_message",
+      "seed": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "message": "",
+      "period": 0,
+      "description": "32-byte random seed, empty message, period 0",
+      "expected_vk_cbor": "5820207a067892821e25d770f1fba0c47c11ff4b813e54162ece9eb839e076231ab6",
+      "expected_sig_cbor": "584000a0be3e2a3832b6e817aedce5fb8ecb4c622fff6adfd5ffd7881046d8881008b804a341aab8a850cdaa3969c21aa7334125cdae2169ce7e6cf7c37182253a07",
+      "notes": "Edge case: empty message signature"
+    }
+  ],
+  "generation_notes": {
+    "rust_command": "cargo test --package cardano-crypto-class --test cross_compat test_generate_single_kes_test_vectors --features serde -- --nocapture",
+    "haskell_snippet": "See README.md for Haskell code to generate these vectors",
+    "validation": "Compare hex-encoded CBOR output byte-for-byte"
+  }
+}

@@ -1,0 +1,222 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+//! Extended hash functions for cross-chain compatibility.
+//!
+//! This module provides additional hash algorithms beyond Blake2b (used in Cardano),
+//! supporting cross-chain bridges to Bitcoin, Ethereum, and other blockchain systems.
+//!
+//! # Algorithms
+//!
+//! - **SHA-256**: Used in Bitcoin
+//! - **SHA-512**: General cryptographic use
+//! - **SHA3-256**: Keccak-based, used in Ethereum 2.0
+//! - **SHA3-512**: Keccak-based, longer digest
+//! - **Keccak-256**: Original Keccak, used in Ethereum 1.0
+//! - **RIPEMD-160**: Used in Bitcoin addresses
+
+use digest::Digest;
+use ripemd::Ripemd160;
+use sha2::{Sha256, Sha512};
+use sha3::{Keccak256, Sha3_256, Sha3_512};
+
+/// SHA-256 hash (32 bytes output).
+///
+/// Used extensively in Bitcoin for transaction hashing, block mining, and address generation.
+pub fn sha256(data: &[u8]) -> [u8; 32] {
+    let mut hasher = Sha256::new();
+    hasher.update(data);
+    hasher.finalize().into()
+}
+
+/// Double SHA-256 hash (32 bytes output).
+///
+/// Common pattern in Bitcoin: `SHA256(SHA256(data))`.
+/// Used for transaction IDs and block hashing.
+pub fn sha256d(data: &[u8]) -> [u8; 32] {
+    sha256(&sha256(data))
+}
+
+/// SHA-512 hash (64 bytes output).
+///
+/// General purpose cryptographic hash with longer output.
+pub fn sha512(data: &[u8]) -> [u8; 64] {
+    let mut hasher = Sha512::new();
+    hasher.update(data);
+    hasher.finalize().into()
+}
+
+/// SHA3-256 hash (32 bytes output).
+///
+/// Keccak-based standardized hash function.
+/// Used in Ethereum 2.0 and various modern protocols.
+pub fn sha3_256(data: &[u8]) -> [u8; 32] {
+    let mut hasher = Sha3_256::new();
+    hasher.update(data);
+    hasher.finalize().into()
+}
+
+/// SHA3-512 hash (64 bytes output).
+///
+/// Keccak-based standardized hash function with longer output.
+pub fn sha3_512(data: &[u8]) -> [u8; 64] {
+    let mut hasher = Sha3_512::new();
+    hasher.update(data);
+    hasher.finalize().into()
+}
+
+/// Keccak-256 hash (32 bytes output).
+///
+/// Original Keccak algorithm before NIST standardization.
+/// Used in Ethereum 1.0 for transaction hashing and address generation.
+pub fn keccak256(data: &[u8]) -> [u8; 32] {
+    let mut hasher = Keccak256::new();
+    hasher.update(data);
+    hasher.finalize().into()
+}
+
+/// RIPEMD-160 hash (20 bytes output).
+///
+/// Used in Bitcoin address generation: `RIPEMD160(SHA256(pubkey))`.
+pub fn ripemd160(data: &[u8]) -> [u8; 20] {
+    let mut hasher = Ripemd160::new();
+    hasher.update(data);
+    hasher.finalize().into()
+}
+
+/// Bitcoin-style address hash: `RIPEMD160(SHA256(data))`.
+///
+/// Used in Bitcoin P2PKH address generation.
+pub fn hash160(data: &[u8]) -> [u8; 20] {
+    ripemd160(&sha256(data))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sha256_empty() {
+        let hash = sha256(b"");
+        let expected =
+            hex::decode("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+                .unwrap();
+        assert_eq!(hash.as_ref(), expected.as_slice());
+    }
+
+    #[test]
+    fn test_sha256_hello() {
+        let hash = sha256(b"hello world");
+        let expected =
+            hex::decode("b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9")
+                .unwrap();
+        assert_eq!(hash.as_ref(), expected.as_slice());
+    }
+
+    #[test]
+    fn test_sha256d() {
+        // Bitcoin double-sha256
+        let hash = sha256d(b"hello");
+        // Should be SHA256(SHA256("hello"))
+        let first = sha256(b"hello");
+        let expected = sha256(&first);
+        assert_eq!(hash, expected);
+    }
+
+    #[test]
+    fn test_sha512_hello() {
+        let hash = sha512(b"hello world");
+        let expected = hex::decode(
+            "309ecc489c12d6eb4cc40f50c902f2b4d0ed77ee511a7c7a9bcd3ca86d4cd86f\
+             989dd35bc5ff499670da34255b45b0cfd830e81f605dcf7dc5542e93ae9cd76f",
+        )
+        .unwrap();
+        assert_eq!(hash.as_ref(), expected.as_slice());
+    }
+
+    #[test]
+    fn test_sha3_256_empty() {
+        let hash = sha3_256(b"");
+        let expected =
+            hex::decode("a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a")
+                .unwrap();
+        assert_eq!(hash.as_ref(), expected.as_slice());
+    }
+
+    #[test]
+    fn test_sha3_512_empty() {
+        let hash = sha3_512(b"");
+        let expected = hex::decode(
+            "a69f73cca23a9ac5c8b567dc185a756e97c982164fe25859e0d1dcc1475c80a6\
+             15b2123af1f5f94c11e3e9402c3ac558f500199d95b6d3e301758586281dcd26",
+        )
+        .unwrap();
+        assert_eq!(hash.as_ref(), expected.as_slice());
+    }
+
+    #[test]
+    fn test_keccak256_empty() {
+        let hash = keccak256(b"");
+        let expected =
+            hex::decode("c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470")
+                .unwrap();
+        assert_eq!(hash.as_ref(), expected.as_slice());
+    }
+
+    #[test]
+    fn test_keccak256_vs_sha3_256() {
+        // Keccak256 and SHA3-256 should produce different results
+        // (different padding in NIST standardization)
+        let data = b"test";
+        let keccak = keccak256(data);
+        let sha3 = sha3_256(data);
+        assert_ne!(keccak, sha3);
+    }
+
+    #[test]
+    fn test_ripemd160_empty() {
+        let hash = ripemd160(b"");
+        let expected = hex::decode("9c1185a5c5e9fc54612808977ee8f548b2258d31").unwrap();
+        assert_eq!(hash.as_ref(), expected.as_slice());
+    }
+
+    #[test]
+    fn test_ripemd160_hello() {
+        let hash = ripemd160(b"hello world");
+        let expected = hex::decode("98c615784ccb5fe5936fbc0cbe9dfdb408d92f0f").unwrap();
+        assert_eq!(hash.as_ref(), expected.as_slice());
+    }
+
+    #[test]
+    fn test_hash160() {
+        // Bitcoin-style RIPEMD160(SHA256(data))
+        let hash = hash160(b"hello");
+        let sha_first = sha256(b"hello");
+        let expected = ripemd160(&sha_first);
+        assert_eq!(hash, expected);
+    }
+
+    #[test]
+    fn test_all_hash_lengths() {
+        let data = b"test data";
+
+        assert_eq!(sha256(data).len(), 32);
+        assert_eq!(sha256d(data).len(), 32);
+        assert_eq!(sha512(data).len(), 64);
+        assert_eq!(sha3_256(data).len(), 32);
+        assert_eq!(sha3_512(data).len(), 64);
+        assert_eq!(keccak256(data).len(), 32);
+        assert_eq!(ripemd160(data).len(), 20);
+        assert_eq!(hash160(data).len(), 20);
+    }
+
+    #[test]
+    fn test_deterministic_hashing() {
+        // Hashing should be deterministic
+        let data = b"deterministic test";
+
+        assert_eq!(sha256(data), sha256(data));
+        assert_eq!(sha512(data), sha512(data));
+        assert_eq!(keccak256(data), keccak256(data));
+        assert_eq!(ripemd160(data), ripemd160(data));
+    }
+}

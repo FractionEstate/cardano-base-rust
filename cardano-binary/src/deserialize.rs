@@ -1,3 +1,5 @@
+#![cfg_attr(test, allow(clippy::unwrap_used))]
+
 use crate::error::BinaryError;
 use serde::de::DeserializeOwned;
 use std::io::Cursor;

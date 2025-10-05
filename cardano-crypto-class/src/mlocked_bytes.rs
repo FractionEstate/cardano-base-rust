@@ -60,7 +60,7 @@ impl MLockedRegion {
                     return Err(MLockedError::InvalidAlignment);
                 }
                 round_up_to(requested, alignment)?
-            }
+            },
             None => requested,
         };
 
@@ -202,19 +202,19 @@ impl MLockedBytes {
     }
 
     /// Length in bytes.
-    #[must_use] 
+    #[must_use]
     pub fn len(&self) -> usize {
         self.region.len()
     }
 
     /// Returns `true` if the allocation is empty.
-    #[must_use] 
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.region.is_empty()
     }
 
     /// Immutable view of the underlying bytes.
-    #[must_use] 
+    #[must_use]
     pub fn as_slice(&self) -> &[u8] {
         self.region.as_slice()
     }
@@ -225,7 +225,7 @@ impl MLockedBytes {
     }
 
     /// Raw pointer to the allocation.
-    #[must_use] 
+    #[must_use]
     pub fn as_ptr(&self) -> *const u8 {
         self.region.as_ptr()
     }
@@ -296,25 +296,25 @@ impl<const N: usize> MLockedSizedBytes<N> {
     }
 
     /// Length in bytes.
-    #[must_use] 
+    #[must_use]
     pub const fn len(&self) -> usize {
         N
     }
 
     /// Returns true if this represents an empty allocation.
-    #[must_use] 
+    #[must_use]
     pub const fn is_empty(&self) -> bool {
         N == 0
     }
 
     /// Immutable view of the underlying bytes.
-    #[must_use] 
+    #[must_use]
     pub fn as_slice(&self) -> &[u8] {
         self.region.as_slice()
     }
 
     /// Immutable view as a fixed-size array reference.
-    #[must_use] 
+    #[must_use]
     pub fn as_array(&self) -> &[u8; N] {
         // SAFETY: self.region.as_ptr() points to at least N bytes (enforced by MLockedRegion::allocate(N)).
         // Casting to *const [u8; N] is valid because the memory layout matches.
@@ -383,7 +383,7 @@ impl MLockedAllocator {
 }
 
 /// Default allocator equivalent to `mlockedMalloc`.
-#[must_use] 
+#[must_use]
 pub fn mlocked_allocator() -> MLockedAllocator {
     MLockedAllocator
 }

@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 
+use crate::direct_serialise::{DirectDeserialise, DirectResult, DirectSerialise};
 use crate::kes::hash::KesHashAlgorithm;
 use crate::kes::{KesAlgorithm, KesError, KesMError, Period};
 use crate::mlocked_bytes::MLockedBytes;
@@ -49,6 +50,45 @@ where
     pub(crate) vk0: D::VerificationKey,
     pub(crate) vk1: D::VerificationKey,
     _phantom: PhantomData<H>,
+}
+
+// Implement PartialEq and Eq manually since we need them for testing
+impl<D, H> PartialEq for SumSignature<D, H>
+where
+    D: KesAlgorithm,
+    D::Signature: PartialEq,
+    D::VerificationKey: PartialEq,
+    H: KesHashAlgorithm,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.sigma == other.sigma && self.vk0 == other.vk0 && self.vk1 == other.vk1
+    }
+}
+
+impl<D, H> Eq for SumSignature<D, H>
+where
+    D: KesAlgorithm,
+    D::Signature: Eq,
+    D::VerificationKey: Eq,
+    H: KesHashAlgorithm,
+{
+}
+
+// Implement Debug for better test output
+impl<D, H> std::fmt::Debug for SumSignature<D, H>
+where
+    D: KesAlgorithm,
+    D::Signature: std::fmt::Debug,
+    D::VerificationKey: std::fmt::Debug,
+    H: KesHashAlgorithm,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SumSignature")
+            .field("sigma", &self.sigma)
+            .field("vk0", &self.vk0)
+            .field("vk1", &self.vk1)
+            .finish()
+    }
 }
 
 impl<D, H> KesAlgorithm for SumKes<D, H>
@@ -277,6 +317,84 @@ where
     }
 }
 
+// Serde implementations for SumKES types
+#[cfg(feature = "serde")]
+impl<D, H> serde::Serialize for SumSignature<D, H>
+where
+    D: KesAlgorithm,
+    D::Signature: serde::Serialize,
+    D::VerificationKey: serde::Serialize,
+    H: KesHashAlgorithm,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeTuple;
+        let mut tuple = serializer.serialize_tuple(3)?;
+        tuple.serialize_element(&self.sigma)?;
+        tuple.serialize_element(&self.vk0)?;
+        tuple.serialize_element(&self.vk1)?;
+        tuple.end()
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, D, H> serde::Deserialize<'de> for SumSignature<D, H>
+where
+    D: KesAlgorithm,
+    D::Signature: serde::Deserialize<'de>,
+    D::VerificationKey: serde::Deserialize<'de>,
+    H: KesHashAlgorithm,
+{
+    fn deserialize<DE>(deserializer: DE) -> Result<Self, DE::Error>
+    where
+        DE: serde::Deserializer<'de>,
+    {
+        use serde::de::{self, SeqAccess, Visitor};
+
+        struct SumSignatureVisitor<D, H>(PhantomData<(D, H)>);
+
+        impl<'de, D, H> Visitor<'de> for SumSignatureVisitor<D, H>
+        where
+            D: KesAlgorithm,
+            D::Signature: serde::Deserialize<'de>,
+            D::VerificationKey: serde::Deserialize<'de>,
+            H: KesHashAlgorithm,
+        {
+            type Value = SumSignature<D, H>;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("a SumKES signature tuple (sigma, vk0, vk1)")
+            }
+
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+            where
+                A: SeqAccess<'de>,
+            {
+                let sigma = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(0, &self))?;
+                let vk0 = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                let vk1 = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(2, &self))?;
+
+                Ok(SumSignature {
+                    sigma,
+                    vk0,
+                    vk1,
+                    _phantom: PhantomData,
+                })
+            }
+        }
+
+        deserializer.deserialize_tuple(3, SumSignatureVisitor(PhantomData))
+    }
+}
+
 // Type aliases for nested compositions
 use crate::dsign::ed25519::Ed25519;
 use crate::kes::hash::Blake2b256;
@@ -305,3 +423,85 @@ pub type Sum6Kes = SumKes<Sum5Kes, Blake2b256>;
 
 /// 2^7 = 128 periods (standard Cardano KES)
 pub type Sum7Kes = SumKes<Sum6Kes, Blake2b256>;
+
+// DirectSerialise implementation for SumSigningKey
+//
+// Following the Haskell pattern, we recursively serialize:
+// 1. Child signing key (sk)
+// 2. MLocked seed for right subtree (r1_seed)
+// 3. Verification key for left subtree (vk0)
+// 4. Verification key for right subtree (vk1)
+impl<D, H> DirectSerialise for SumSigningKey<D, H>
+where
+    D: KesAlgorithm,
+    D::SigningKey: DirectSerialise,
+    D::VerificationKey: DirectSerialise,
+    H: KesHashAlgorithm,
+{
+    fn direct_serialise(
+        &self,
+        push: &mut dyn FnMut(*const u8, usize) -> DirectResult<()>,
+    ) -> DirectResult<()> {
+        // Serialize child signing key
+        self.sk.direct_serialise(push)?;
+
+        // Serialize r1_seed (mlocked seed for right subtree)
+        if let Some(ref r1_seed) = self.r1_seed {
+            let slice = r1_seed.as_slice();
+            push(slice.as_ptr(), slice.len())?;
+        } else {
+            // If r1_seed is None, we still need to serialize empty bytes
+            // This should not happen in a valid key, but we handle it for safety
+            // Actually, based on Haskell, if r1_seed is None it means we're in right subtree
+            // and the seed has been consumed. We should serialize zeroes or error.
+            // For now, let's serialize the expected number of zero bytes.
+            let zero_bytes = vec![0u8; D::SEED_SIZE];
+            push(zero_bytes.as_ptr(), D::SEED_SIZE)?;
+        }
+
+        // Serialize verification keys
+        self.vk0.direct_serialise(push)?;
+        self.vk1.direct_serialise(push)?;
+
+        Ok(())
+    }
+}
+
+impl<D, H> DirectDeserialise for SumSigningKey<D, H>
+where
+    D: KesAlgorithm,
+    D::SigningKey: DirectDeserialise,
+    D::VerificationKey: DirectDeserialise,
+    H: KesHashAlgorithm,
+{
+    fn direct_deserialise(
+        pull: &mut dyn FnMut(*mut u8, usize) -> DirectResult<()>,
+    ) -> DirectResult<Self> {
+        // Deserialize child signing key
+        let sk = D::SigningKey::direct_deserialise(pull)?;
+
+        // Deserialize r1_seed into MLocked memory
+        let mut r1_mlocked = MLockedBytes::new(D::SEED_SIZE).map_err(|_| {
+            crate::direct_serialise::SizeCheckError {
+                expected_size: D::SEED_SIZE,
+                actual_size: 0,
+            }
+        })?;
+        {
+            let slice = r1_mlocked.as_mut_slice();
+            pull(slice.as_mut_ptr(), D::SEED_SIZE)?;
+        }
+
+        // Deserialize verification keys
+        let vk0 = D::VerificationKey::direct_deserialise(pull)?;
+        let vk1 = D::VerificationKey::direct_deserialise(pull)?;
+
+        Ok(SumSigningKey {
+            sk,
+            r1_seed: Some(r1_mlocked),
+            vk0,
+            vk1,
+            _phantom: PhantomData,
+        })
+    }
+}

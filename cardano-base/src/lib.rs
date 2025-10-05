@@ -30,7 +30,7 @@ pub enum CardanoFeatureFlag {
 
 impl CardanoFeatureFlag {
     /// Return all known feature flags in declaration order.
-    #[must_use] 
+    #[must_use]
     pub const fn all() -> &'static [CardanoFeatureFlag; 3] {
         &[
             CardanoFeatureFlag::Leios,
@@ -70,6 +70,10 @@ impl FromStr for CardanoFeatureFlag {
 }
 
 /// Parse a collection of feature flags from textual names.
+///
+/// # Errors
+///
+/// Returns `ParseFeatureFlagError` if any flag name is not recognized.
 pub fn parse_flags<I, S>(names: I) -> Result<Vec<CardanoFeatureFlag>, ParseFeatureFlagError>
 where
     I: IntoIterator<Item = S>,
@@ -99,6 +103,10 @@ static LOOKUP_LOWER: Lazy<HashMap<String, CardanoFeatureFlag>> = Lazy::new(|| {
 });
 
 /// Case-insensitive parsing convenience.
+///
+/// # Errors
+///
+/// Returns `ParseFeatureFlagError` if the flag name is not recognized.
 pub fn parse_flag_case_insensitive(
     value: &str,
 ) -> Result<CardanoFeatureFlag, ParseFeatureFlagError> {
@@ -128,11 +136,15 @@ mod tests {
     #[test]
     fn from_str_variants() {
         assert_eq!(
-            "Leios".parse::<CardanoFeatureFlag>().unwrap(),
+            "Leios"
+                .parse::<CardanoFeatureFlag>()
+                .expect("should parse Leios"),
             CardanoFeatureFlag::Leios
         );
         assert_eq!(
-            "PerasFlag".parse::<CardanoFeatureFlag>().unwrap(),
+            "PerasFlag"
+                .parse::<CardanoFeatureFlag>()
+                .expect("should parse PerasFlag"),
             CardanoFeatureFlag::Peras
         );
         assert!("Unknown".parse::<CardanoFeatureFlag>().is_err());
@@ -150,7 +162,7 @@ mod tests {
     #[test]
     fn case_insensitive_lookup() {
         assert_eq!(
-            parse_flag_case_insensitive("leios").unwrap(),
+            parse_flag_case_insensitive("leios").expect("should parse leios case-insensitive"),
             CardanoFeatureFlag::Leios
         );
         assert!(parse_flag_case_insensitive("leioss").is_err());

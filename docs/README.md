@@ -27,10 +27,13 @@ Welcome to the comprehensive documentation for the **cardano-base-rust** project
 
 ### 🔍 Audit & Verification
 
+- [**KES Implementation Status**](audit/KES_STATUS.md) – **✨ Current Status** – KES implementation state (October 2025)
+- [**Audit Status Update**](audit/AUDIT_STATUS_UPDATE.md) – Comparison of audit claims vs current reality
 - [**Audit Reports**](audit/) – Comprehensive security audits and verification reports
   - [**Cross-Validation Report**](audit/CROSS_VALIDATION_REPORT.md) – **⭐ Key Document** – Proves Haskell binary compatibility
   - [**Comprehensive Checklist**](audit/COMPREHENSIVE_AUDIT_CHECKLIST.md) – Complete verification checklist (100%)
   - [**Component Verification**](audit/) – Individual verification reports for VRF, KES, DSIGN, CBOR
+  - [**Historical Documents**](audit/README.md) – Outdated audit documents (January 2025) kept for reference
 
 ### 🔄 Migration
 

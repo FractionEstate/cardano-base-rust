@@ -6,8 +6,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 ///
 /// In Rust, evaluation is already strict, but the type provides API parity
 /// with the original Haskell `StrictMaybe`.
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[derive(Default)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub enum StrictMaybe<T> {
     #[default]
     SNothing,
@@ -15,7 +14,6 @@ pub enum StrictMaybe<T> {
 }
 
 impl<T: Copy> Copy for StrictMaybe<T> {}
-
 
 impl<T> StrictMaybe<T> {
     pub const fn is_s_nothing(&self) -> bool {
@@ -194,7 +192,7 @@ where
             (value, StrictMaybe::SNothing) => value.clone(),
             (StrictMaybe::SJust(left), StrictMaybe::SJust(right)) => {
                 StrictMaybe::SJust(left.combine(right))
-            }
+            },
         }
     }
 }

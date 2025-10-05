@@ -34,15 +34,11 @@ macro_rules! impl_numeric_monoid {
 impl_numeric_monoid!(u8, u16, u32, u64, usize, i32, i64, isize);
 
 impl Semigroup for () {
-    fn combine(&self, _other: &Self) -> Self {
-        
-    }
+    fn combine(&self, _other: &Self) -> Self {}
 }
 
 impl Monoid for () {
-    fn empty() -> Self {
-        
-    }
+    fn empty() -> Self {}
 }
 
 /// Trait equivalent to `Data.FingerTree.Measured`.
@@ -129,7 +125,7 @@ where
     V: Monoid + Clone,
     A: Measured<V>,
 {
-    #[must_use] 
+    #[must_use]
     pub fn empty() -> Self {
         Self {
             data: VecDeque::new(),
@@ -153,7 +149,7 @@ where
         }
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn from_strict(tree: VecDeque<A>) -> Self {
         Self {
             data: tree,
@@ -161,7 +157,7 @@ where
         }
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn force_to_strict(tree: VecDeque<A>) -> Self {
         Self {
             data: tree,
@@ -169,27 +165,27 @@ where
         }
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn into_inner(self) -> VecDeque<A> {
         self.data
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn len(&self) -> usize {
         self.data.len()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.data.is_empty()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn null(&self) -> bool {
         self.data.is_empty()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn viewl(&self) -> ViewL<V, A> {
         match self.data.front() {
             None => ViewL::EmptyL,
@@ -203,11 +199,11 @@ where
                         _marker: PhantomData,
                     },
                 )
-            }
+            },
         }
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn viewr(&self) -> ViewR<V, A> {
         match self.data.back() {
             None => ViewR::EmptyR,
@@ -221,7 +217,7 @@ where
                     },
                     last,
                 )
-            }
+            },
         }
     }
 
@@ -235,13 +231,13 @@ where
         self
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn concat(mut self, mut other: Self) -> Self {
         self.data.append(&mut other.data);
         self
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn reverse(&self) -> Self {
         Self {
             data: self.data.iter().cloned().rev().collect(),
@@ -249,7 +245,7 @@ where
         }
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn measure(&self) -> V {
         self.data
             .iter()
@@ -385,7 +381,7 @@ where
         }
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn iter(&self) -> std::collections::vec_deque::Iter<'_, A> {
         self.data.iter()
     }
@@ -447,7 +443,7 @@ mod tests {
             ViewL::Cons(head, rest) => {
                 assert_eq!(head, Counted(1));
                 assert_eq!(rest.len(), 2);
-            }
+            },
             _ => panic!("unexpected left view"),
         }
 
@@ -455,7 +451,7 @@ mod tests {
             ViewR::Cons(rest, tail) => {
                 assert_eq!(tail, Counted(3));
                 assert_eq!(rest.len(), 2);
-            }
+            },
             _ => panic!("unexpected right view"),
         }
 
@@ -491,7 +487,7 @@ mod tests {
                 assert_eq!(prefix.into_iter().collect::<Vec<_>>(), vec![Counted(1)]);
                 assert_eq!(pivot, Counted(2));
                 assert_eq!(suffix.into_iter().collect::<Vec<_>>(), vec![Counted(3)]);
-            }
+            },
             _ => panic!("unexpected search result"),
         }
     }

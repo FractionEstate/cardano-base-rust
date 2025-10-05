@@ -2,6 +2,8 @@
 //!
 //! This implements ECVRF-ED25519-SHA512-TAI with batch verification support
 
+#![allow(clippy::unwrap_used)]
+
 use curve25519_dalek::{edwards::EdwardsPoint, scalar::Scalar, traits::VartimeMultiscalarMul};
 use sha2::{Digest, Sha512};
 use zeroize::Zeroizing;
@@ -253,7 +255,7 @@ impl VrfDraft13 {
     }
 
     /// Generate keypair from seed
-    #[must_use] 
+    #[must_use]
     pub fn keypair_from_seed(
         seed: &[u8; SEED_SIZE],
     ) -> ([u8; SECRET_KEY_SIZE], [u8; PUBLIC_KEY_SIZE]) {

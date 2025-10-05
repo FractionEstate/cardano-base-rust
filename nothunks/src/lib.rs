@@ -6,6 +6,8 @@
 //! propagating contextual information while ensuring that all contained values
 //! participate in the `NoThunks` trait.
 
+#![allow(clippy::missing_errors_doc)]
+
 use base_deriving_via::{Generic, InstantiatedAt};
 
 use std::borrow::{Cow, ToOwned};

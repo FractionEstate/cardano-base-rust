@@ -11,12 +11,12 @@ use std::marker::PhantomData;
 pub struct SlotNo(pub u64);
 
 impl SlotNo {
-    #[must_use] 
+    #[must_use]
     pub const fn new(value: u64) -> Self {
         Self(value)
     }
 
-    #[must_use] 
+    #[must_use]
     pub const fn get(self) -> u64 {
         self.0
     }
@@ -75,8 +75,7 @@ impl SubAssign<u64> for SlotNo {
 }
 
 /// A value that can be at the origin or at a concrete slot.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-#[derive(Default)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
 pub enum WithOrigin<T> {
     #[default]
     Origin,
@@ -131,7 +130,6 @@ impl<T> WithOrigin<T> {
         self.as_mut().into_option().into_iter()
     }
 }
-
 
 impl<T: Serialize> Serialize for WithOrigin<T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -251,7 +249,7 @@ pub fn at<T>(value: T) -> WithOrigin<T> {
     WithOrigin::At(value)
 }
 
-#[must_use] 
+#[must_use]
 pub const fn origin<T>() -> WithOrigin<T> {
     WithOrigin::Origin
 }
@@ -426,7 +424,7 @@ pub fn bin_op_epoch_no(op: impl Fn(u64, u64) -> u64, lhs: EpochNo, rhs: EpochNo)
     EpochNo(op(lhs.0, rhs.0))
 }
 
-#[must_use] 
+#[must_use]
 pub fn add_epoch_interval(epoch_no: EpochNo, interval: EpochInterval) -> EpochNo {
     EpochNo(epoch_no.0 + u64::from(interval))
 }

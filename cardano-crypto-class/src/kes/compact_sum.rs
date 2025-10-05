@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 
+use crate::direct_serialise::{DirectDeserialise, DirectResult, DirectSerialise};
 use crate::kes::compact_single::OptimizedKesSignature;
 use crate::kes::hash::KesHashAlgorithm;
 use crate::kes::{KesAlgorithm, KesError, KesMError, Period};
@@ -314,3 +315,83 @@ pub type CompactSum6Kes = CompactSumKes<CompactSum5Kes, Blake2b256>;
 
 /// 2^7 = 128 periods (compact, standard Cardano KES)
 pub type CompactSum7Kes = CompactSumKes<CompactSum6Kes, Blake2b256>;
+
+// DirectSerialise implementation for CompactSumSigningKey
+//
+// Following the Haskell pattern, we recursively serialize:
+// 1. Child signing key (sk)
+// 2. MLocked seed for right subtree (r1_seed)
+// 3. Verification key for left subtree (vk0)
+// 4. Verification key for right subtree (vk1)
+impl<D, H> DirectSerialise for CompactSumSigningKey<D, H>
+where
+    D: KesAlgorithm,
+    D::SigningKey: DirectSerialise,
+    D::VerificationKey: DirectSerialise,
+    D::Signature: OptimizedKesSignature,
+    H: KesHashAlgorithm,
+{
+    fn direct_serialise(
+        &self,
+        push: &mut dyn FnMut(*const u8, usize) -> DirectResult<()>,
+    ) -> DirectResult<()> {
+        // Serialize child signing key
+        self.sk.direct_serialise(push)?;
+
+        // Serialize r1_seed (mlocked seed for right subtree)
+        if let Some(ref r1_seed) = self.r1_seed {
+            let slice = r1_seed.as_slice();
+            push(slice.as_ptr(), slice.len())?;
+        } else {
+            // If r1_seed is None, serialize zero bytes
+            let zero_bytes = vec![0u8; D::SEED_SIZE];
+            push(zero_bytes.as_ptr(), D::SEED_SIZE)?;
+        }
+
+        // Serialize verification keys
+        self.vk0.direct_serialise(push)?;
+        self.vk1.direct_serialise(push)?;
+
+        Ok(())
+    }
+}
+
+impl<D, H> DirectDeserialise for CompactSumSigningKey<D, H>
+where
+    D: KesAlgorithm,
+    D::SigningKey: DirectDeserialise,
+    D::VerificationKey: DirectDeserialise,
+    D::Signature: OptimizedKesSignature,
+    H: KesHashAlgorithm,
+{
+    fn direct_deserialise(
+        pull: &mut dyn FnMut(*mut u8, usize) -> DirectResult<()>,
+    ) -> DirectResult<Self> {
+        // Deserialize child signing key
+        let sk = D::SigningKey::direct_deserialise(pull)?;
+
+        // Deserialize r1_seed into MLocked memory
+        let mut r1_mlocked = MLockedBytes::new(D::SEED_SIZE).map_err(|_| {
+            crate::direct_serialise::SizeCheckError {
+                expected_size: D::SEED_SIZE,
+                actual_size: 0,
+            }
+        })?;
+        {
+            let slice = r1_mlocked.as_mut_slice();
+            pull(slice.as_mut_ptr(), D::SEED_SIZE)?;
+        }
+
+        // Deserialize verification keys
+        let vk0 = D::VerificationKey::direct_deserialise(pull)?;
+        let vk1 = D::VerificationKey::direct_deserialise(pull)?;
+
+        Ok(CompactSumSigningKey {
+            sk,
+            r1_seed: Some(r1_mlocked),
+            vk0,
+            vk1,
+            _phantom: PhantomData,
+        })
+    }
+}

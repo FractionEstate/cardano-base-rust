@@ -4,9 +4,15 @@
 //! `cardano-crypto-class`. The initial focus is the `Seed` abstraction used to
 //! seed deterministic key generation and pseudo-random generators.
 
+#![allow(clippy::unreadable_literal)]
+#![cfg_attr(test, allow(clippy::unwrap_used))]
+#![cfg_attr(test, allow(clippy::assert_eq_literal_bool))]
+#![cfg_attr(test, allow(clippy::panic))]
+
 pub mod direct_serialise;
 pub mod dsign;
 pub mod ffi;
+pub mod hash;
 pub mod kes;
 pub mod mlocked_bytes;
 pub mod mlocked_seed;

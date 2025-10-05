@@ -12,13 +12,13 @@ pub struct PackedBytes<const N: usize> {
 
 impl<const N: usize> PackedBytes<N> {
     /// Construct packed bytes from an array.
-    #[must_use] 
+    #[must_use]
     pub const fn new(data: [u8; N]) -> Self {
         Self { data }
     }
 
     /// View the packed bytes as a slice.
-    #[must_use] 
+    #[must_use]
     pub fn as_slice(&self) -> &[u8] {
         &self.data
     }
@@ -29,13 +29,13 @@ impl<const N: usize> PackedBytes<N> {
     }
 
     /// Copy the underlying bytes into a fixed array.
-    #[must_use] 
+    #[must_use]
     pub fn to_array(&self) -> [u8; N] {
         self.data
     }
 
     /// Copy the underlying bytes into a `Vec`.
-    #[must_use] 
+    #[must_use]
     pub fn to_vec(&self) -> Vec<u8> {
         self.data.to_vec()
     }
@@ -119,13 +119,13 @@ impl<'de, const N: usize> Deserialize<'de> for PackedBytes<N> {
 }
 
 /// Pack bytes from a slice and offset, panicking if bounds are violated.
-#[must_use] 
+#[must_use]
 pub fn pack_bytes<const N: usize>(bytes: &[u8], offset: usize) -> PackedBytes<N> {
     pack_bytes_maybe(bytes, offset).expect("pack_bytes: slice too short")
 }
 
 /// Pack bytes from a slice and offset, returning `None` if the slice is too small.
-#[must_use] 
+#[must_use]
 pub fn pack_bytes_maybe<const N: usize>(bytes: &[u8], offset: usize) -> Option<PackedBytes<N>> {
     bytes.get(offset..offset.checked_add(N)?).map(|segment| {
         let mut data = [0u8; N];
@@ -148,19 +148,19 @@ pub fn pack_pinned_bytes<const N: usize>(bytes: &[u8]) -> Result<PackedBytes<N>,
 }
 
 /// Unpack into a fixed-size array.
-#[must_use] 
+#[must_use]
 pub fn unpack_bytes<const N: usize>(bytes: &PackedBytes<N>) -> [u8; N] {
     bytes.to_array()
 }
 
 /// Unpack into a `Vec<u8>`.
-#[must_use] 
+#[must_use]
 pub fn unpack_pinned_bytes<const N: usize>(bytes: &PackedBytes<N>) -> Vec<u8> {
     bytes.to_vec()
 }
 
 /// XOR two packed byte arrays element-wise.
-#[must_use] 
+#[must_use]
 pub fn xor_packed_bytes<const N: usize>(
     lhs: &PackedBytes<N>,
     rhs: &PackedBytes<N>,

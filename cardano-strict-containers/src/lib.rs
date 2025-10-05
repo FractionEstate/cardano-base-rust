@@ -4,6 +4,9 @@
 //! package by providing strict variants of `Maybe`, `Seq`, and `FingerTree`
 //! plus helper utilities.
 
+#![allow(clippy::missing_panics_doc)]
+#![cfg_attr(test, allow(clippy::panic))]
+
 pub mod strict_finger_tree;
 pub mod strict_maybe;
 pub mod strict_seq;

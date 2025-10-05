@@ -4,6 +4,9 @@
 //! package, offering high-level helpers to serialise values to CBOR, decode
 //! complete payloads, and work with nested CBOR-in-CBOR structures.
 
+#![cfg_attr(test, allow(clippy::unwrap_used))]
+#![cfg_attr(test, allow(clippy::approx_constant))]
+
 mod deserialize;
 mod error;
 mod serialize;

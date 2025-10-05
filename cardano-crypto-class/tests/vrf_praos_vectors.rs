@@ -322,7 +322,7 @@ fn extend_praos_signing_key(signing_key: &[u8], verifying_key: &[u8]) -> Vec<u8>
             extended.extend_from_slice(signing_key);
             extended.extend_from_slice(verifying_key);
             extended
-        }
+        },
         len => panic!("praos signing key has unsupported length {len}; expected 32 or 64 bytes"),
     }
 }

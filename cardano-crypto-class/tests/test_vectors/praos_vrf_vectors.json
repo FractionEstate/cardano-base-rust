@@ -1,0 +1,61 @@
+{
+  "description": "Praos VRF cross-compatibility test vectors",
+  "algorithm": "PraosVRF",
+  "cbor_spec": {
+    "verification_key": "CBOR bytes tag (major type 2) + 32-byte public key",
+    "proof": "CBOR bytes tag (major type 2) + 80-byte proof (gamma 32 bytes + c 16 bytes + s 32 bytes)"
+  },
+  "vectors": [
+    {
+      "name": "all_zeros_seed",
+      "seed": "0000000000000000000000000000000000000000000000000000000000000000",
+      "message": "48656c6c6f2c20576f726c6421",
+      "description": "Seed of all zeros, message 'Hello, World!'",
+      "expected_vk_cbor": "58203b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29",
+      "expected_proof_cbor": "58500d47590b4bf96596cd5fac8a201098db0292dd4f31d96a71b86c584a09397813a13f37e88f53725075089496eb14e7530e569c059ae987435c7ed188e2e2240931fa0cbc475f0e71f4a639e42f69df0a",
+      "notes": "Generated from Rust implementation - to be verified against Haskell cardano-base"
+    },
+    {
+      "name": "all_ones_seed",
+      "seed": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "message": "5465737420566563746f72",
+      "description": "Seed of all ones (0xFF), message 'Test Vector'",
+      "expected_vk_cbor": "582076a1592044a6e4f511265bca73a604d90b0529d1df602be30a19a9257660d1f5",
+      "expected_proof_cbor": "5850d6e47059601644f51d71b2db3c3112e36ae072206793a4563de9c3d7f557ff38642305f0f30fe49818d023469d68a8b91648a2240846453003a5e08bb768620ba5957b657c9764c5388c45694d523e0d",
+      "notes": "Generated from Rust implementation - to be verified against Haskell cardano-base"
+    },
+    {
+      "name": "sequential_seed",
+      "seed": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "message": "43617264616e6f",
+      "description": "Sequential bytes 0x00..0x1F, message 'Cardano'",
+      "expected_vk_cbor": "582003a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+      "expected_proof_cbor": "58505cecbfc8c616fdd4cbfe916304dde91c9b5938a1b40a257f7206fc3876cc30d10a9d2922ced7092e9f9e75d067b0496b73dd3ee9c5b8c5b4847aaed54a081d0d4069be97a45f361b3386e6e9d2bbe30b",
+      "notes": "Generated from Rust implementation - to be verified against Haskell cardano-base"
+    },
+    {
+      "name": "test_seed_42",
+      "seed": "2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a",
+      "message": "5652462076657269666965722074657374",
+      "description": "Seed of 0x2A (42 decimal) repeated, message 'VRF verifier test'",
+      "expected_vk_cbor": "5820197f6b23e16c8532c6abc838facd5ea789be0c76b2920334039bfa8b3d368d61",
+      "expected_proof_cbor": "58509ab460a53c26d5fb218424fe67f76ce46d121e74b2c1bc53fd5a617af4d8a1d2ec7f1499f2994e3a4d8a4f813ee553a611b5e492caed1f06ebde48fad5284c56151b9141c746343e1d5b6592b969d50d",
+      "notes": "Generated from Rust implementation - to be verified against Haskell cardano-base"
+    },
+    {
+      "name": "empty_message",
+      "seed": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "message": "",
+      "description": "Random seed, empty message",
+      "expected_vk_cbor": "5820207a067892821e25d770f1fba0c47c11ff4b813e54162ece9eb839e076231ab6",
+      "expected_proof_cbor": "58502fad9f82d761d157c409a1816d7041e28cbcb9152cab2134db5e79ccb581df963be9ccb2995182921ad04ab822fe3bf23f4e1f383748442da04bf4cdb1aca887ff44314999f1af0b8d7b5d1ae11a0e08",
+      "notes": "Generated from Rust implementation - to be verified against Haskell cardano-base"
+    }
+  ],
+  "generation_notes": {
+    "rust_command": "cargo test --package cardano-crypto-class --test cross_compat test_generate_praos_vrf_test_vectors --features serde -- --nocapture",
+    "haskell_snippet": "See README.md for Haskell code to generate these vectors",
+    "validation": "Compare hex-encoded CBOR output byte-for-byte",
+    "proof_structure": "80 bytes total: gamma (32 bytes) + c (16 bytes) + s (32 bytes)"
+  }
+}

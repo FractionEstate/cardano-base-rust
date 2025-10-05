@@ -5,6 +5,7 @@
 //! report sizes in machine *words* (8 bytes on the supported target).
 
 #![cfg_attr(not(target_pointer_width = "64"), allow(dead_code))]
+#![allow(clippy::too_many_arguments)]
 
 #[cfg(not(target_pointer_width = "64"))]
 compile_error!("heapwords assumes a 64-bit target platform");
@@ -20,13 +21,13 @@ use time::{Date, OffsetDateTime};
 pub const WORD_SIZE: usize = 8;
 
 /// Convert a number of heap words into megabytes.
-#[must_use] 
+#[must_use]
 pub fn heap_size_mb(words: usize) -> usize {
     words.saturating_mul(WORD_SIZE) / (1024 * 1024)
 }
 
 /// Convert a number of heap words into kilobytes.
-#[must_use] 
+#[must_use]
 pub fn heap_size_kb(words: usize) -> usize {
     words.saturating_mul(WORD_SIZE) / 1024
 }
@@ -38,7 +39,7 @@ pub trait HeapWords {
 }
 
 #[inline]
-#[must_use] 
+#[must_use]
 pub fn heap_words0() -> usize {
     0
 }
@@ -373,14 +374,14 @@ where
 
 /// Estimate the heap words of an array of primitive values.
 #[inline]
-#[must_use] 
+#[must_use]
 pub fn heap_words_uarray(element_size_bytes: usize, len: usize) -> usize {
     13 + element_size_bytes.saturating_mul(len) / WORD_SIZE
 }
 
 /// Estimate the heap words of an unboxed vector.
 #[inline]
-#[must_use] 
+#[must_use]
 pub fn heap_words_uvector(element_size_bytes: usize, len: usize) -> usize {
     5 + element_size_bytes.saturating_mul(len) / WORD_SIZE
 }

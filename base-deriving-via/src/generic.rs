@@ -56,7 +56,7 @@ where
 {
     /// Produce the identity representation. The default delegates to
     /// [`Monoid::empty`].
-    #[must_use] 
+    #[must_use]
     fn gmempty() -> Self::Repr {
         <Self::Repr as Monoid>::empty()
     }

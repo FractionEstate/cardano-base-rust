@@ -12,7 +12,7 @@ pub struct StrictSeq<T> {
 }
 
 impl<T> StrictSeq<T> {
-    #[must_use] 
+    #[must_use]
     pub fn empty() -> Self {
         Self {
             data: VecDeque::new(),
@@ -25,22 +25,22 @@ impl<T> StrictSeq<T> {
         Self { data }
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn len(&self) -> usize {
         self.data.len()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn length(&self) -> usize {
         self.len()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.data.is_empty()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn null(&self) -> bool {
         self.is_empty()
     }
@@ -63,7 +63,7 @@ impl<T> StrictSeq<T> {
         self
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn concat(mut self, mut other: Self) -> Self {
         self.data.append(&mut other.data);
         self
@@ -75,29 +75,29 @@ impl<T> StrictSeq<T> {
         }
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn from_vec(vec: Vec<T>) -> Self {
         Self {
             data: VecDeque::from(vec),
         }
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn from_vec_deque(deque: VecDeque<T>) -> Self {
         Self { data: deque }
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn into_vec_deque(self) -> VecDeque<T> {
         self.data
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn into_vec(self) -> Vec<T> {
         self.data.into_iter().collect()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn to_vec(&self) -> Vec<T>
     where
         T: Clone,
@@ -105,12 +105,12 @@ impl<T> StrictSeq<T> {
         self.data.iter().cloned().collect()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn front(&self) -> Option<&T> {
         self.data.front()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn back(&self) -> Option<&T> {
         self.data.back()
     }
@@ -123,7 +123,7 @@ impl<T> StrictSeq<T> {
         self.data.pop_back()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn take(&self, n: usize) -> Self
     where
         T: Clone,
@@ -131,7 +131,7 @@ impl<T> StrictSeq<T> {
         Self::from_list(self.data.iter().take(n).cloned())
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn drop(&self, n: usize) -> Self
     where
         T: Clone,
@@ -139,7 +139,7 @@ impl<T> StrictSeq<T> {
         Self::from_list(self.data.iter().skip(n).cloned())
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn take_last(&self, n: usize) -> Self
     where
         T: Clone,
@@ -151,7 +151,7 @@ impl<T> StrictSeq<T> {
         self.drop(len - n)
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn drop_last(&self, n: usize) -> Self
     where
         T: Clone,
@@ -163,7 +163,7 @@ impl<T> StrictSeq<T> {
         self.take(len - n)
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn split_at(&self, index: usize) -> (Self, Self)
     where
         T: Clone,
@@ -171,7 +171,7 @@ impl<T> StrictSeq<T> {
         (self.take(index), self.drop(index))
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn split_at_end(&self, n: usize) -> (Self, Self)
     where
         T: Clone,
@@ -334,17 +334,17 @@ impl<T> StrictSeq<T> {
             .collect()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn lookup(&self, index: usize) -> Option<&T> {
         self.data.get(index)
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn get(&self, index: usize) -> Option<&T> {
         self.lookup(index)
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn zip<U>(self, other: StrictSeq<U>) -> StrictSeq<(T, U)> {
         self.zip_with(other, |a, b| (a, b))
     }
@@ -365,7 +365,7 @@ impl<T> StrictSeq<T> {
         StrictSeq { data }
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn unzip<A, B>(self) -> (StrictSeq<A>, StrictSeq<B>)
     where
         T: Into<(A, B)>,
@@ -395,7 +395,7 @@ impl<T> StrictSeq<T> {
         StrictSeq::from_list(self.data.iter().filter(|item| predicate(item)).cloned())
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn iter(&self) -> std::collections::vec_deque::Iter<'_, T> {
         self.data.iter()
     }

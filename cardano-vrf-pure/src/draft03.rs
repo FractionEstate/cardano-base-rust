@@ -3,6 +3,8 @@
 //! This implements ECVRF-ED25519-SHA512-Elligator2 as specified in
 //! draft-irtf-cfrg-vrf-03
 
+#![allow(clippy::unwrap_used)]
+
 use curve25519_dalek::{edwards::EdwardsPoint, scalar::Scalar, traits::VartimeMultiscalarMul};
 use sha2::{Digest, Sha512};
 use zeroize::Zeroizing;
@@ -38,6 +40,14 @@ impl VrfDraft03 {
     ///
     /// # Returns
     /// 80-byte proof
+    ///
+    /// # Errors
+    ///
+    /// Returns `VrfError` if the proof generation fails.
+    ///
+    /// # Panics
+    ///
+    /// May panic if internal cryptographic operations fail (extremely unlikely).
     pub fn prove(
         secret_key: &[u8; SECRET_KEY_SIZE],
         message: &[u8],
@@ -247,7 +257,7 @@ impl VrfDraft03 {
     }
 
     /// Generate keypair from seed
-    #[must_use] 
+    #[must_use]
     pub fn keypair_from_seed(
         seed: &[u8; SEED_SIZE],
     ) -> ([u8; SECRET_KEY_SIZE], [u8; PUBLIC_KEY_SIZE]) {

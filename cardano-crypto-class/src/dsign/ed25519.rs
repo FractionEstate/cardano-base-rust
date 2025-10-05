@@ -44,6 +44,53 @@ impl Ed25519VerificationKey {
     }
 }
 
+// CBOR Serialization for Ed25519VerificationKey
+#[cfg(feature = "serde")]
+impl serde::Serialize for Ed25519VerificationKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        // Serialize as CBOR bytes wrapping the raw verification key
+        serializer.serialize_bytes(self.as_bytes())
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for Ed25519VerificationKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct BytesVisitor;
+
+        impl<'de> serde::de::Visitor<'de> for BytesVisitor {
+            type Value = Ed25519VerificationKey;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                write!(formatter, "Ed25519 verification key bytes")
+            }
+
+            fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                Ed25519VerificationKey::from_bytes(v)
+                    .ok_or_else(|| E::custom("invalid Ed25519 verification key"))
+            }
+
+            fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_bytes(&v)
+            }
+        }
+
+        deserializer.deserialize_bytes(BytesVisitor)
+    }
+}
+
 impl DirectSerialise for Ed25519VerificationKey {
     fn direct_serialise(
         &self,
@@ -129,6 +176,89 @@ impl Ed25519Signature {
 
     pub(crate) fn as_bytes(&self) -> &[u8; SIGNATURE_BYTES] {
         self.0.as_bytes()
+    }
+}
+
+// CBOR Serialization for Ed25519Signature
+#[cfg(feature = "serde")]
+impl serde::Serialize for Ed25519Signature {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_bytes(self.as_bytes())
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for Ed25519Signature {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct BytesVisitor;
+
+        impl<'de> serde::de::Visitor<'de> for BytesVisitor {
+            type Value = Ed25519Signature;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                write!(formatter, "Ed25519 signature bytes")
+            }
+
+            fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                if v.len() != SIGNATURE_BYTES {
+                    return Err(E::custom(format!(
+                        "invalid signature length: expected {}, got {}",
+                        SIGNATURE_BYTES,
+                        v.len()
+                    )));
+                }
+                let mut array = [0u8; SIGNATURE_BYTES];
+                array.copy_from_slice(v);
+                DalekSignature::try_from(array.as_ref())
+                    .map(|sig| Ed25519Signature::from_dalek(&sig))
+                    .map_err(|_| E::custom("invalid Ed25519 signature"))
+            }
+
+            fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_bytes(&v)
+            }
+        }
+
+        deserializer.deserialize_bytes(BytesVisitor)
+    }
+}
+
+impl DirectSerialise for Ed25519Signature {
+    fn direct_serialise(
+        &self,
+        push: &mut dyn FnMut(*const u8, usize) -> DirectResult<()>,
+    ) -> DirectResult<()> {
+        self.0.with_c_ptr(|ptr| push(ptr, SIGNATURE_BYTES))
+    }
+}
+
+impl DirectDeserialise for Ed25519Signature {
+    fn direct_deserialise(
+        pull: &mut dyn FnMut(*mut u8, usize) -> DirectResult<()>,
+    ) -> DirectResult<Self> {
+        let (bytes, result) =
+            PinnedSizedBytes::<SIGNATURE_BYTES>::create_result(|ptr| pull(ptr, SIGNATURE_BYTES));
+        result?;
+        let mut array = [0u8; SIGNATURE_BYTES];
+        array.copy_from_slice(bytes.as_bytes());
+        DalekSignature::try_from(array.as_ref())
+            .map(|sig| Ed25519Signature::from_dalek(&sig))
+            .map_err(|_| SizeCheckError {
+                expected_size: SIGNATURE_BYTES,
+                actual_size: SIGNATURE_BYTES,
+            })
     }
 }
 

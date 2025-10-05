@@ -30,7 +30,7 @@ pub struct PinnedSizedBytes<const N: usize> {
 
 impl<const N: usize> PinnedSizedBytes<N> {
     /// Construct from an owned byte array of the exact size.
-    #[must_use] 
+    #[must_use]
     pub fn from_array(array: [u8; N]) -> Self {
         Self {
             data: Box::new(array),
@@ -39,7 +39,7 @@ impl<const N: usize> PinnedSizedBytes<N> {
 
     /// Deprecated Haskell helper preserved for parity: pad or truncate the
     /// provided slice to fit the fixed size.
-    #[must_use] 
+    #[must_use]
     pub fn from_bytes_padded(bytes: &[u8]) -> Self {
         let mut array = [0u8; N];
         if bytes.len() >= N {
@@ -71,7 +71,7 @@ impl<const N: usize> PinnedSizedBytes<N> {
     }
 
     /// Borrow the underlying bytes as a slice.
-    #[must_use] 
+    #[must_use]
     pub fn as_bytes(&self) -> &[u8; N] {
         &self.data
     }
@@ -82,13 +82,13 @@ impl<const N: usize> PinnedSizedBytes<N> {
     }
 
     /// Return the bytes as a `Vec<u8>`.
-    #[must_use] 
+    #[must_use]
     pub fn to_vec(&self) -> Vec<u8> {
         self.data.to_vec()
     }
 
     /// Equivalent to `psbToBytes`, returning an owned byte vector.
-    #[must_use] 
+    #[must_use]
     pub fn to_bytes(&self) -> Vec<u8> {
         self.to_vec()
     }
@@ -158,7 +158,7 @@ impl<const N: usize> PinnedSizedBytes<N> {
     }
 
     /// Helper mirroring `psbZero`, returning a zero-initialised array.
-    #[must_use] 
+    #[must_use]
     pub fn zeroed() -> Self {
         Self {
             data: Box::new([0u8; N]),
@@ -166,7 +166,7 @@ impl<const N: usize> PinnedSizedBytes<N> {
     }
 
     /// Equivalent of `psbFromByteString` which panics on size mismatch.
-    #[must_use] 
+    #[must_use]
     pub fn from_slice_or_panic(slice: &[u8]) -> Self {
         Self::from_slice(slice).unwrap_or_else(|err| panic!("psbFromByteString: {}", err))
     }
@@ -179,7 +179,7 @@ impl<const N: usize> PinnedSizedBytes<N> {
     /// - `ptr` is a valid pointer to a `PinnedSizedBytes<N>` instance
     /// - `ptr` points to memory containing at least N valid bytes
     /// - The lifetime of the returned `SizedPtr` doesn't outlive the pointed-to data
-    #[must_use] 
+    #[must_use]
     pub unsafe fn ptr_to_sized_ptr(ptr: *const Self) -> SizedPtr<'static, N> {
         let raw = (ptr as *const [u8; N]) as *mut u8;
         // SAFETY: Caller guarantees ptr is valid, so casting through it is safe

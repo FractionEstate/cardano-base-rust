@@ -1,0 +1,62 @@
+{
+  "description": "Mock VRF cross-compatibility test vectors",
+  "algorithm": "MockVRF",
+  "cbor_spec": {
+    "verification_key": "CBOR bytes tag (major type 2) + 8-byte mock key",
+    "proof": "CBOR bytes tag (major type 2) + 8-byte mock proof"
+  },
+  "vectors": [
+    {
+      "name": "all_zeros_seed",
+      "seed": "0000000000000000",
+      "message": "48656c6c6f2c20576f726c6421",
+      "description": "8-byte seed of all zeros, message 'Hello, World!'",
+      "expected_vk_cbor": "480000000000000000",
+      "expected_proof_cbor": "480000000000000000",
+      "notes": "Generated from Rust implementation - MockVRF uses 8-byte keys/proofs for testing"
+    },
+    {
+      "name": "all_ones_seed",
+      "seed": "ffffffffffffffff",
+      "message": "5465737420566563746f72",
+      "description": "8-byte seed of all ones (0xFF), message 'Test Vector'",
+      "expected_vk_cbor": "48ffffffffffffffff",
+      "expected_proof_cbor": "48ffffffffffffffff",
+      "notes": "Generated from Rust implementation"
+    },
+    {
+      "name": "sequential_seed",
+      "seed": "0001020304050607",
+      "message": "43617264616e6f",
+      "description": "8-byte sequential seed (0x00..0x07), message 'Cardano'",
+      "expected_vk_cbor": "480001020304050607",
+      "expected_proof_cbor": "480001020304050607",
+      "notes": "Generated from Rust implementation"
+    },
+    {
+      "name": "test_seed_42",
+      "seed": "2a2a2a2a2a2a2a2a",
+      "message": "4d6f636b205652462074657374696e672076616c69646174696f6e",
+      "description": "8-byte seed of 0x2A (42 decimal) repeated, message 'Mock VRF testing validation'",
+      "expected_vk_cbor": "482a2a2a2a2a2a2a2a",
+      "expected_proof_cbor": "482a2a2a2a2a2a2a2a",
+      "notes": "Generated from Rust implementation"
+    },
+    {
+      "name": "random_seed",
+      "seed": "0123456789abcdef",
+      "message": "",
+      "description": "8-byte random seed, empty message",
+      "expected_vk_cbor": "480123456789abcdef",
+      "expected_proof_cbor": "480123456789abcdef",
+      "notes": "Generated from Rust implementation - edge case: empty message"
+    }
+  ],
+  "generation_notes": {
+    "rust_command": "cargo test --package cardano-crypto-class --test cross_compat test_generate_mock_vrf_test_vectors --features serde -- --nocapture",
+    "haskell_snippet": "See README.md for Haskell code to generate these vectors",
+    "validation": "Compare hex-encoded CBOR output byte-for-byte",
+    "seed_size": "8 bytes",
+    "note": "MockVRF is a simplified VRF for testing - keys and proofs are just the seed bytes themselves"
+  }
+}

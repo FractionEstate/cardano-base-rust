@@ -31,22 +31,116 @@ impl fmt::Debug for MockSigningKey {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct MockCertificate(u64);
 
+// CBOR Serialization for MockCertificate
+#[cfg(feature = "serde")]
+impl serde::Serialize for MockCertificate {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let bytes = MockVRF::raw_serialize_proof(self);
+        serializer.serialize_bytes(&bytes)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for MockCertificate {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct BytesVisitor;
+
+        impl<'de> serde::de::Visitor<'de> for BytesVisitor {
+            type Value = MockCertificate;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                write!(formatter, "Mock VRF certificate bytes")
+            }
+
+            fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                MockVRF::raw_deserialize_proof(v)
+                    .ok_or_else(|| E::custom("invalid Mock VRF certificate"))
+            }
+
+            fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_bytes(&v)
+            }
+        }
+
+        deserializer.deserialize_bytes(BytesVisitor)
+    }
+}
+
 impl MockVerificationKey {
-    #[must_use] 
+    #[must_use]
     pub fn value(&self) -> u64 {
         self.0
     }
 }
 
+// CBOR Serialization for MockVerificationKey
+#[cfg(feature = "serde")]
+impl serde::Serialize for MockVerificationKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let bytes = MockVRF::raw_serialize_verification_key(self);
+        serializer.serialize_bytes(&bytes)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for MockVerificationKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct BytesVisitor;
+
+        impl<'de> serde::de::Visitor<'de> for BytesVisitor {
+            type Value = MockVerificationKey;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                write!(formatter, "Mock VRF verification key bytes")
+            }
+
+            fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                MockVRF::raw_deserialize_verification_key(v)
+                    .ok_or_else(|| E::custom("invalid Mock VRF verification key"))
+            }
+
+            fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_bytes(&v)
+            }
+        }
+
+        deserializer.deserialize_bytes(BytesVisitor)
+    }
+}
+
 impl MockSigningKey {
-    #[must_use] 
+    #[must_use]
     pub fn value(&self) -> u64 {
         self.0
     }
 }
 
 impl MockCertificate {
-    #[must_use] 
+    #[must_use]
     pub fn value(&self) -> u64 {
         self.0
     }
@@ -207,13 +301,13 @@ impl From<&MockSigningKey> for MockCertificate {
 }
 
 /// Convenience helper for deterministic key generation matching the Haskell helper.
-#[must_use] 
+#[must_use]
 pub fn gen_key(seed: &Seed) -> MockSigningKey {
     MockVRF::gen_key(seed)
 }
 
 /// Convenience helper returning the keypair from a seed.
-#[must_use] 
+#[must_use]
 pub fn gen_keypair(seed: &Seed) -> (MockSigningKey, MockVerificationKey) {
     MockVRF::gen_keypair(seed)
 }

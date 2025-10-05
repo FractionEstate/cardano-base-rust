@@ -29,25 +29,25 @@ impl Seed {
     }
 
     /// Return an owned byte vector of the seed contents.
-    #[must_use] 
+    #[must_use]
     pub fn to_vec(&self) -> Vec<u8> {
         self.bytes.as_ref().to_vec()
     }
 
     /// View the seed contents as a byte slice.
-    #[must_use] 
+    #[must_use]
     pub fn as_ref(&self) -> &[u8] {
         &self.bytes
     }
 
     /// Number of bytes contained in the seed.
-    #[must_use] 
+    #[must_use]
     pub fn len(&self) -> usize {
         self.bytes.len()
     }
 
     /// Whether the seed is empty.
-    #[must_use] 
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.bytes.is_empty()
     }
@@ -77,19 +77,19 @@ pub fn mk_seed_from_bytes(bytes: impl Into<Vec<u8>>) -> Seed {
 }
 
 /// Obtain the raw bytes of a [`Seed`].
-#[must_use] 
+#[must_use]
 pub fn get_seed_bytes(seed: &Seed) -> Vec<u8> {
     seed.to_vec()
 }
 
 /// Return the number of bytes stored in the [`Seed`].
-#[must_use] 
+#[must_use]
 pub fn get_seed_size(seed: &Seed) -> usize {
     seed.len()
 }
 
 /// Take `n` bytes from the seed, returning `None` if insufficient bytes remain.
-#[must_use] 
+#[must_use]
 pub fn get_bytes_from_seed(n: usize, seed: Seed) -> Option<(Vec<u8>, Seed)> {
     get_bytes_from_seed_either(n, seed).ok()
 }
@@ -113,7 +113,7 @@ pub fn get_bytes_from_seed_either(
 
 /// Take `n` bytes from the seed, panicking with [`SeedBytesExhausted`] on
 /// exhaustion.
-#[must_use] 
+#[must_use]
 pub fn get_bytes_from_seed_t(n: usize, seed: Seed) -> (Vec<u8>, Seed) {
     match get_bytes_from_seed_either(n, seed) {
         Ok(result) => result,
@@ -123,7 +123,7 @@ pub fn get_bytes_from_seed_t(n: usize, seed: Seed) -> (Vec<u8>, Seed) {
 
 /// Split a seed into two smaller seeds. The first contains `n` bytes and the
 /// second the remaining bytes.
-#[must_use] 
+#[must_use]
 pub fn split_seed(n: usize, seed: Seed) -> Option<(Seed, Seed)> {
     get_bytes_from_seed(n, seed).map(|(bytes, remainder)| (Seed::from_bytes(bytes), remainder))
 }
@@ -131,7 +131,7 @@ pub fn split_seed(n: usize, seed: Seed) -> Option<(Seed, Seed)> {
 /// Expand a seed into two seeds using the specified digest algorithm. The
 /// entire input seed is consumed. The resulting seeds each have the length of
 /// the digest output.
-#[must_use] 
+#[must_use]
 pub fn expand_seed<D>(seed: &Seed) -> (Seed, Seed)
 where
     D: Digest + Default,
@@ -151,7 +151,7 @@ where
 
 /// Obtain a [`Seed`] by reading `n` bytes of entropy from the operating
 /// system.
-#[must_use] 
+#[must_use]
 pub fn read_seed_from_system_entropy(n: usize) -> Seed {
     let mut buffer = vec![0u8; n];
     let mut rng = OsRng;
@@ -176,7 +176,7 @@ pub struct SeedRng {
 
 impl SeedRng {
     /// Create a new RNG from the supplied seed data.
-    #[must_use] 
+    #[must_use]
     pub fn new(seed: Seed) -> Self {
         Self {
             data: seed.to_vec(),
@@ -185,7 +185,7 @@ impl SeedRng {
     }
 
     /// Remaining bytes in the RNG.
-    #[must_use] 
+    #[must_use]
     pub fn remaining(&self) -> usize {
         self.data.len().saturating_sub(self.position)
     }

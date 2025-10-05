@@ -1,3 +1,5 @@
+#![allow(clippy::unreadable_literal)]
+
 use std::convert::TryFrom;
 use std::fmt;
 
@@ -217,6 +219,53 @@ impl SimpleVerificationKey {
     }
 }
 
+// CBOR Serialization for SimpleVerificationKey
+#[cfg(feature = "serde")]
+impl serde::Serialize for SimpleVerificationKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let bytes = SimpleVRF::raw_serialize_verification_key(self);
+        serializer.serialize_bytes(&bytes)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for SimpleVerificationKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct BytesVisitor;
+
+        impl<'de> serde::de::Visitor<'de> for BytesVisitor {
+            type Value = SimpleVerificationKey;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                write!(formatter, "Simple VRF verification key bytes")
+            }
+
+            fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                SimpleVRF::raw_deserialize_verification_key(v)
+                    .ok_or_else(|| E::custom("invalid Simple VRF verification key"))
+            }
+
+            fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_bytes(&v)
+            }
+        }
+
+        deserializer.deserialize_bytes(BytesVisitor)
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct SimpleSigningKey(u128);
 
@@ -261,6 +310,53 @@ impl SimpleCertificate {
 
     fn response(&self) -> u128 {
         self.s
+    }
+}
+
+// CBOR Serialization for SimpleCertificate (VRF Proof)
+#[cfg(feature = "serde")]
+impl serde::Serialize for SimpleCertificate {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let bytes = SimpleVRF::raw_serialize_proof(self);
+        serializer.serialize_bytes(&bytes)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for SimpleCertificate {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct BytesVisitor;
+
+        impl<'de> serde::de::Visitor<'de> for BytesVisitor {
+            type Value = SimpleCertificate;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                write!(formatter, "Simple VRF certificate bytes")
+            }
+
+            fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                SimpleVRF::raw_deserialize_proof(v)
+                    .ok_or_else(|| E::custom("invalid Simple VRF certificate"))
+            }
+
+            fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_bytes(&v)
+            }
+        }
+
+        deserializer.deserialize_bytes(BytesVisitor)
     }
 }
 

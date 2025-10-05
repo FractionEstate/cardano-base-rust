@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::dsign::DsignMAlgorithm;
+use crate::dsign::{DsignMAlgorithm, UnsoundDsignMAlgorithm};
 use crate::kes::{KesAlgorithm, KesError, KesMError, Period};
 
 /// CompactSingleKES wraps a DSIGNM algorithm with an embedded verification key.
@@ -11,15 +11,116 @@ use crate::kes::{KesAlgorithm, KesError, KesMError, Period};
 pub struct CompactSingleKes<D: DsignMAlgorithm>(PhantomData<D>);
 
 /// Signature type that embeds the verification key.
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone)]
 pub struct CompactSingleSig<D: DsignMAlgorithm> {
     pub(crate) signature: D::Signature,
     pub(crate) verification_key: D::VerificationKey,
 }
 
-impl<D> KesAlgorithm for CompactSingleKes<D>
+// Manual PartialEq and Eq implementations
+impl<D: DsignMAlgorithm> PartialEq for CompactSingleSig<D>
+where
+    D::Signature: PartialEq,
+    D::VerificationKey: PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.signature == other.signature && self.verification_key == other.verification_key
+    }
+}
+
+impl<D: DsignMAlgorithm> Eq for CompactSingleSig<D>
+where
+    D::Signature: Eq,
+    D::VerificationKey: Eq,
+{
+}
+
+// Manual Debug implementation for CompactSingleSig
+impl<D: DsignMAlgorithm> std::fmt::Debug for CompactSingleSig<D>
+where
+    D::Signature: std::fmt::Debug,
+    D::VerificationKey: std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CompactSingleSig")
+            .field("signature", &self.signature)
+            .field("verification_key", &self.verification_key)
+            .finish()
+    }
+}
+
+// Serde implementations for CompactSingleSig
+#[cfg(feature = "serde")]
+impl<D> serde::Serialize for CompactSingleSig<D>
 where
     D: DsignMAlgorithm,
+    D::Signature: serde::Serialize,
+    D::VerificationKey: serde::Serialize,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeTuple;
+        let mut tuple = serializer.serialize_tuple(2)?;
+        tuple.serialize_element(&self.signature)?;
+        tuple.serialize_element(&self.verification_key)?;
+        tuple.end()
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, D> serde::Deserialize<'de> for CompactSingleSig<D>
+where
+    D: DsignMAlgorithm,
+    D::Signature: serde::Deserialize<'de>,
+    D::VerificationKey: serde::Deserialize<'de>,
+{
+    fn deserialize<DE>(deserializer: DE) -> Result<Self, DE::Error>
+    where
+        DE: serde::Deserializer<'de>,
+    {
+        use serde::de::{self, SeqAccess, Visitor};
+
+        struct CompactSingleSigVisitor<D>(PhantomData<D>);
+
+        impl<'de, D> Visitor<'de> for CompactSingleSigVisitor<D>
+        where
+            D: DsignMAlgorithm,
+            D::Signature: serde::Deserialize<'de>,
+            D::VerificationKey: serde::Deserialize<'de>,
+        {
+            type Value = CompactSingleSig<D>;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("a CompactSingleKES signature tuple (signature, vk)")
+            }
+
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+            where
+                A: SeqAccess<'de>,
+            {
+                let signature = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(0, &self))?;
+                let verification_key = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+
+                Ok(CompactSingleSig {
+                    signature,
+                    verification_key,
+                })
+            }
+        }
+
+        deserializer.deserialize_tuple(2, CompactSingleSigVisitor(PhantomData))
+    }
+}
+
+impl<D> KesAlgorithm for CompactSingleKes<D>
+where
+    D: DsignMAlgorithm + UnsoundDsignMAlgorithm,
     D::VerificationKey: Clone,
 {
     type VerificationKey = D::VerificationKey;
@@ -102,10 +203,10 @@ where
         }
     }
 
-    fn gen_key_kes_from_seed_bytes(_seed: &[u8]) -> Result<Self::SigningKey, KesMError> {
-        Err(KesMError::Dsign(
-            "gen_key_kes_from_seed_bytes not yet fully implemented for generic DSIGNM".to_owned(),
-        ))
+    fn gen_key_kes_from_seed_bytes(seed: &[u8]) -> Result<Self::SigningKey, KesMError> {
+        // Use the UnsoundDsignMAlgorithm trait which provides raw_deserialize_signing_key_m
+        // This constructs an MLocked signing key directly from seed bytes
+        D::raw_deserialize_signing_key_m(seed).map_err(|e| KesMError::Dsign(format!("{:?}", e)))
     }
 
     fn raw_serialize_verification_key_kes(key: &Self::VerificationKey) -> Vec<u8> {

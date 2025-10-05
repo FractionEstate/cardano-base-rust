@@ -8,12 +8,16 @@
 //! All implementations are memory-safe and use constant-time operations where appropriate
 //! to prevent timing attacks.
 
+// Allow some clippy lints for cryptographic code
+#![allow(clippy::missing_panics_doc)]
+#![allow(clippy::missing_errors_doc)]
+#![cfg_attr(test, allow(clippy::unwrap_used))]
 #![deny(unsafe_code)]
 #![warn(missing_docs)]
 
+pub mod common;
 pub mod draft03;
 pub mod draft13;
-pub mod common;
 
 pub use draft03::VrfDraft03;
 pub use draft13::VrfDraft13;

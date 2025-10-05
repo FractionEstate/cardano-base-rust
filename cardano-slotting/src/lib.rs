@@ -5,6 +5,10 @@
 //! slots, epochs, relative time conversions, and helper utilities to
 //! extend epoch information.
 
+#![cfg_attr(test, allow(clippy::unwrap_used))]
+#![allow(clippy::missing_panics_doc)]
+#![allow(clippy::missing_errors_doc)]
+
 pub mod block;
 pub mod epoch_info;
 pub mod slot;

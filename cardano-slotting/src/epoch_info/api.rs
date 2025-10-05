@@ -127,7 +127,7 @@ where
     info.map_error(f)
 }
 
-#[must_use] 
+#[must_use]
 pub fn generalize_epoch_info<E>(info: EpochInfo<Infallible>) -> EpochInfo<E>
 where
     E: Send + Sync + 'static,

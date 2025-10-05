@@ -1,6 +1,19 @@
 # cardano-base-rust
 
-[![Pure Rust](https://img.shields.io/badge/Pure_Rust-100%25-orange.svg)](https://www.rust-lang.org/)
+[![Pure Rust](https://img.shields.io/badge/## 📚 Documentation
+
+- [**📖 API Documentation**](docs/api/) – Comprehensive API reference for all packages
+- [**🎯 PROJECT_STATUS.md**](PROJECT_STATUS.md) – **Current status & next steps** ⭐ START HERE
+- [**📋 QUICK_REFERENCE.md**](QUICK_REFERENCE.md) – One-page quick reference
+- [**🔍 GAP_ANALYSIS_SUMMARY.md**](GAP_ANALYSIS_SUMMARY.md) – Gap analysis summary (95% complete!)
+- [**📂 PROJECT_INDEX.md**](PROJECT_INDEX.md) – Complete project navigation
+- [**📚 docs/archive/**](docs/archive/) – Historical session documentation
+- [**🔐 Cryptography Guide**](docs/development/CRYPTOGRAPHY.md) – VRF, KES, and DSIGN implementations
+- [**✅ KES Implementation Status**](docs/audit/KES_STATUS.md) – Current status of KES implementation (October 2025)
+- [**🔄 Migration Guide**](docs/migration/) – Migrating from Haskell cardano-base
+- [**🛡️ Security Practices**](SECURITY.md) – Security policies and vulnerability reporting
+- [**🤝 Contributing**](CONTRIBUTING.md) – How to contribute to this project
+- [**📋 Audit Reports**](docs/audit/) – Security audits and verification (includes historical documents)-100%25-orange.svg)](https://www.rust-lang.org/)
 [![Tests](https://img.shields.io/badge/Tests-234_Passing-brightgreen.svg)](https://github.com/FractionEstate/cardano-base-rust/actions)
 [![Zero C Dependencies](https://img.shields.io/badge/C_Dependencies-0-blue.svg)](Cargo.toml)
 [![License](https://img.shields.io/badge/License-Apache--2.0%20OR%20MIT-blue.svg)](LICENSE)
@@ -66,9 +79,11 @@ cargo doc --workspace --no-deps --open
 
 - [**📖 API Documentation**](docs/api/) – Comprehensive API reference for all packages
 - [**🔐 Cryptography Guide**](docs/development/CRYPTOGRAPHY.md) – VRF, KES, and DSIGN implementations
+- [**✅ KES Implementation Status**](docs/audit/KES_STATUS.md) – Current status of KES implementation (October 2025)
 - [**🔄 Migration Guide**](docs/migration/) – Migrating from Haskell cardano-base
 - [**🛡️ Security Practices**](SECURITY.md) – Security policies and vulnerability reporting
 - [**🤝 Contributing**](CONTRIBUTING.md) – How to contribute to this project
+- [**� Audit Reports**](docs/audit/) – Security audits and verification (includes historical documents)
 
 ## 📦 Workspace Packages
 
@@ -226,4 +241,4 @@ This project is a pure Rust port of the Haskell [`cardano-base`](https://github.
 
 ---
 
-Built with ❤️ in pure Rust for the Cardano ecosystem
+Built with ❤️ by FractionEstate in pure Rust for the Cardano ecosystem

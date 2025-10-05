@@ -1,3 +1,5 @@
+#![cfg_attr(test, allow(clippy::unwrap_used))]
+
 use crate::error::BinaryError;
 use serde::Serialize;
 use std::io::Write;

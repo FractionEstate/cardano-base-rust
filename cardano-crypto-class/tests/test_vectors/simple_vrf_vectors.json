@@ -1,0 +1,62 @@
+{
+  "description": "Simple VRF cross-compatibility test vectors",
+  "algorithm": "SimpleVRF",
+  "cbor_spec": {
+    "verification_key": "CBOR bytes tag (major type 2) + 32-byte public key",
+    "proof": "CBOR bytes tag (major type 2) + 64-byte proof"
+  },
+  "vectors": [
+    {
+      "name": "seed_value_1",
+      "seed": "repeating_01_for_1600_bytes",
+      "message": "48656c6c6f2c20576f726c6421",
+      "description": "1600-byte seed of 0x01 repeated, message 'Hello, World!'",
+      "expected_vk_cbor": "582000009010a10e71d7899c4602950361d900014cb938861f33d8e6f06121ad9589",
+      "expected_proof_cbor": "58400000f421e76de675fc718b2a4c81fdef000127148dc1b5cbc3f7a580af5588da000000000000000031217c300b9f0df7000001a892c9fb03e9c2d2ef16cd10ea",
+      "notes": "Generated from Rust implementation - SimpleVRF requires 1600-byte seeds"
+    },
+    {
+      "name": "seed_value_7",
+      "seed": "repeating_07_for_1600_bytes",
+      "message": "5465737420566563746f72",
+      "description": "1600-byte seed of 0x07 repeated, message 'Test Vector'",
+      "expected_vk_cbor": "58200000b87fb305c17e1ba2023adae00fdb00015ab15f0d8f15da28a91c072b1eb4",
+      "expected_proof_cbor": "58400000437c63ba1492cea2d4158003ad890000dc0827626f742f365e1db86b0cb900000000000000007ed8a9295910c13500000c52ceb2dd68de36d65a43ef5218",
+      "notes": "Generated from Rust implementation"
+    },
+    {
+      "name": "seed_value_42",
+      "seed": "repeating_2a_for_1600_bytes",
+      "message": "43617264616e6f",
+      "description": "1600-byte seed of 0x2A (42 decimal) repeated, message 'Cardano'",
+      "expected_vk_cbor": "58200000b84afdc6ca0443ae7a4b131e5d4b0000bd8b42df6d777144f81379a5d420",
+      "expected_proof_cbor": "58400001708fd113eaa50ce5b14464060d2d0001640832e1ae3cfe13610115fb84370000000000000000084991ffebd7a22200007cc0a398f2bbdc7f8ce3f9672baa",
+      "notes": "Generated from Rust implementation"
+    },
+    {
+      "name": "seed_value_99",
+      "seed": "repeating_63_for_1600_bytes",
+      "message": "53696d706c652056524620746573742076657269666965722074657374",
+      "description": "1600-byte seed of 0x63 (99 decimal) repeated, message 'Simple VRF test verifier test'",
+      "expected_vk_cbor": "58200000eafe56797ee416c0c80089f81cc30000e925635586e3d71d005736a00e88",
+      "expected_proof_cbor": "584000001b01d98a79c6306da9980a8cf98100009708837d5b2c159784b21d2b0da000000000000000009f02976fe459520b0000250afab48896a4fe6af805abd96c",
+      "notes": "Generated from Rust implementation"
+    },
+    {
+      "name": "seed_mixed",
+      "seed": "mixed_pattern_1600_bytes",
+      "message": "",
+      "description": "1600-byte mixed seed pattern: (i * 7 + 13) % 256, empty message",
+      "expected_vk_cbor": "582000016902cef55b9def75757e99060d0300010db390a196cdd2cc26fb6961ca64",
+      "expected_proof_cbor": "58400000c74fac093d7b2e6688e9dab2898700011da3b711c375acee8efca78e7c1f0000000000000000d9aa0e70b65993280000649f96de7437348c7461d4ca3025",
+      "notes": "Generated from Rust implementation - edge case: empty message"
+    }
+  ],
+  "generation_notes": {
+    "rust_command": "cargo test --package cardano-crypto-class --test cross_compat test_generate_simple_vrf_test_vectors --features serde -- --nocapture",
+    "haskell_snippet": "See README.md for Haskell code to generate these vectors",
+    "validation": "Compare hex-encoded CBOR output byte-for-byte",
+    "seed_size": "1600 bytes (16 * 100 attempts to find valid scalar)",
+    "note": "SimpleVRF uses elliptic curve over F_p with point compression, requires large seeds for key derivation"
+  }
+}

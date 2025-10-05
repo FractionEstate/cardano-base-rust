@@ -159,6 +159,26 @@ pub trait KesAlgorithm {
 
     /// Securely forget/zeroize a signing key.
     fn forget_signing_key_kes(signing_key: Self::SigningKey);
+
+    /// Hash a verification key using the specified hash algorithm.
+    ///
+    /// This is a convenience method that serializes the verification key and hashes it.
+    /// Provides API parity with Haskell's `hashVerKeyKES` method.
+    ///
+    /// # Type Parameters
+    /// * `H` - The hash algorithm to use (must implement `KesHashAlgorithm`)
+    ///
+    /// # Example
+    /// ```ignore
+    /// use cardano_crypto_class::{Blake2b256, Sum1Kes, KesAlgorithm};
+    /// let vk_hash = Sum1Kes::hash_verification_key_kes::<Blake2b256>(&vk);
+    /// ```
+    fn hash_verification_key_kes<H: hash::KesHashAlgorithm>(
+        verification_key: &Self::VerificationKey,
+    ) -> Vec<u8> {
+        let serialized = Self::raw_serialize_verification_key_kes(verification_key);
+        H::hash(&serialized)
+    }
 }
 
 /// Trait for unsound KES operations (exposing signing key serialization).

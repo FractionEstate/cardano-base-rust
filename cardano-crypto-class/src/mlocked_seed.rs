@@ -72,7 +72,7 @@ impl<const N: usize> MLockedSeed<N> {
     }
 
     /// Immutable view for testing and higher-level abstractions.
-    #[must_use] 
+    #[must_use]
     pub fn as_bytes(&self) -> &[u8; N] {
         self.bytes.as_array()
     }

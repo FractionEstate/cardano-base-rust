@@ -25,6 +25,10 @@ pub const TWO: u8 = 0x02;
 pub const THREE: u8 = 0x03;
 
 /// Convert bytes to Edwards point, validating the encoding
+///
+/// # Errors
+///
+/// Returns `VrfError::InvalidPoint` if the bytes do not represent a valid Edwards point.
 pub fn bytes_to_point(bytes: &[u8; 32]) -> VrfResult<EdwardsPoint> {
     CompressedEdwardsY(*bytes)
         .decompress()
@@ -32,7 +36,7 @@ pub fn bytes_to_point(bytes: &[u8; 32]) -> VrfResult<EdwardsPoint> {
 }
 
 /// Convert Edwards point to bytes
-#[must_use] 
+#[must_use]
 pub fn point_to_bytes(point: &EdwardsPoint) -> [u8; 32] {
     point.compress().to_bytes()
 }
@@ -47,7 +51,7 @@ pub fn point_to_bytes(point: &EdwardsPoint) -> [u8; 32] {
 /// about it not being a secure hash function on its own, but in VRF
 /// we're already hashing with SHA-512 before calling this.
 #[allow(deprecated)]
-#[must_use] 
+#[must_use]
 pub fn elligator2_hash_to_curve(r: &[u8; 32]) -> [u8; 32] {
     // We need to use nonspec_map_to_curve which expects to hash the input.
     // Since our input is already hashed (from SHA-512), we use it with SHA-512
@@ -57,19 +61,24 @@ pub fn elligator2_hash_to_curve(r: &[u8; 32]) -> [u8; 32] {
 }
 
 /// Reduce a 64-byte hash to a scalar
-#[must_use] 
+///
+/// # Panics
+///
+/// This function should not panic in practice as the conversion from `&[u8; 64]` to
+/// `&[u8; 64]` is infallible, but it uses `try_into().unwrap()` internally.
+#[must_use]
 pub fn hash_to_scalar(hash: &[u8; 64]) -> Scalar {
     Scalar::from_bytes_mod_order_wide(hash.try_into().unwrap())
 }
 
 /// Negate a scalar (constant-time)
-#[must_use] 
+#[must_use]
 pub fn scalar_negate(scalar: &Scalar) -> Scalar {
     -scalar
 }
 
 /// Check if bytes represent a canonical scalar encoding
-#[must_use] 
+#[must_use]
 pub fn is_canonical_scalar(bytes: &[u8; 32]) -> bool {
     // A scalar is canonical if it's < L (the group order)
     // The top 4 bits of the last byte must be clear for canonical encoding
@@ -82,7 +91,7 @@ pub fn is_canonical_scalar(bytes: &[u8; 32]) -> bool {
 }
 
 /// Check if a point has small order (should be rejected)
-#[must_use] 
+#[must_use]
 pub fn has_small_order(point: &EdwardsPoint) -> bool {
     // Check if point * 8 = identity
     // Small order points are in the 8-torsion subgroup
@@ -90,19 +99,19 @@ pub fn has_small_order(point: &EdwardsPoint) -> bool {
 }
 
 /// Clear cofactor by multiplying by 8
-#[must_use] 
+#[must_use]
 pub fn clear_cofactor(point: &EdwardsPoint) -> EdwardsPoint {
     point.mul_by_cofactor()
 }
 
 /// Constant-time comparison of 16-byte arrays
-#[must_use] 
+#[must_use]
 pub fn verify_16(a: &[u8; 16], b: &[u8; 16]) -> bool {
     a.ct_eq(b).into()
 }
 
 /// Expand a 32-byte seed to a 64-byte secret key using SHA-512
-#[must_use] 
+#[must_use]
 pub fn expand_secret_key(seed: &[u8; 32]) -> [u8; 64] {
     let mut hasher = Sha512::new();
     hasher.update(seed);
@@ -120,7 +129,7 @@ pub fn expand_secret_key(seed: &[u8; 32]) -> [u8; 64] {
 }
 
 /// Extract the scalar from an expanded secret key
-#[must_use] 
+#[must_use]
 pub fn secret_key_to_scalar(sk: &[u8; 64]) -> Scalar {
     let mut scalar_bytes = [0u8; 32];
     scalar_bytes.copy_from_slice(&sk[0..32]);
@@ -128,7 +137,7 @@ pub fn secret_key_to_scalar(sk: &[u8; 64]) -> Scalar {
 }
 
 /// Extract the public key from a secret key (last 32 bytes of 64-byte sk)
-#[must_use] 
+#[must_use]
 pub fn secret_key_to_public(sk: &[u8; 64]) -> [u8; 32] {
     let mut pk = [0u8; 32];
     pk.copy_from_slice(&sk[32..64]);
@@ -136,7 +145,7 @@ pub fn secret_key_to_public(sk: &[u8; 64]) -> [u8; 32] {
 }
 
 /// Generate a public key from a seed
-#[must_use] 
+#[must_use]
 pub fn seed_to_public_key(seed: &[u8; 32]) -> [u8; 32] {
     let expanded = expand_secret_key(seed);
     let scalar = secret_key_to_scalar(&expanded);
@@ -145,7 +154,7 @@ pub fn seed_to_public_key(seed: &[u8; 32]) -> [u8; 32] {
 }
 
 /// Expand seed to 64-byte secret key (seed || public_key)
-#[must_use] 
+#[must_use]
 pub fn seed_to_secret_key(seed: &[u8; 32]) -> [u8; 64] {
     let pk = seed_to_public_key(seed);
     let mut sk = [0u8; 64];

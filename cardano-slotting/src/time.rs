@@ -22,12 +22,12 @@ impl fmt::Debug for SystemStart {
 pub struct RelativeTime(Duration);
 
 impl RelativeTime {
-    #[must_use] 
+    #[must_use]
     pub fn new(duration: Duration) -> Self {
         Self(duration)
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn duration(self) -> Duration {
         self.0
     }
@@ -51,12 +51,12 @@ impl fmt::Debug for SlotLength {
 }
 
 impl SlotLength {
-    #[must_use] 
+    #[must_use]
     pub fn new(duration: Duration) -> Self {
         SlotLength(duration)
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn duration(self) -> Duration {
         self.0
     }
@@ -71,17 +71,17 @@ pub struct TimeOrderingError {
     pub system_start: OffsetDateTime,
 }
 
-#[must_use] 
+#[must_use]
 pub fn add_relative_time(delta: Duration, relative: RelativeTime) -> RelativeTime {
     RelativeTime(relative.0 + delta)
 }
 
-#[must_use] 
+#[must_use]
 pub fn diff_relative_time(lhs: RelativeTime, rhs: RelativeTime) -> Duration {
     lhs.0 - rhs.0
 }
 
-#[must_use] 
+#[must_use]
 pub fn mult_relative_time(relative: RelativeTime, factor: i128) -> RelativeTime {
     let nanos = relative
         .0
@@ -106,12 +106,12 @@ pub fn to_relative_time(
     Ok(RelativeTime(instant - system_start.0))
 }
 
-#[must_use] 
+#[must_use]
 pub fn from_relative_time(system_start: SystemStart, relative: RelativeTime) -> OffsetDateTime {
     system_start.0 + relative.0
 }
 
-#[must_use] 
+#[must_use]
 pub fn mult_nominal_diff_time(duration: Duration, factor: u64) -> Duration {
     let nanos = duration
         .whole_nanoseconds()
@@ -121,17 +121,17 @@ pub fn mult_nominal_diff_time(duration: Duration, factor: u64) -> Duration {
     Duration::nanoseconds(nanos)
 }
 
-#[must_use] 
+#[must_use]
 pub fn get_slot_length(slot_length: SlotLength) -> Duration {
     slot_length.0
 }
 
-#[must_use] 
+#[must_use]
 pub fn mk_slot_length(duration: Duration) -> SlotLength {
     SlotLength::new(duration)
 }
 
-#[must_use] 
+#[must_use]
 pub fn slot_length_from_millisec(milliseconds: i128) -> SlotLength {
     let nanos = milliseconds
         .checked_mul(1_000_000)
@@ -140,17 +140,17 @@ pub fn slot_length_from_millisec(milliseconds: i128) -> SlotLength {
     SlotLength(Duration::nanoseconds(nanos))
 }
 
-#[must_use] 
+#[must_use]
 pub fn slot_length_from_sec(seconds: i128) -> SlotLength {
     slot_length_from_millisec(seconds * 1_000)
 }
 
-#[must_use] 
+#[must_use]
 pub fn slot_length_to_millisec(slot_length: SlotLength) -> i128 {
     slot_length.0.whole_nanoseconds() / 1_000_000
 }
 
-#[must_use] 
+#[must_use]
 pub fn slot_length_to_sec(slot_length: SlotLength) -> i128 {
     slot_length_to_millisec(slot_length) / 1_000
 }

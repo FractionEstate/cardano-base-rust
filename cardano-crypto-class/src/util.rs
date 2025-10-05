@@ -51,26 +51,26 @@ pub fn get_random_word64<R: RngCore + ?Sized>(rng: &mut R) -> u64 {
 }
 
 /// Read an unsigned 64-bit integer from a big-endian byte slice.
-#[must_use] 
+#[must_use]
 pub fn read_binary_word64(bytes: &[u8]) -> u64 {
     bytes.iter().fold(0u64, |acc, &b| (acc << 8) | u64::from(b))
 }
 
 /// Read a natural number (arbitrary precision) from a big-endian byte slice.
-#[must_use] 
+#[must_use]
 pub fn read_binary_natural(bytes: &[u8]) -> BigUint {
     BigUint::from_bytes_be(bytes)
 }
 
 /// Serialise a `u64` into its big-endian representation.
-#[must_use] 
+#[must_use]
 pub fn write_binary_word64(value: u64) -> Vec<u8> {
     value.to_be_bytes().to_vec()
 }
 
 /// Serialise a natural number into exactly `len` bytes (big-endian), truncating
 /// higher-order bytes if necessary.
-#[must_use] 
+#[must_use]
 pub fn write_binary_natural(len: usize, value: &BigUint) -> Vec<u8> {
     if len == 0 {
         return Vec::new();
@@ -88,7 +88,7 @@ pub fn write_binary_natural(len: usize, value: &BigUint) -> Vec<u8> {
 }
 
 /// Split a byte slice at the specified lengths.
-#[must_use] 
+#[must_use]
 pub fn splits_at<'a>(lengths: &[usize], bytes: &'a [u8]) -> Vec<Cow<'a, [u8]>> {
     let mut result = Vec::with_capacity(lengths.len().saturating_add(1));
     let mut remainder = bytes;
@@ -110,7 +110,7 @@ pub fn splits_at<'a>(lengths: &[usize], bytes: &'a [u8]) -> Vec<Cow<'a, [u8]>> {
 }
 
 /// Slice helper taking `offset` and `size` as `u64`s.
-#[must_use] 
+#[must_use]
 pub fn slice(offset: u64, size: u64, bytes: &[u8]) -> Cow<'_, [u8]> {
     let start = offset.min(bytes.len() as u64) as usize;
     let available = (bytes.len() as u64).saturating_sub(start as u64);
@@ -119,13 +119,13 @@ pub fn slice(offset: u64, size: u64, bytes: &[u8]) -> Cow<'_, [u8]> {
 }
 
 /// Convert bytes to a natural number (big-endian).
-#[must_use] 
+#[must_use]
 pub fn bytes_to_natural(bytes: &[u8]) -> BigUint {
     BigUint::from_bytes_be(bytes)
 }
 
 /// Convert a natural number to bytes (big-endian) of the specified length.
-#[must_use] 
+#[must_use]
 pub fn natural_to_bytes(len: usize, value: &BigUint) -> Vec<u8> {
     write_binary_natural(len, value)
 }
@@ -273,7 +273,7 @@ mod tests {
             DecodeHexError::LengthMismatch { expected, actual } => {
                 assert_eq!(expected, 1);
                 assert_eq!(actual, 2);
-            }
+            },
             _ => panic!("unexpected error: {err}"),
         }
     }

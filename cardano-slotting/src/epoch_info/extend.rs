@@ -5,7 +5,7 @@ use crate::epoch_info::api::{
 use crate::slot::{EpochNo, EpochSize, SlotNo};
 use crate::time::{add_relative_time, get_slot_length, mult_nominal_diff_time};
 
-#[must_use] 
+#[must_use]
 pub fn unsafe_linear_extend_epoch_info<E>(
     basis_slot: SlotNo,
     underlying: EpochInfo<E>,
