@@ -250,14 +250,22 @@ impl FieldElement {
         h[8] -= carry << 26;
 
         // Handle top limb overflow (multiply by 19)
-        carry = h[9] >> 25;
-        h[0] += carry * 19;
-        h[9] -= carry << 25;
+        // Need to do this multiple times if value is very large
+        for _ in 0..3 {
+            carry = h[9] >> 25;
+            h[0] += carry * 19;
+            h[9] -= carry << 25;
 
-        // Final carry propagation
-        carry = h[0] >> 26;
-        h[1] += carry;
-        h[0] -= carry << 26;
+            // Propagate carry from h[0]
+            carry = h[0] >> 26;
+            h[1] += carry;
+            h[0] -= carry << 26;
+            
+            // And from h[1] if needed
+            carry = h[1] >> 25;
+            h[2] += carry;
+            h[1] -= carry << 25;
+        }
 
         FieldElement(h)
     }
@@ -329,8 +337,14 @@ impl FieldElement {
     ///
     /// `true` if the element has a square root, `false` otherwise
     pub fn is_square(&self) -> bool {
-        // Compute x^((p-1)/2) using pow22523
-        let check = (self.pow22523().square().square() * *self).reduce();
+        // Compute x^((p-1)/2) using Euler's criterion
+        // For p = 2^255-19: (p-1)/2 = 2^254 - 10
+        // We compute this as: (x^(2^252-3))^4 * x^2
+        let pow_result = self.pow22523().reduce(); // x^(2^252 - 3)
+        let pow_sq = pow_result.square().reduce(); // x^(2^253 - 6)
+        let pow_sq_sq = pow_sq.square().reduce(); // x^(2^254 - 12)
+        let x2 = self.square().reduce(); // x^2
+        let check = (pow_sq_sq * x2).reduce(); // x^(2^254 - 12 + 2) = x^(2^254 - 10)
         
         // Check if result equals 1
         let one = FieldElement::one();
@@ -345,23 +359,56 @@ impl FieldElement {
     /// If the element is a quadratic residue, returns Some(sqrt).
     /// Otherwise returns None.
     ///
+    /// # Algorithm
+    ///
+    /// For p = 2^255 - 19, we can compute sqrt using:
+    /// sqrt(x) = x^((p+3)/8) = x^(2^252 - 2)
+    ///
+    /// We have pow22523() = x^(2^252 - 3), so:
+    /// x^(2^252 - 2) = x^(2^252 - 3) * x = pow22523() * x
+    ///
     /// # Returns
     ///
     /// `Some(sqrt)` if square root exists, `None` otherwise
     pub fn sqrt(&self) -> Option<Self> {
-        let candidate = self.pow22523().reduce();
-        let check = candidate.square().reduce();
+        // Compute candidate = x^(2^252 - 2) = x^(2^252 - 3) * x
+        let pow_result = self.pow22523().reduce();
+        let candidate = (pow_result * *self).reduce();
         
-        // Verify that candidate^2 == self
+        // Check if candidate^2 == self
+        let check = candidate.square().reduce();
         let diff = (check - *self).reduce();
         let diff_bytes = diff.to_bytes();
         
         let is_zero = diff_bytes.iter().all(|&b| b == 0);
         
+        eprintln!("DEBUG sqrt: input = {}", hex::encode(self.to_bytes()));
+        eprintln!("DEBUG sqrt: candidate = {}", hex::encode(candidate.to_bytes()));
+        eprintln!("DEBUG sqrt: candidate^2 = {}", hex::encode(check.to_bytes()));
+        eprintln!("DEBUG sqrt: diff = {}", hex::encode(diff_bytes));
+        eprintln!("DEBUG sqrt: is_zero = {}", is_zero);
+        
         if is_zero {
             Some(candidate)
         } else {
-            None
+            // Try the other square root: -candidate
+            let neg_candidate = -candidate;
+            let check2 = neg_candidate.square().reduce();
+            let diff2 = (check2 - *self).reduce();
+            let diff2_bytes = diff2.to_bytes();
+            
+            let is_zero2 = diff2_bytes.iter().all(|&b| b == 0);
+            
+            eprintln!("DEBUG sqrt: neg_candidate = {}", hex::encode(neg_candidate.to_bytes()));
+            eprintln!("DEBUG sqrt: neg_candidate^2 = {}", hex::encode(check2.to_bytes()));
+            eprintln!("DEBUG sqrt: diff2 = {}", hex::encode(diff2_bytes));
+            eprintln!("DEBUG sqrt: is_zero2 = {}", is_zero2);
+            
+            if is_zero2 {
+                Some(neg_candidate)
+            } else {
+                None
+            }
         }
     }
 

@@ -42,31 +42,49 @@ pub fn cardano_hash_to_curve(r: &[u8; 32]) -> VrfResult<EdwardsPoint> {
     
     // Apply Elligator2 to get Montgomery coordinates
     let (mont_u, mont_v) = montgomery::elligator2(&r_masked)
-        .ok_or(crate::VrfError::InvalidPoint)?;
+        .ok_or_else(|| {
+            eprintln!("DEBUG: Elligator2 failed for input: {}", hex::encode(r_masked));
+            crate::VrfError::InvalidPoint
+        })?;
     
     // Convert Montgomery to Edwards coordinates
     let (ed_x, ed_y) = montgomery::mont_to_edwards(&mont_u, &mont_v)
-        .ok_or(crate::VrfError::InvalidPoint)?;
+        .ok_or_else(|| {
+            eprintln!("DEBUG: Montgomery to Edwards conversion failed");
+            eprintln!("DEBUG: mont_u bytes: {}", hex::encode(mont_u.to_bytes()));
+            eprintln!("DEBUG: mont_v bytes: {}", hex::encode(mont_v.to_bytes()));
+            crate::VrfError::InvalidPoint
+        })?;
     
     // Convert field elements to bytes for EdwardsPoint construction
     let x_bytes = ed_x.to_bytes();
     let y_bytes = ed_y.to_bytes();
     
-    // Construct Edwards point from coordinates
-    // Note: This is a simplified version - full implementation needs proper point construction
+    // Construct Edwards point from (x, y) coordinates
+    // Edwards points are stored in compressed form as y-coordinate + sign bit of x
+    // The sign bit of x goes into the high bit of byte 31
     let mut point_bytes = [0u8; 32];
     point_bytes.copy_from_slice(&y_bytes);
     
-    // Set sign bit based on x coordinate
+    // Set sign bit in high bit of y encoding based on x coordinate's low bit
+    // This matches the Ed25519 point compression standard
     if (x_bytes[0] & 1) == 1 {
         point_bytes[31] |= 0x80;
     }
     
-    // Try to decompress the point
+    // Try to decompress the point using curve25519-dalek
+    // This will validate that the point is actually on the curve
     let point_opt = curve25519_dalek::edwards::CompressedEdwardsY(point_bytes)
         .decompress();
     
-    let mut point = point_opt.ok_or(crate::VrfError::InvalidPoint)?;
+    // If decompression fails, the coordinates don't represent a valid curve point
+    let mut point = point_opt.ok_or_else(|| {
+        eprintln!("DEBUG: Point decompression failed");
+        eprintln!("DEBUG: ed_x bytes: {}", hex::encode(x_bytes));
+        eprintln!("DEBUG: ed_y bytes: {}", hex::encode(y_bytes));
+        eprintln!("DEBUG: compressed point: {}", hex::encode(point_bytes));
+        crate::VrfError::InvalidPoint
+    })?;
     
     // Apply sign bit from original input
     if sign == 1 {

@@ -38,8 +38,11 @@ const A: i64 = 486662;
 /// 1. Load r as field element and square it
 /// 2. Compute v = -A/(1+ur^2) where u = 2
 /// 3. Compute e = Legendre symbol of v^3 + Av^2 + v
-/// 4. Select x = e*v - (1-e)*(A/2)
+/// 4. Select x = e*v - (1-e)*A (where A is the Montgomery curve parameter)
 /// 5. Compute y from x using curve equation
+///
+/// The key insight: If v^3 + Av^2 + v is a QR, use x=v; otherwise x=-v-A.
+/// This ensures at least one of these x values will have a corresponding y.
 pub fn elligator2(r: &[u8; 32]) -> Option<(FieldElement, FieldElement)> {
     // Load r as a field element
     let r_fe = FieldElement::from_bytes(r);
@@ -57,9 +60,8 @@ pub fn elligator2(r: &[u8; 32]) -> Option<(FieldElement, FieldElement)> {
     // Compute 1 + u*r^2
     let one_plus_ur2 = (FieldElement::one() + ur2).reduce();
     
-    // Compute -A as field element
+    // Compute -A as field element (A = 486662)
     let mut a_bytes = [0u8; 32];
-    // A = 486662 in little-endian
     a_bytes[0] = 0x06;
     a_bytes[1] = 0x6d;
     a_bytes[2] = 0x07;
@@ -79,14 +81,15 @@ pub fn elligator2(r: &[u8; 32]) -> Option<(FieldElement, FieldElement)> {
     // Compute Av^2
     let av2 = (a_fe * v2).reduce();
     
-    // Compute v^3 + Av^2 + v (the curve equation right side)
-    let rhs = (v3 + av2 + v).reduce();
+    // Compute v^3 + Av^2 + v (the curve equation right side for x=v)
+    let rhs_v = (v3 + av2 + v).reduce();
     
-    // Check if rhs is a quadratic residue (has square root)
-    let is_qr = rhs.is_square();
+    // Check if rhs_v is a quadratic residue (has square root)
+    let is_qr = rhs_v.is_square();
     
-    // Compute x coordinate based on whether rhs is QR
-    // If QR: x = v, else: x = -v - A
+    // Select x coordinate based on whether rhs_v is QR
+    // If QR: x = v and we know y exists
+    // If not QR: x = -v - A, and by Elligator2 properties, this MUST have a y
     let x = if is_qr {
         v
     } else {
@@ -95,7 +98,22 @@ pub fn elligator2(r: &[u8; 32]) -> Option<(FieldElement, FieldElement)> {
     };
     
     // Compute y from x using curve equation By^2 = x^3 + Ax^2 + x
+    // This should always succeed for the x we selected
     let y_opt = xmont_to_ymont(&x, 0);
+    
+    if y_opt.is_none() {
+        eprintln!("DEBUG elligator2: xmont_to_ymont failed (should not happen!)");
+        eprintln!("DEBUG elligator2: x = {}", hex::encode(x.to_bytes()));
+        eprintln!("DEBUG elligator2: rhs_v was QR = {}", is_qr);
+        
+        // Let's check the rhs for this x
+        let x2 = x.square().reduce();
+        let x3 = (x * x2).reduce();
+        let ax2 = (a_fe * x2).reduce();
+        let rhs_x = (x3 + ax2 + x).reduce();
+        eprintln!("DEBUG elligator2: rhs_x is QR = {}", rhs_x.is_square());
+        eprintln!("DEBUG elligator2: rhs_x = {}", hex::encode(rhs_x.to_bytes()));
+    }
     
     y_opt.map(|y| (x, y))
 }
@@ -245,11 +263,34 @@ mod tests {
     }
 
     #[test]
-    fn test_xmont_to_ymont() {
-        // Test with x = 0
-        let x = FieldElement::zero();
-        let y_opt = xmont_to_ymont(&x, 0);
-        assert!(y_opt.is_some());
+    fn test_field_square_and_sqrt_consistency() {
+        use super::super::field::FieldElement;
+        
+        // Test that square and sqrt are inverses (when sqrt exists)
+        let x = FieldElement::one() + FieldElement::one(); // 2
+        let x2 = x.square().reduce();
+        
+        eprintln!("x (2) = {}", hex::encode(x.to_bytes()));
+        eprintln!("x^2 (4) = {}", hex::encode(x2.to_bytes()));
+        
+        // x^2 should be a QR
+        let is_qr = x2.is_square();
+        eprintln!("is_square(4) = {}", is_qr);
+        assert!(is_qr, "Square of 2 should be a QR");
+        
+        // sqrt(x^2) should give us back something whose square is x^2
+        match x2.sqrt() {
+            Some(sqrt_x2) => {
+                eprintln!("sqrt(4) = {}", hex::encode(sqrt_x2.to_bytes()));
+                let sqrt_x2_squared = sqrt_x2.square().reduce();
+                eprintln!("sqrt(4)^2 = {}", hex::encode(sqrt_x2_squared.to_bytes()));
+                assert_eq!(sqrt_x2_squared.to_bytes(), x2.to_bytes(), 
+                          "sqrt(x^2)^2 should equal x^2");
+            }
+            None => {
+                panic!("sqrt of x^2 should exist");
+            }
+        }
     }
 
     #[test]
