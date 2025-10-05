@@ -102,17 +102,17 @@ pub fn elligator2(r: &[u8; 32]) -> Option<(FieldElement, FieldElement)> {
     let y_opt = xmont_to_ymont(&x, 0);
     
     if y_opt.is_none() {
-        eprintln!("DEBUG elligator2: xmont_to_ymont failed (should not happen!)");
-        eprintln!("DEBUG elligator2: x = {}", hex::encode(x.to_bytes()));
-        eprintln!("DEBUG elligator2: rhs_v was QR = {}", is_qr);
+        // eprintln!("DEBUG elligator2: xmont_to_ymont failed (should not happen!)");
+        // eprintln!("DEBUG elligator2: x = {}", hex::encode(x.to_bytes()));
+        // eprintln!("DEBUG elligator2: rhs_v was QR = {}", is_qr);
         
         // Let's check the rhs for this x
         let x2 = x.square().reduce();
         let x3 = (x * x2).reduce();
         let ax2 = (a_fe * x2).reduce();
         let rhs_x = (x3 + ax2 + x).reduce();
-        eprintln!("DEBUG elligator2: rhs_x is QR = {}", rhs_x.is_square());
-        eprintln!("DEBUG elligator2: rhs_x = {}", hex::encode(rhs_x.to_bytes()));
+        // eprintln!("DEBUG elligator2: rhs_x is QR = {}", rhs_x.is_square());
+        // eprintln!("DEBUG elligator2: rhs_x = {}", hex::encode(rhs_x.to_bytes()));
     }
     
     y_opt.map(|y| (x, y))
@@ -268,22 +268,22 @@ mod tests {
         
         // Test that square and sqrt are inverses (when sqrt exists)
         let x = FieldElement::one() + FieldElement::one(); // 2
-        let x2 = x.square().reduce();
+        let x2 = x.square(); // No need for .reduce() since mul already reduces
         
-        eprintln!("x (2) = {}", hex::encode(x.to_bytes()));
-        eprintln!("x^2 (4) = {}", hex::encode(x2.to_bytes()));
+        // eprintln!("x (2) = {}", hex::encode(x.to_bytes()));
+        // eprintln!("x^2 (4) = {}", hex::encode(x2.to_bytes()));
         
         // x^2 should be a QR
         let is_qr = x2.is_square();
-        eprintln!("is_square(4) = {}", is_qr);
+        // eprintln!("is_square(4) = {}", is_qr);
         assert!(is_qr, "Square of 2 should be a QR");
         
         // sqrt(x^2) should give us back something whose square is x^2
         match x2.sqrt() {
             Some(sqrt_x2) => {
-                eprintln!("sqrt(4) = {}", hex::encode(sqrt_x2.to_bytes()));
-                let sqrt_x2_squared = sqrt_x2.square().reduce();
-                eprintln!("sqrt(4)^2 = {}", hex::encode(sqrt_x2_squared.to_bytes()));
+                // eprintln!("sqrt(4) = {}", hex::encode(sqrt_x2.to_bytes()));
+                let sqrt_x2_squared = sqrt_x2.square();
+                // eprintln!("sqrt(4)^2 = {}", hex::encode(sqrt_x2_squared.to_bytes()));
                 assert_eq!(sqrt_x2_squared.to_bytes(), x2.to_bytes(), 
                           "sqrt(x^2)^2 should equal x^2");
             }

@@ -43,16 +43,16 @@ pub fn cardano_hash_to_curve(r: &[u8; 32]) -> VrfResult<EdwardsPoint> {
     // Apply Elligator2 to get Montgomery coordinates
     let (mont_u, mont_v) = montgomery::elligator2(&r_masked)
         .ok_or_else(|| {
-            eprintln!("DEBUG: Elligator2 failed for input: {}", hex::encode(r_masked));
+            // eprintln!("DEBUG: Elligator2 failed for input: {}", hex::encode(r_masked));
             crate::VrfError::InvalidPoint
         })?;
     
     // Convert Montgomery to Edwards coordinates
     let (ed_x, ed_y) = montgomery::mont_to_edwards(&mont_u, &mont_v)
         .ok_or_else(|| {
-            eprintln!("DEBUG: Montgomery to Edwards conversion failed");
-            eprintln!("DEBUG: mont_u bytes: {}", hex::encode(mont_u.to_bytes()));
-            eprintln!("DEBUG: mont_v bytes: {}", hex::encode(mont_v.to_bytes()));
+            // eprintln!("DEBUG: Montgomery to Edwards conversion failed");
+            // eprintln!("DEBUG: mont_u bytes: {}", hex::encode(mont_u.to_bytes()));
+            // eprintln!("DEBUG: mont_v bytes: {}", hex::encode(mont_v.to_bytes()));
             crate::VrfError::InvalidPoint
         })?;
     
@@ -79,10 +79,10 @@ pub fn cardano_hash_to_curve(r: &[u8; 32]) -> VrfResult<EdwardsPoint> {
     
     // If decompression fails, the coordinates don't represent a valid curve point
     let mut point = point_opt.ok_or_else(|| {
-        eprintln!("DEBUG: Point decompression failed");
-        eprintln!("DEBUG: ed_x bytes: {}", hex::encode(x_bytes));
-        eprintln!("DEBUG: ed_y bytes: {}", hex::encode(y_bytes));
-        eprintln!("DEBUG: compressed point: {}", hex::encode(point_bytes));
+        // eprintln!("DEBUG: Point decompression failed");
+        // eprintln!("DEBUG: ed_x bytes: {}", hex::encode(x_bytes));
+        // eprintln!("DEBUG: ed_y bytes: {}", hex::encode(y_bytes));
+        // eprintln!("DEBUG: compressed point: {}", hex::encode(point_bytes));
         crate::VrfError::InvalidPoint
     })?;
     

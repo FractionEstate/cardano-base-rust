@@ -304,27 +304,27 @@ impl FieldElement {
     ///
     /// self^(2^252-3)
     fn pow22523(&self) -> Self {
-        let z2 = self.square().reduce();
-        let z8 = z2.square().square().reduce();
-        let z9 = (*self * z8).reduce();
-        let z11 = (z2 * z9).reduce();
-        let z22 = z11.square().reduce();
-        let z_5_0 = (z9 * z22).reduce();
-        let z_10_5 = (0..5).fold(z_5_0, |acc, _| acc.square().reduce());
-        let z_10_0 = (z_10_5 * z_5_0).reduce();
-        let z_20_10 = (0..10).fold(z_10_0, |acc, _| acc.square().reduce());
-        let z_20_0 = (z_20_10 * z_10_0).reduce();
-        let z_40_20 = (0..20).fold(z_20_0, |acc, _| acc.square().reduce());
-        let z_40_0 = (z_40_20 * z_20_0).reduce();
-        let z_50_10 = (0..10).fold(z_40_0, |acc, _| acc.square().reduce());
-        let z_50_0 = (z_50_10 * z_10_0).reduce();
-        let z_100_50 = (0..50).fold(z_50_0, |acc, _| acc.square().reduce());
-        let z_100_0 = (z_100_50 * z_50_0).reduce();
-        let z_200_100 = (0..100).fold(z_100_0, |acc, _| acc.square().reduce());
-        let z_200_0 = (z_200_100 * z_100_0).reduce();
-        let z_250_50 = (0..50).fold(z_200_0, |acc, _| acc.square().reduce());
-        let z_250_0 = (z_250_50 * z_50_0).reduce();
-        let z_252_2 = z_250_0.square().square().reduce();
+        let z2 = self.square();
+        let z8 = z2.square().square();
+        let z9 = (*self * z8);
+        let z11 = (z2 * z9);
+        let z22 = z11.square();
+        let z_5_0 = (z9 * z22);
+        let z_10_5 = (0..5).fold(z_5_0, |acc, _| acc.square());
+        let z_10_0 = (z_10_5 * z_5_0);
+        let z_20_10 = (0..10).fold(z_10_0, |acc, _| acc.square());
+        let z_20_0 = (z_20_10 * z_10_0);
+        let z_40_20 = (0..20).fold(z_20_0, |acc, _| acc.square());
+        let z_40_0 = (z_40_20 * z_20_0);
+        let z_50_10 = (0..10).fold(z_40_0, |acc, _| acc.square());
+        let z_50_0 = (z_50_10 * z_10_0);
+        let z_100_50 = (0..50).fold(z_50_0, |acc, _| acc.square());
+        let z_100_0 = (z_100_50 * z_50_0);
+        let z_200_100 = (0..100).fold(z_100_0, |acc, _| acc.square());
+        let z_200_0 = (z_200_100 * z_100_0);
+        let z_250_50 = (0..50).fold(z_200_0, |acc, _| acc.square());
+        let z_250_0 = (z_250_50 * z_50_0);
+        let z_252_2 = z_250_0.square().square();
         (z_252_2 * *self).reduce()
     }
 
@@ -340,11 +340,11 @@ impl FieldElement {
         // Compute x^((p-1)/2) using Euler's criterion
         // For p = 2^255-19: (p-1)/2 = 2^254 - 10
         // We compute this as: (x^(2^252-3))^4 * x^2
-        let pow_result = self.pow22523().reduce(); // x^(2^252 - 3)
-        let pow_sq = pow_result.square().reduce(); // x^(2^253 - 6)
-        let pow_sq_sq = pow_sq.square().reduce(); // x^(2^254 - 12)
-        let x2 = self.square().reduce(); // x^2
-        let check = (pow_sq_sq * x2).reduce(); // x^(2^254 - 12 + 2) = x^(2^254 - 10)
+        let pow_result = self.pow22523(); // x^(2^252 - 3)
+        let pow_sq = pow_result.square(); // x^(2^253 - 6)
+        let pow_sq_sq = pow_sq.square(); // x^(2^254 - 12)
+        let x2 = self.square(); // x^2
+        let check = (pow_sq_sq * x2).reduce(); // x^(2^254 - 12 + 2) = x^(2^254 - 10), final reduce
         
         // Check if result equals 1
         let one = FieldElement::one();
@@ -372,37 +372,37 @@ impl FieldElement {
     /// `Some(sqrt)` if square root exists, `None` otherwise
     pub fn sqrt(&self) -> Option<Self> {
         // Compute candidate = x^(2^252 - 2) = x^(2^252 - 3) * x
-        let pow_result = self.pow22523().reduce();
-        let candidate = (pow_result * *self).reduce();
+        let pow_result = self.pow22523();
+        let candidate = pow_result * *self;
         
         // Check if candidate^2 == self
-        let check = candidate.square().reduce();
-        let diff = (check - *self).reduce();
+        let check = candidate.square();
+        let diff = check - *self;
         let diff_bytes = diff.to_bytes();
         
         let is_zero = diff_bytes.iter().all(|&b| b == 0);
         
-        eprintln!("DEBUG sqrt: input = {}", hex::encode(self.to_bytes()));
-        eprintln!("DEBUG sqrt: candidate = {}", hex::encode(candidate.to_bytes()));
-        eprintln!("DEBUG sqrt: candidate^2 = {}", hex::encode(check.to_bytes()));
-        eprintln!("DEBUG sqrt: diff = {}", hex::encode(diff_bytes));
-        eprintln!("DEBUG sqrt: is_zero = {}", is_zero);
+        // eprintln!("DEBUG sqrt: input = {}", hex::encode(self.to_bytes()));
+        // eprintln!("DEBUG sqrt: candidate = {}", hex::encode(candidate.to_bytes()));
+        // eprintln!("DEBUG sqrt: candidate^2 = {}", hex::encode(check.to_bytes()));
+        // eprintln!("DEBUG sqrt: diff = {}", hex::encode(diff_bytes));
+        // eprintln!("DEBUG sqrt: is_zero = {}", is_zero);
         
         if is_zero {
             Some(candidate)
         } else {
             // Try the other square root: -candidate
             let neg_candidate = -candidate;
-            let check2 = neg_candidate.square().reduce();
-            let diff2 = (check2 - *self).reduce();
+            let check2 = neg_candidate.square();
+            let diff2 = check2 - *self;
             let diff2_bytes = diff2.to_bytes();
             
             let is_zero2 = diff2_bytes.iter().all(|&b| b == 0);
             
-            eprintln!("DEBUG sqrt: neg_candidate = {}", hex::encode(neg_candidate.to_bytes()));
-            eprintln!("DEBUG sqrt: neg_candidate^2 = {}", hex::encode(check2.to_bytes()));
-            eprintln!("DEBUG sqrt: diff2 = {}", hex::encode(diff2_bytes));
-            eprintln!("DEBUG sqrt: is_zero2 = {}", is_zero2);
+            // eprintln!("DEBUG sqrt: neg_candidate = {}", hex::encode(neg_candidate.to_bytes()));
+            // eprintln!("DEBUG sqrt: neg_candidate^2 = {}", hex::encode(check2.to_bytes()));
+            // eprintln!("DEBUG sqrt: diff2 = {}", hex::encode(diff2_bytes));
+            // eprintln!("DEBUG sqrt: is_zero2 = {}", is_zero2);
             
             if is_zero2 {
                 Some(neg_candidate)
@@ -628,13 +628,63 @@ impl Mul for FieldElement {
              + f[4] * g[5] + f[5] * g[4] + f[6] * g[3] + f[7] * g[2] 
              + f[8] * g[1] + f[9] * g[0];
 
-        // Convert back to i64
+        // Now do proper carry propagation from i128 to i64 with reduction
+        // This is critical - we can't just truncate i128 to i64
+        let mut carry: i128;
+        
+        // First carry propagation pass
+        carry = (h[0] + (1i128 << 25)) >> 26;
+        h[1] += carry;
+        h[0] -= carry << 26;
+        
+        carry = (h[4] + (1i128 << 25)) >> 26;
+        h[5] += carry;
+        h[4] -= carry << 26;
+
+        carry = (h[1] + (1i128 << 24)) >> 25;
+        h[2] += carry;
+        h[1] -= carry << 25;
+        
+        carry = (h[5] + (1i128 << 24)) >> 25;
+        h[6] += carry;
+        h[5] -= carry << 25;
+
+        carry = (h[2] + (1i128 << 25)) >> 26;
+        h[3] += carry;
+        h[2] -= carry << 26;
+        
+        carry = (h[6] + (1i128 << 25)) >> 26;
+        h[7] += carry;
+        h[6] -= carry << 26;
+
+        carry = (h[3] + (1i128 << 24)) >> 25;
+        h[4] += carry;
+        h[3] -= carry << 25;
+        
+        carry = (h[7] + (1i128 << 24)) >> 25;
+        h[8] += carry;
+        h[7] -= carry << 25;
+
+        carry = (h[8] + (1i128 << 25)) >> 26;
+        h[9] += carry;
+        h[8] -= carry << 26;
+
+        carry = (h[9] + (1i128 << 24)) >> 25;
+        h[0] += carry * 19;
+        h[9] -= carry << 25;
+
+        // Second pass to handle overflow from h[0]
+        carry = h[0] >> 26;
+        h[1] += carry;
+        h[0] -= carry << 26;
+
+        // Convert to i64 - now safe because all limbs are in range
         let h_i64 = [
             h[0] as i64, h[1] as i64, h[2] as i64, h[3] as i64, h[4] as i64,
             h[5] as i64, h[6] as i64, h[7] as i64, h[8] as i64, h[9] as i64,
         ];
 
-        FieldElement(h_i64).reduce()
+        FieldElement(h_i64)
     }
 }
 
@@ -727,6 +777,15 @@ mod tests {
     }
 
     #[test]
+    fn test_is_square_four() {
+        let two = FieldElement::one() + FieldElement::one();
+        let four = two * two;
+        
+        // 4 should be a quadratic residue
+        assert!(four.is_square(), "4 should be a quadratic residue");
+    }
+
+    #[test]
     fn test_sqrt() {
         // Test square root of 4 (should be 2 or -2)
         let mut bytes = [0u8; 32];
@@ -758,5 +817,25 @@ mod tests {
         
         let one = FieldElement::one();
         assert!(!one.is_zero());
+    }
+}
+#[test]
+fn test_debug_sqrt() {
+    let two = FieldElement::one() + FieldElement::one();
+    let four = two * two;
+    
+    println!("Testing sqrt(4)...");
+    println!("is_square(4) = {}", four.is_square());
+    
+    match four.sqrt() {
+        Some(sqrt_four) => {
+            println!("sqrt(4) found!");
+            let sqrt_squared = sqrt_four * sqrt_four;
+            println!("sqrt(4)^2 = {:?}", &sqrt_squared.to_bytes()[..8]);
+            println!("4 = {:?}", &four.to_bytes()[..8]);
+        }
+        None => {
+            println!("sqrt(4) = None (FAILED)");
+        }
     }
 }
