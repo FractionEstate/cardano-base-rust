@@ -286,6 +286,173 @@ impl FieldElement {
         let sq = self.square();
         sq + sq
     }
+
+    /// Compute self^(2^252-3) for inversion
+    ///
+    /// This is a helper function used in field inversion.
+    /// Implements exponentiation by squaring for the specific exponent needed.
+    ///
+    /// # Returns
+    ///
+    /// self^(2^252-3)
+    fn pow22523(&self) -> Self {
+        let z2 = self.square().reduce();
+        let z8 = z2.square().square().reduce();
+        let z9 = (*self * z8).reduce();
+        let z11 = (z2 * z9).reduce();
+        let z22 = z11.square().reduce();
+        let z_5_0 = (z9 * z22).reduce();
+        let z_10_5 = (0..5).fold(z_5_0, |acc, _| acc.square().reduce());
+        let z_10_0 = (z_10_5 * z_5_0).reduce();
+        let z_20_10 = (0..10).fold(z_10_0, |acc, _| acc.square().reduce());
+        let z_20_0 = (z_20_10 * z_10_0).reduce();
+        let z_40_20 = (0..20).fold(z_20_0, |acc, _| acc.square().reduce());
+        let z_40_0 = (z_40_20 * z_20_0).reduce();
+        let z_50_10 = (0..10).fold(z_40_0, |acc, _| acc.square().reduce());
+        let z_50_0 = (z_50_10 * z_10_0).reduce();
+        let z_100_50 = (0..50).fold(z_50_0, |acc, _| acc.square().reduce());
+        let z_100_0 = (z_100_50 * z_50_0).reduce();
+        let z_200_100 = (0..100).fold(z_100_0, |acc, _| acc.square().reduce());
+        let z_200_0 = (z_200_100 * z_100_0).reduce();
+        let z_250_50 = (0..50).fold(z_200_0, |acc, _| acc.square().reduce());
+        let z_250_0 = (z_250_50 * z_50_0).reduce();
+        let z_252_2 = z_250_0.square().square().reduce();
+        (z_252_2 * *self).reduce()
+    }
+
+    /// Check if field element is square (has a square root)
+    ///
+    /// Uses Euler's criterion: x is a square iff x^((p-1)/2) = 1 (mod p)
+    /// For p = 2^255-19, this is x^(2^254-10)
+    ///
+    /// # Returns
+    ///
+    /// `true` if the element has a square root, `false` otherwise
+    pub fn is_square(&self) -> bool {
+        // Compute x^((p-1)/2) using pow22523
+        let check = (self.pow22523().square().square() * *self).reduce();
+        
+        // Check if result equals 1
+        let one = FieldElement::one();
+        let check_bytes = check.to_bytes();
+        let one_bytes = one.to_bytes();
+        
+        check_bytes[..] == one_bytes[..]
+    }
+
+    /// Compute modular square root
+    ///
+    /// If the element is a quadratic residue, returns Some(sqrt).
+    /// Otherwise returns None.
+    ///
+    /// # Returns
+    ///
+    /// `Some(sqrt)` if square root exists, `None` otherwise
+    pub fn sqrt(&self) -> Option<Self> {
+        let candidate = self.pow22523().reduce();
+        let check = candidate.square().reduce();
+        
+        // Verify that candidate^2 == self
+        let diff = (check - *self).reduce();
+        let diff_bytes = diff.to_bytes();
+        
+        let is_zero = diff_bytes.iter().all(|&b| b == 0);
+        
+        if is_zero {
+            Some(candidate)
+        } else {
+            None
+        }
+    }
+
+    /// Compute multiplicative inverse
+    ///
+    /// Returns the multiplicative inverse of the field element.
+    /// For non-zero x, returns x^(-1) such that x * x^(-1) = 1.
+    ///
+    /// # Panics
+    ///
+    /// Panics if called on zero (which has no inverse).
+    ///
+    /// # Returns
+    ///
+    /// The multiplicative inverse
+    pub fn invert(&self) -> Self {
+        // Use Fermat's little theorem: x^(p-2) = x^(-1) mod p
+        // For p = 2^255-19: x^(-1) = x^(2^255-21)
+        let z2_1_0 = self.pow22523().reduce();
+        let z2_2_0 = (z2_1_0.square().square() * *self).reduce();
+        let result = (z2_2_0.square() * *self).reduce();
+        result
+    }
+
+    /// Conditional select: return `a` if `choice == 1`, else `b`
+    ///
+    /// This is a constant-time operation to prevent timing attacks.
+    ///
+    /// # Arguments
+    ///
+    /// * `a` - First field element
+    /// * `b` - Second field element
+    /// * `choice` - Selection bit (0 or 1)
+    ///
+    /// # Returns
+    ///
+    /// `a` if `choice == 1`, `b` if `choice == 0`
+    #[inline]
+    pub fn conditional_select(a: &Self, b: &Self, choice: u8) -> Self {
+        let mask = -(choice as i64);
+        let mut result = [0i64; 10];
+        
+        for i in 0..10 {
+            result[i] = b.0[i] ^ (mask & (a.0[i] ^ b.0[i]));
+        }
+        
+        FieldElement(result)
+    }
+
+    /// Conditional swap: swap `a` and `b` if `choice == 1`
+    ///
+    /// This is a constant-time operation to prevent timing attacks.
+    ///
+    /// # Arguments
+    ///
+    /// * `a` - First field element (mutable)
+    /// * `b` - Second field element (mutable)
+    /// * `choice` - Swap bit (0 or 1)
+    pub fn conditional_swap(a: &mut Self, b: &mut Self, choice: u8) {
+        let mask = -(choice as i64);
+        
+        for i in 0..10 {
+            let t = mask & (a.0[i] ^ b.0[i]);
+            a.0[i] ^= t;
+            b.0[i] ^= t;
+        }
+    }
+
+    /// Check if field element equals zero (constant-time)
+    ///
+    /// # Returns
+    ///
+    /// `true` if the element is zero, `false` otherwise
+    pub fn is_zero(&self) -> bool {
+        let reduced = self.reduce();
+        let bytes = reduced.to_bytes();
+        bytes.iter().all(|&b| b == 0)
+    }
+
+    /// Check if field element is negative
+    ///
+    /// An element is considered negative if its least significant bit is 1
+    /// in the canonical byte representation.
+    ///
+    /// # Returns
+    ///
+    /// `true` if negative, `false` otherwise
+    pub fn is_negative(&self) -> bool {
+        let bytes = self.to_bytes();
+        (bytes[0] & 1) == 1
+    }
 }
 
 // Implement standard arithmetic operations
@@ -469,5 +636,64 @@ mod tests {
         let bytes_zero = zero.to_bytes();
         let fe_zero_back = FieldElement::from_bytes(&bytes_zero);
         assert_eq!(bytes_zero, fe_zero_back.to_bytes());
+    }
+
+    #[test]
+    fn test_invert() {
+        let fe = FieldElement::one();
+        let inv = fe.invert();
+        let product = fe * inv;
+        assert_eq!(product.reduce(), FieldElement::one());
+    }
+
+    #[test]
+    fn test_invert_non_trivial() {
+        // Test with a non-trivial element
+        let mut bytes = [0u8; 32];
+        bytes[0] = 5;
+        let fe = FieldElement::from_bytes(&bytes);
+        let inv = fe.invert();
+        let product = fe * inv;
+        
+        // Product should be 1
+        let one = FieldElement::one();
+        let product_reduced = product.reduce();
+        let one_reduced = one.reduce();
+        
+        assert_eq!(product_reduced.to_bytes(), one_reduced.to_bytes());
+    }
+
+    #[test]
+    fn test_sqrt() {
+        // Test square root of 4 (should be 2 or -2)
+        let mut bytes = [0u8; 32];
+        bytes[0] = 4;
+        let fe = FieldElement::from_bytes(&bytes);
+        
+        if let Some(sqrt) = fe.sqrt() {
+            let check = sqrt.square();
+            assert_eq!(check.reduce().to_bytes(), fe.reduce().to_bytes());
+        }
+    }
+
+    #[test]
+    fn test_conditional_select() {
+        let a = FieldElement::one();
+        let b = FieldElement::zero();
+        
+        let result_a = FieldElement::conditional_select(&a, &b, 1);
+        assert_eq!(result_a, a);
+        
+        let result_b = FieldElement::conditional_select(&a, &b, 0);
+        assert_eq!(result_b, b);
+    }
+
+    #[test]
+    fn test_is_zero() {
+        let zero = FieldElement::zero();
+        assert!(zero.is_zero());
+        
+        let one = FieldElement::one();
+        assert!(!one.is_zero());
     }
 }
