@@ -25,8 +25,8 @@ This comprehensive audit compares the Rust `cardano-base-rust` implementation ag
 | Metric | Score | Status |
 |--------|-------|--------|
 | **Feature Parity** | 75% | 🟡 Good |
-| **Tested Accuracy** | 95% | 🟢 Excellent |
-| **Production Readiness** | 90% | 🟢 Ready |
+| **Tested Accuracy** | 75% | 🟡 Good |
+| **Production Readiness** | 60% | 🔴 Critical Issues |
 
 ### Key Findings
 
@@ -37,10 +37,12 @@ This comprehensive audit compares the Rust `cardano-base-rust` implementation ag
 - Strong test coverage for implemented features
 
 ⚠️ **Areas Needing Attention:**
+- **VRF implementation must match libsodium** (URGENT)
 - BLS12-381 elliptic curve not implemented
 - Some algorithms missing (Ed448, Simple KES)
 
 ❌ **Critical Gaps:**
+- **VRF libsodium incompatibility** (CRITICAL RISK - consensus failures)
 - BLS12-381 may be required for Conway era (MEDIUM RISK)
 
 ---
@@ -100,24 +102,32 @@ All major KES variants implemented and tested:
 ---
 
 ### 4. Verifiable Random Functions (VRF)
-**Status:** ✅ **Production Ready**  
-**Overall Accuracy:** 98%
+**Status:** ❌ **NOT COMPATIBLE**  
+**Overall Accuracy:** 0% (incompatible with Haskell)
 
-| Implementation | Status | Accuracy | Byte Compatible | Notes |
-|----------------|--------|----------|-----------------|-------|
-| Praos VRF (Draft-03) | ✅ | 98% | ✅ Yes | 7 test vectors pass |
-| Praos Batch (Draft-13) | ✅ | 98% | ✅ Yes | 7 test vectors pass - PRODUCTION |
-| Simple VRF | ✅ | 85% | ⚠️ Likely | Simple wrapper implementation |
-| Mock VRF | ✅ | 85% | ✅ Yes | Testing implementation |
-| Never VRF | N/A | N/A | N/A | Rust-specific |
+| Implementation | Status | Compatibility | Notes |
+|----------------|--------|---------------|-------|
+| Praos VRF (Draft-03) | ❌ | NOT COMPATIBLE | Pure Rust vs libsodium - different outputs |
+| Praos Batch (Draft-13) | ❌ | NOT COMPATIBLE | Pure Rust vs libsodium - different outputs |
+| Simple VRF | ⚠️ | Unknown | Needs validation |
+| Mock VRF | ✅ | OK | Testing only |
+
+**CRITICAL ISSUE:**
+Testing against official IntersectMBO/cardano-base test vectors reveals that the Rust VRF implementation produces DIFFERENT cryptographic outputs than Haskell:
+- Haskell uses libsodium C library
+- Rust uses pure `curve25519-dalek`
+- All 14 official test vectors FAIL
 
 **Evidence:**
-- `cardano-crypto-class/tests/vrf_praos_vectors.rs` - Comprehensive test suite
-- 14 test vectors from Haskell implementation (7 Draft-03, 7 Draft-13)
-- All tests passing with byte-exact compatibility
-- PraosBatchCompatVRF is used by cardano-rust-node
+```
+Test Result: FAILED. 0 passed; 2 failed
+- praos_vectors_match_reference: FAILED
+- praos_batch_vectors_match_reference: FAILED
+```
 
-**Assessment:** VRF implementation is production-ready and 100% compatible with Haskell cardano-base.
+**Impact:** VRF proofs from Rust will NOT be accepted by Haskell nodes and vice versa. This is a **consensus failure risk**.
+
+**Action Required:** Either add libsodium bindings or fix pure Rust implementation to match byte-for-byte.
 
 ---
 

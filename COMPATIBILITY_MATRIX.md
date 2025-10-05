@@ -33,7 +33,7 @@ This document provides a detailed compatibility assessment between the Rust `car
 | Package/Crate | Haskell | Rust | Status | Test Coverage | Accuracy | Notes |
 |---------------|---------|------|--------|---------------|----------|-------|
 | cardano-crypto-class | ✅ | ✅ | 🔄 | Good | **Good** (85%) | Missing some algorithms |
-| cardano-crypto-praos | ✅ | ✅ | ✅ | Excellent | **Excellent** (98%) | VRF validated with 14 test vectors |
+| cardano-crypto-praos | ✅ | ❌ | ❌ | Poor | **NOT COMPATIBLE** (0%) | VRF incompatible with libsodium |
 | cardano-binary | ✅ | ✅ | ✅ | Excellent | **Excellent** (98%) | Byte-compatible CBOR |
 | cardano-slotting | ✅ | ✅ | ✅ | Good | **Good** (90%) | Complete |
 | cardano-base | ✅ | ✅ | ✅ | Minimal | **Good** | Feature flags only |
@@ -88,23 +88,31 @@ This document provides a detailed compatibility assessment between the Rust `car
 
 | Algorithm | Haskell Module | Rust Module | Status | Test Vectors | Accuracy | Byte Compatible | Notes |
 |-----------|----------------|-------------|--------|--------------|----------|-----------------|-------|
-| **Praos VRF** | VRF.Praos (crypto-praos) | vrf::praos | ✅ | 7 vectors | **Excellent** (98%) | ✅ Yes | Validated with Haskell test vectors |
-| **Praos Batch** | VRF.PraosBatchCompat | vrf::praos_batch | ✅ | 7 vectors | **Excellent** (98%) | ✅ Yes | Production implementation |
-| **Simple VRF** | VRF.Simple | vrf::simple | ✅ | 5+ vectors | **Good** (85%) | ⚠️ Likely | Simple wrapper |
+| **Praos VRF** | VRF.Praos (crypto-praos) | vrf::praos | ❌ | 0/7 pass | **NOT COMPATIBLE** (0%) | ❌ No | Pure Rust vs libsodium mismatch |
+| **Praos Batch** | VRF.PraosBatchCompat | vrf::praos_batch | ❌ | 0/7 pass | **NOT COMPATIBLE** (0%) | ❌ No | Pure Rust vs libsodium mismatch |
+| **Simple VRF** | VRF.Simple | vrf::simple | ⚠️ | Unknown | **Unknown** | ⚠️ Unknown | Needs validation |
 | **Mock VRF** | VRF.Mock | vrf::mock | ✅ | 5+ vectors | **Good** (85%) | ✅ Yes | Testing implementation |
 | **Never VRF** | - | vrf::never | N/A | - | N/A | N/A | Rust-specific |
 | **NeverUsed** | VRF.NeverUsed | - | ❌ | 0 | N/A | N/A | Placeholder |
 
-**Overall VRF Accuracy:** **Excellent** (98%)  
-**Production Ready:** ✅ Yes - PraosBatchCompatVRF validated with 14 test vectors
+**Overall VRF Accuracy:** **NOT COMPATIBLE** (0%)  
+**Production Ready:** ❌ NO - Critical incompatibility with Haskell libsodium
+
+**CRITICAL FINDING:** 
+When tested against official IntersectMBO/cardano-base test vectors, ALL VRF tests FAIL. The Rust implementation using pure `curve25519-dalek` produces different cryptographic outputs than the Haskell implementation using libsodium.
 
 **Evidence:** 
-- `cardano-crypto-class/tests/vrf_praos_vectors.rs` passes all tests
-- 7 Draft-03 test vectors (PraosVRF)
-- 7 Draft-13 test vectors (PraosBatchCompatVRF)
-- Byte-exact compatibility with Haskell cardano-base
+- Tested with 14 official test vectors from IntersectMBO/cardano-base
+- 0/7 Praos VRF (Draft-03) tests pass
+- 0/7 Praos Batch (Draft-13) tests pass
+- Different proofs and outputs for identical inputs
 
-**Note:** cardano-rust-node uses PraosBatchCompatVRF from cardano-crypto-class as the production VRF implementation.
+**Impact:** Cannot interoperate with Cardano mainnet/testnet. VRF proofs are incompatible.
+
+**Solution Required:** 
+1. Add libsodium bindings to match Haskell exactly, OR
+2. Fix pure Rust implementation to produce identical outputs, OR
+3. Verify if pure Rust approach is acceptable for specific use case
 
 ---
 
