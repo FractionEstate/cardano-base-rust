@@ -510,6 +510,16 @@ impl Mul for FieldElement {
         let f = self.0;
         let g = other.0;
 
+        // Convert to i128 to prevent overflow during multiplication
+        let f: [i128; 10] = [
+            f[0] as i128, f[1] as i128, f[2] as i128, f[3] as i128, f[4] as i128,
+            f[5] as i128, f[6] as i128, f[7] as i128, f[8] as i128, f[9] as i128,
+        ];
+        let g: [i128; 10] = [
+            g[0] as i128, g[1] as i128, g[2] as i128, g[3] as i128, g[4] as i128,
+            g[5] as i128, g[6] as i128, g[7] as i128, g[8] as i128, g[9] as i128,
+        ];
+
         // Precompute doubled values
         let f1_2 = 2 * f[1];
         let f3_2 = 2 * f[3];
@@ -528,7 +538,7 @@ impl Mul for FieldElement {
         let g8_19 = 19 * g[8];
         let g9_19 = 19 * g[9];
 
-        let mut h = [0i64; 10];
+        let mut h = [0i128; 10];
 
         // Compute product limbs
         h[0] = f[0] * g[0] + f1_2 * g9_19 + f[2] * g8_19 + f3_2 * g7_19 
@@ -571,7 +581,13 @@ impl Mul for FieldElement {
              + f[4] * g[5] + f[5] * g[4] + f[6] * g[3] + f[7] * g[2] 
              + f[8] * g[1] + f[9] * g[0];
 
-        FieldElement(h).reduce()
+        // Convert back to i64
+        let h_i64 = [
+            h[0] as i64, h[1] as i64, h[2] as i64, h[3] as i64, h[4] as i64,
+            h[5] as i64, h[6] as i64, h[7] as i64, h[8] as i64, h[9] as i64,
+        ];
+
+        FieldElement(h_i64).reduce()
     }
 }
 
