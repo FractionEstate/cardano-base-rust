@@ -15,6 +15,7 @@ cardano-test-vectors/
 │   ├── ed25519_test_vectors.json
 │   ├── ecdsa_secp256k1_test_vectors.json
 │   ├── schnorr_secp256k1_test_vectors.json
+│   ├── compact_sum_kes_test_vectors.json (CompactSumKES levels 1–7)
 │   ├── vrf_ver03_standard_10 … vrf_ver03_standard_12
 │   ├── vrf_ver13_* and generated_* series
 │   └── bls12-381/
@@ -26,7 +27,8 @@ cardano-test-vectors/
 └── tests/
     ├── debug_ed25519_trace.rs # Trace helper when ed25519-debug feature is set
     ├── performance.rs         # Signing throughput smoke test
-    └── dsign_ed25519_vectors.rs (crate tests import this)
+    ├── dsign_ed25519_vectors.rs (crate tests import this)
+    └── kes_vectors.rs         # Single/CompactSingle/Sum/CompactSum regression
 ```
 
 ### VRF vectors
@@ -56,6 +58,21 @@ kept alongside the VRF set:
 
 The Ed25519 vectors are also used for the RFC 8032 parity checks in
 `cardano-crypto-class`.
+
+### KES vectors
+
+`generate_kes_vectors.rs` mirrors the hierarchy from
+`Cardano.Crypto.KES.Sum`, emitting deterministic fixtures for:
+
+- `single_kes_test_vectors.json` – SingleKES level 0 cases
+- `compact_single_kes_test_vectors.json` – CompactSingleKES (embedded vk parity)
+- `sum_kes_test_vectors.json` – SumKES levels 1–7
+- `compact_sum_kes_test_vectors.json` – CompactSumKES levels 1–7, using the
+    new recursive verification-key reconstruction to keep compact trees in
+    lockstep with their SumKES counterparts
+
+The top-level test `tests/kes_vectors.rs` consumes these files to assert
+signature stability and to cross-check the period boundaries for every level.
 
 ### BLS12-381 vectors
 

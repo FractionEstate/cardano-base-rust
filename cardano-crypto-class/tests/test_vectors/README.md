@@ -63,6 +63,7 @@ For initial testing, we can create known-good test vectors manually by:
 - `mock_vrf_vectors.json` - Mock VRF test vectors
 - `single_kes_vectors.json` - Single KES test vectors
 - `compact_single_kes_vectors.json` - Compact Single KES test vectors
+- `compact_sum_kes_test_vectors.json` - Compact Sum KES (levels 1–7) test vectors
 
 ## Validation Process
 

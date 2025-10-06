@@ -2,8 +2,9 @@ use cardano_crypto_class::dsign::DsignAlgorithm;
 use cardano_crypto_class::dsign::ed25519::Ed25519;
 use cardano_crypto_class::kes::compact_single::OptimizedKesSignature;
 use cardano_crypto_class::kes::{
-    CompactSingleKes, KesAlgorithm, SingleKes, Sum1Kes, Sum2Kes, Sum3Kes, Sum4Kes, Sum5Kes,
-    Sum6Kes, Sum7Kes,
+    CompactSingleKes, CompactSum1Kes, CompactSum2Kes, CompactSum3Kes, CompactSum4Kes,
+    CompactSum5Kes, CompactSum6Kes, CompactSum7Kes, KesAlgorithm, SingleKes, Sum1Kes, Sum2Kes,
+    Sum3Kes, Sum4Kes, Sum5Kes, Sum6Kes, Sum7Kes,
 };
 use cardano_test_vectors::kes;
 use hex::{decode, encode_upper};
@@ -52,6 +53,11 @@ struct CompactSingleExpected {
 
 #[derive(Deserialize)]
 struct SumKesVectors {
+    levels: Vec<SumKesLevel>,
+}
+
+#[derive(Deserialize)]
+struct CompactSumKesVectors {
     levels: Vec<SumKesLevel>,
 }
 
@@ -218,6 +224,27 @@ fn sum_kes_vectors_cover_period_boundaries() {
             6 => exercise_sum_level::<Sum6Kes>(level),
             7 => exercise_sum_level::<Sum7Kes>(level),
             other => panic!("unexpected SumKES level {other}"),
+        }
+    }
+}
+
+#[test]
+fn compact_sum_kes_vectors_cover_all_levels() {
+    let fixture =
+        kes::get("compact_sum_kes_test_vectors.json").expect("compact sum KES vectors present");
+    let parsed: CompactSumKesVectors =
+        serde_json::from_str(fixture).expect("valid compact sum KES JSON");
+
+    for level in &parsed.levels {
+        match level.level {
+            1 => exercise_sum_level::<CompactSum1Kes>(level),
+            2 => exercise_sum_level::<CompactSum2Kes>(level),
+            3 => exercise_sum_level::<CompactSum3Kes>(level),
+            4 => exercise_sum_level::<CompactSum4Kes>(level),
+            5 => exercise_sum_level::<CompactSum5Kes>(level),
+            6 => exercise_sum_level::<CompactSum6Kes>(level),
+            7 => exercise_sum_level::<CompactSum7Kes>(level),
+            other => panic!("unexpected CompactSumKES level {other}"),
         }
     }
 }

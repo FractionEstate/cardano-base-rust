@@ -36,6 +36,12 @@ generators.
   serialisation helpers, and constant-time pinned or mlocked key storage. The
   Ed25519 harness now ships with RFC 8032 parity tests driven by fixtures in
   [`cardano-test-vectors`](../cardano-test-vectors).
+- CompactSumKES reuses a recursive verification-key helper so the compact tree
+  matches SumKES hashing for levels 1–7, backed by regenerated fixtures in
+  [`cardano-test-vectors`](../cardano-test-vectors).
+- KES boundary suites assert that `SingleKES`/`CompactSingleKES` expire after
+  their lone period and that CompactSum verification rejects tampered
+  signatures or verification keys.
 
 ## DSIGN parity progress
 
@@ -73,6 +79,14 @@ The Ed25519 harness (`tests/dsign_ed25519_vectors.rs`) exercises:
 
 Additional DSIGN harnesses for ECDSA and Schnorr will live alongside the
 Ed25519 suite as Phase 04 progresses.
+
+The feature-gated test `tests/compact_sum_kes_vectors.rs` consumes the shared
+CompactSumKES vectors to ensure all levels remain byte-for-byte compatible
+with the hash reconstruction logic.
+
+`tests/kes_boundary.rs` focuses on evolution edge cases: Single/CompactSingle
+expiry, CompactSum period rollovers, and tamper detection for verification key
+reconstruction.
 
 ## Usage
 

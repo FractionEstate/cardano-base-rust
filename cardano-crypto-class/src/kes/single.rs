@@ -72,12 +72,13 @@ where
         signing_key: Self::SigningKey,
         period: Period,
     ) -> Result<Option<Self::SigningKey>, KesMError> {
-        if period >= 1 {
-            // Key expired - we can't evolve beyond period 0
+        let last_period = Self::total_periods().saturating_sub(1);
+
+        if period >= last_period {
+            // Once we have signed for the final available period, the key expires.
             D::forget_signing_key_m(signing_key);
             Ok(None)
         } else {
-            // Still at period 0, return the same key
             Ok(Some(signing_key))
         }
     }

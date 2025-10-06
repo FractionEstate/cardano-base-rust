@@ -13,6 +13,17 @@
 * Introduce libsodium-style memory utilities, including runtime-length
   mlocked buffers, allocators, and low-level `zero_mem`/`copy_mem` helpers
   mirroring `Cardano.Crypto.Libsodium.Memory`.
+* Added serde-gated CompactSumKES level-1 regression test consuming shared
+  fixtures, keeping the compact tree implementation in sync with generated
+  vectors.
+* Extended CompactSumKES verification to reconstruct recursive verification
+  keys, enabling parity for levels 1–7 alongside the SumKES hierarchy and the
+  regenerated shared fixtures.
+* Aligned `SingleKES`/`CompactSingleKES` key evolution with the Haskell
+  reference and added boundary/tamper regression tests to lock down compact
+  tree verification behaviour.
+* Allow `PackedBytes` serde deserialisation to accept human-readable byte
+  sequences as well as base64 strings, matching Haskell JSON fixtures.
 
 ## 2.2.3.2
 

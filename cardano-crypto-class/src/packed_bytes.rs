@@ -112,6 +112,38 @@ impl<'de, const N: usize> Deserialize<'de> for PackedBytes<N> {
             {
                 pack_pinned_bytes(v).map_err(|err| E::custom(err.to_string()))
             }
+
+            fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_bytes(&v)
+            }
+
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+            where
+                A: serde::de::SeqAccess<'de>,
+            {
+                let mut data = [0u8; N];
+                let mut idx = 0usize;
+
+                while let Some(byte) = seq.next_element::<u8>()? {
+                    if idx >= N {
+                        return Err(<A::Error as serde::de::Error>::invalid_length(
+                            idx + 1,
+                            &self,
+                        ));
+                    }
+                    data[idx] = byte;
+                    idx += 1;
+                }
+
+                if idx != N {
+                    return Err(<A::Error as serde::de::Error>::invalid_length(idx, &self));
+                }
+
+                Ok(PackedBytes::new(data))
+            }
         }
 
         deserializer.deserialize_bytes(Visitor::<N>)

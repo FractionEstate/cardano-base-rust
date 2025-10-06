@@ -10,6 +10,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 ### Added
 - SumKES JSON fixtures (`sum_kes_test_vectors.json`) mirrored from the Haskell
   reference generator (`Cardano.Crypto.KES.Sum`).
+- CompactSumKES level-1 JSON fixtures (`compact_sum_kes_test_vectors.json`)
+  generated alongside the existing KES datasets to unblock compact tree
+  regression tests.
 - Hierarchical SumKES coverage in `tests/kes_vectors.rs`, exercising levels 1–6
   and asserting tracked period signatures as described in
   `Cardano.Crypto.KES.Sum`.
@@ -25,6 +28,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - `generate_kes_vectors.rs` now emits SumKES vectors alongside existing Single
   and CompactSingle outputs, mirroring the logic from
   `Cardano.Crypto.KES.Sum`.
+- `compact_sum_kes_test_vectors.json` now covers CompactSumKES levels 1–7, and
+  the regression harness exercises every level to match the regenerated
+  fixtures.
 - `generate_ed25519_outputs.rs` surfaces optional debugging guidance when the
   new feature flag is enabled.
 - Library module exports extended to expose the sum KES fixtures at compile

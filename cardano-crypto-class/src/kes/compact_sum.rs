@@ -49,7 +49,6 @@ where
 }
 
 /// Signature for CompactSumKES - only stores the "other" verification key.
-#[derive(Clone)]
 pub struct CompactSumSignature<D, H>
 where
     D: KesAlgorithm,
@@ -63,14 +62,40 @@ where
     _phantom: PhantomData<H>,
 }
 
+/// Helper trait used to recover the verification key associated with a compact subtree
+/// for any supported KES algorithm. CompactSum verification stitches these keys back
+/// together when recomputing higher-level verification hashes.
+pub trait CompactKesComponents: KesAlgorithm {
+    fn active_verification_key_from_signature(
+        signature: &Self::Signature,
+        period: Period,
+    ) -> Self::VerificationKey;
+}
+
+impl<D, H> Clone for CompactSumSignature<D, H>
+where
+    D: KesAlgorithm,
+    D::Signature: OptimizedKesSignature + Clone,
+    D::VerificationKey: Clone,
+    H: KesHashAlgorithm,
+{
+    fn clone(&self) -> Self {
+        Self {
+            sigma: self.sigma.clone(),
+            vk_other: self.vk_other.clone(),
+            _phantom: PhantomData,
+        }
+    }
+}
+
 impl<D, H> OptimizedKesSignature for CompactSumSignature<D, H>
 where
     D: KesAlgorithm,
     D::VerificationKey: Clone,
-    D::Signature: OptimizedKesSignature<VerificationKey = D::VerificationKey>,
+    D::Signature: OptimizedKesSignature,
     H: KesHashAlgorithm,
 {
-    type VerificationKey = D::VerificationKey;
+    type VerificationKey = <D::Signature as OptimizedKesSignature>::VerificationKey;
 
     fn extract_verification_key(&self) -> &Self::VerificationKey {
         self.sigma.extract_verification_key()
@@ -79,9 +104,9 @@ where
 
 impl<D, H> KesAlgorithm for CompactSumKes<D, H>
 where
-    D: KesAlgorithm,
+    D: KesAlgorithm + CompactKesComponents,
     D::VerificationKey: Clone,
-    D::Signature: OptimizedKesSignature<VerificationKey = D::VerificationKey> + Clone,
+    D::Signature: OptimizedKesSignature + Clone,
     H: KesHashAlgorithm,
 {
     type VerificationKey = Vec<u8>; // Hash of (vk0, vk1)
@@ -143,17 +168,27 @@ where
         signature: &Self::Signature,
     ) -> Result<(), KesError> {
         let t_half = D::total_periods();
+        let active_is_left = period < t_half;
+        let child_period = if active_is_left {
+            period
+        } else {
+            period - t_half
+        };
 
-        // Extract the "on-side" verification key from the signature
-        let vk_active = signature.sigma.extract_verification_key();
+        // Derive the active subtree verification key (owned value so we can reuse it)
+        let vk_active = <D as CompactKesComponents>::active_verification_key_from_signature(
+            &signature.sigma,
+            child_period,
+        );
+        let vk_other = signature.vk_other.clone();
 
         // Reconstruct both vk0 and vk1
-        let (vk0, vk1) = if period < t_half {
+        let (vk0, vk1) = if active_is_left {
             // Active is left, other is right
-            (vk_active.clone(), signature.vk_other.clone())
+            (vk_active.clone(), vk_other.clone())
         } else {
             // Active is right, other is left
-            (signature.vk_other.clone(), vk_active.clone())
+            (vk_other.clone(), vk_active.clone())
         };
 
         // Verify that H(vk0 || vk1) matches the provided verification key
@@ -166,11 +201,7 @@ where
         }
 
         // Verify the signature against the active verification key
-        if period < t_half {
-            D::verify_kes(context, &vk0, period, message, &signature.sigma)
-        } else {
-            D::verify_kes(context, &vk1, period - t_half, message, &signature.sigma)
-        }
+        D::verify_kes(context, &vk_active, child_period, message, &signature.sigma)
     }
 
     fn update_kes(
@@ -329,6 +360,52 @@ pub type CompactSum6Kes = CompactSumKes<CompactSum5Kes, Blake2b256>;
 
 /// 2^7 = 128 periods (compact, standard Cardano KES)
 pub type CompactSum7Kes = CompactSumKes<CompactSum6Kes, Blake2b256>;
+
+impl CompactKesComponents for CompactSum0Kes {
+    fn active_verification_key_from_signature(
+        signature: &Self::Signature,
+        _period: Period,
+    ) -> Self::VerificationKey {
+        signature.extract_verification_key().clone()
+    }
+}
+
+impl<D, H> CompactKesComponents for CompactSumKes<D, H>
+where
+    D: KesAlgorithm + CompactKesComponents,
+    D::VerificationKey: Clone,
+    D::Signature: OptimizedKesSignature + Clone,
+    H: KesHashAlgorithm,
+{
+    fn active_verification_key_from_signature(
+        signature: &Self::Signature,
+        period: Period,
+    ) -> Self::VerificationKey {
+        let t_half = D::total_periods();
+        let active_is_left = period < t_half;
+        let child_period = if active_is_left {
+            period
+        } else {
+            period - t_half
+        };
+
+        let vk_active = <D as CompactKesComponents>::active_verification_key_from_signature(
+            &signature.sigma,
+            child_period,
+        );
+        let vk_other = signature.vk_other.clone();
+
+        let (vk_left, vk_right) = if active_is_left {
+            (vk_active.clone(), vk_other)
+        } else {
+            (vk_other.clone(), vk_active.clone())
+        };
+
+        let left_bytes = D::raw_serialize_verification_key_kes(&vk_left);
+        let right_bytes = D::raw_serialize_verification_key_kes(&vk_right);
+        H::hash_concat(&left_bytes, &right_bytes)
+    }
+}
 
 // DirectSerialise implementation for CompactSumSigningKey
 //

@@ -11,10 +11,23 @@ use crate::kes::{KesAlgorithm, KesError, KesMError, Period};
 pub struct CompactSingleKes<D: DsignMAlgorithm>(PhantomData<D>);
 
 /// Signature type that embeds the verification key.
-#[derive(Clone)]
 pub struct CompactSingleSig<D: DsignMAlgorithm> {
     pub(crate) signature: D::Signature,
     pub(crate) verification_key: D::VerificationKey,
+}
+
+impl<D> Clone for CompactSingleSig<D>
+where
+    D: DsignMAlgorithm,
+    D::Signature: Clone,
+    D::VerificationKey: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            signature: self.signature.clone(),
+            verification_key: self.verification_key.clone(),
+        }
+    }
 }
 
 // Manual PartialEq and Eq implementations
@@ -195,7 +208,9 @@ where
         signing_key: Self::SigningKey,
         period: Period,
     ) -> Result<Option<Self::SigningKey>, KesMError> {
-        if period >= 1 {
+        let last_period = Self::total_periods().saturating_sub(1);
+
+        if period >= last_period {
             D::forget_signing_key_m(signing_key);
             Ok(None)
         } else {

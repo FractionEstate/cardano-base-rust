@@ -67,14 +67,14 @@ Validate and achieve 100% functional parity between the Rust KES (Key Evolving S
   - `cardano-crypto-tests/src/Test/Crypto/KES.hs`
   - [x] Single/CompactSingle sign/verify vectors (deterministic Rust reproduction aligned with Haskell coverage)
   - [x] Sum hierarchical vectors (levels 1-6 captured via `sum_kes_test_vectors.json`)
-  - [ ] CompactSum hierarchical vectors
+  - [x] CompactSum hierarchical vectors *(levels 1–7 regenerated after recursive verification key reconstruction landed)*
   - [ ] Period evolution sequences
 
 - [ ] Create JSON test vector files
   - [x] `single_kes_test_vectors.json`
   - [x] `compact_single_kes_test_vectors.json`
   - [x] `sum_kes_test_vectors.json`
-  - [ ] `compact_sum_kes_test_vectors.json`
+  - [x] `compact_sum_kes_test_vectors.json` *(levels 1–7 regenerated from the Rust implementation after recursive vk wiring)*
 
 - [x] Migrate vectors to `cardano-test-vectors` crate
 
@@ -312,6 +312,10 @@ Validate and achieve 100% functional parity between the Rust KES (Key Evolving S
   - **2025-10-06**: Phase 05 initiated after DSIGN parity completion. Status: In progress, Owner: @FractionEstate
   - **2025-10-07**: Generated deterministic SingleKES and CompactSingleKES vectors, embedded them in `cardano-test-vectors`, and added verification tests. Next up: SumKES vector extraction.
   - **2025-10-08**: Added SumKES generator coverage in `cardano-test-vectors`, produced `sum_kes_test_vectors.json`, and wired regression tests for levels 1–6. CompactSum fixtures remain outstanding.
+  - **2025-10-06-time-21:45**: Ported CompactSumKES level-1 vectors into `cardano-test-vectors`, added regression hooks in both crates, and documented remaining work for deeper compact levels.
+  - **2025-10-09**: Reworked CompactSumKES verification to recover recursive branch keys, regenerated fixtures for levels 1–7, expanded regression tests, and refreshed docs/CHANGELOG entries. Next: continue parity validation for evolution edge cases.
+  - **2025-10-10**: Regenerated CompactSum fixtures after recursive vk changes, confirmed serde-gated regression in `cardano-crypto-class` exercises levels 1–7, and ran `cardano-crypto-class`/`cardano-test-vectors` test suites. Next: focus on evolution boundary edge cases and Single/CompactSingle parity sign-off.
+  - **2025-10-10**: Locked down `SingleKES`/`CompactSingleKES` expiry semantics, added boundary and tamper regression tests for CompactSum, and refreshed crate docs to reflect the new coverage. Next: expand evolution edge-case validation for SumKES variants.
 
 ---
 
