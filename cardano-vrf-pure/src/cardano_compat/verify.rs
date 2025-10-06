@@ -4,14 +4,12 @@
 //! implementation byte-for-byte.
 
 use curve25519_dalek::{
-    constants::ED25519_BASEPOINT_TABLE,
-    edwards::CompressedEdwardsY,
-    scalar::Scalar,
+    constants::ED25519_BASEPOINT_TABLE, edwards::CompressedEdwardsY, scalar::Scalar,
 };
 use sha2::{Digest, Sha512};
 
-use crate::{VrfError, VrfResult};
 use super::point::cardano_hash_to_curve;
+use crate::{VrfError, VrfResult};
 
 /// Suite identifier for VRF draft-03
 const SUITE_DRAFT03: u8 = 0x03;
@@ -144,7 +142,7 @@ mod tests {
         let pk = [0u8; 32];
         let proof = [0u8; 80];
         let msg = b"test";
-        
+
         // Will fail until hash_to_curve is implemented
         let result = cardano_vrf_verify(&pk, &proof, msg);
         assert!(result.is_err());
@@ -156,7 +154,7 @@ mod tests {
         let c_short = [1u8; 16];
         let mut c_full = [0u8; 32];
         c_full[0..16].copy_from_slice(&c_short);
-        
+
         assert_eq!(&c_full[0..16], &c_short);
         assert_eq!(&c_full[16..32], &[0u8; 16]);
     }

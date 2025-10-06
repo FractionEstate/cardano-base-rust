@@ -3,15 +3,12 @@
 //! This module implements VRF proof generation matching Cardano's libsodium
 //! implementation byte-for-byte.
 
-use curve25519_dalek::{
-    constants::ED25519_BASEPOINT_TABLE,
-    scalar::Scalar,
-};
+use curve25519_dalek::{constants::ED25519_BASEPOINT_TABLE, scalar::Scalar};
 use sha2::{Digest, Sha512};
 use zeroize::Zeroizing;
 
-use crate::VrfResult;
 use super::point::cardano_hash_to_curve;
+use crate::VrfResult;
 
 /// Suite identifier for VRF draft-03
 const SUITE_DRAFT03: u8 = 0x03;
@@ -49,10 +46,7 @@ const TWO: u8 = 0x02;
 /// # Errors
 ///
 /// Returns error if hash-to-curve fails or key is invalid
-pub fn cardano_vrf_prove(
-    secret_key: &[u8; 64],
-    message: &[u8],
-) -> VrfResult<[u8; 80]> {
+pub fn cardano_vrf_prove(secret_key: &[u8; 64], message: &[u8]) -> VrfResult<[u8; 80]> {
     // Step 1: Expand secret key
     let mut az = Zeroizing::new([0u8; 64]);
     let mut hasher = Sha512::new();
@@ -80,7 +74,7 @@ pub fn cardano_vrf_prove(
 
     let mut r_bytes = [0u8; 32];
     r_bytes.copy_from_slice(&r_string[0..32]);
-    r_bytes[31] &= 0x7f; // Clear sign bit
+    r_bytes[31] &= 0x7f; // Clear sign bit per Cardano reference implementation
 
     // CRITICAL: This must use Cardano-specific hash-to-curve
     let h_point = cardano_hash_to_curve(&r_bytes)?;
@@ -139,10 +133,13 @@ mod tests {
     fn test_prove_compiles() {
         let sk = [0u8; 64];
         let msg = b"test";
-        
-        // Will fail until hash_to_curve is implemented
-        let result = cardano_vrf_prove(&sk, msg);
-        assert!(result.is_err());
+
+        let proof =
+            cardano_vrf_prove(&sk, msg).expect("zero secret key should still produce a proof");
+        assert_eq!(proof.len(), 80);
+        // Gamma should not be all zeros even for a zero scalar because hash-to-curve produces
+        // a valid point and the proof concatenates the serialized point.
+        assert!(proof[0..32].iter().any(|&b| b != 0));
     }
 
     #[test]
@@ -152,7 +149,7 @@ mod tests {
         az[0] &= 248;
         az[31] &= 127;
         az[31] |= 64;
-        
+
         assert_eq!(az[0] & 0x07, 0);
         assert_eq!(az[31] & 0x80, 0);
         assert_eq!(az[31] & 0x40, 0x40);

@@ -3,9 +3,10 @@
 //! This module implements operations on Edwards curve points, including
 //! Cardano-specific cofactor clearing that differs from standard implementations.
 
-use curve25519_dalek::edwards::EdwardsPoint;
 use super::montgomery;
 use crate::VrfResult;
+use curve25519_dalek::edwards::EdwardsPoint;
+use curve25519_dalek::montgomery::MontgomeryPoint;
 
 /// Cardano-specific hash-to-curve function
 ///
@@ -35,65 +36,44 @@ use crate::VrfResult;
 pub fn cardano_hash_to_curve(r: &[u8; 32]) -> VrfResult<EdwardsPoint> {
     // Extract sign bit from high bit of r[31]
     let sign = (r[31] >> 7) & 1;
-    
+    eprintln!("DEBUG hash_to_curve: sign bit = {}", sign);
+
     // Create modified r with sign bit cleared for Elligator2
     let mut r_masked = *r;
     r_masked[31] &= 0x7f;
-    
+
     // Apply Elligator2 to get Montgomery coordinates
-    let (mont_u, mont_v) = montgomery::elligator2(&r_masked)
-        .ok_or_else(|| {
-            // eprintln!("DEBUG: Elligator2 failed for input: {}", hex::encode(r_masked));
-            crate::VrfError::InvalidPoint
-        })?;
-    
-    // Convert Montgomery to Edwards coordinates
-    let (ed_x, ed_y) = montgomery::mont_to_edwards(&mont_u, &mont_v)
-        .ok_or_else(|| {
-            // eprintln!("DEBUG: Montgomery to Edwards conversion failed");
-            // eprintln!("DEBUG: mont_u bytes: {}", hex::encode(mont_u.to_bytes()));
-            // eprintln!("DEBUG: mont_v bytes: {}", hex::encode(mont_v.to_bytes()));
-            crate::VrfError::InvalidPoint
-        })?;
-    
-    // Convert field elements to bytes for EdwardsPoint construction
-    let x_bytes = ed_x.to_bytes();
-    let y_bytes = ed_y.to_bytes();
-    
-    // Construct Edwards point from (x, y) coordinates
-    // Edwards points are stored in compressed form as y-coordinate + sign bit of x
-    // The sign bit of x goes into the high bit of byte 31
-    let mut point_bytes = [0u8; 32];
-    point_bytes.copy_from_slice(&y_bytes);
-    
-    // Set sign bit in high bit of y encoding based on x coordinate's low bit
-    // This matches the Ed25519 point compression standard
-    if (x_bytes[0] & 1) == 1 {
-        point_bytes[31] |= 0x80;
-    }
-    
-    // Try to decompress the point using curve25519-dalek
-    // This will validate that the point is actually on the curve
-    let point_opt = curve25519_dalek::edwards::CompressedEdwardsY(point_bytes)
-        .decompress();
-    
-    // If decompression fails, the coordinates don't represent a valid curve point
-    let mut point = point_opt.ok_or_else(|| {
-        // eprintln!("DEBUG: Point decompression failed");
-        // eprintln!("DEBUG: ed_x bytes: {}", hex::encode(x_bytes));
-        // eprintln!("DEBUG: ed_y bytes: {}", hex::encode(y_bytes));
-        // eprintln!("DEBUG: compressed point: {}", hex::encode(point_bytes));
+    // We only need the u-coordinate for Montgomery to Edwards conversion
+    let (mont_u, _mont_v) = montgomery::elligator2(&r_masked).ok_or_else(|| {
+        eprintln!("DEBUG: Elligator2 FAILED");
         crate::VrfError::InvalidPoint
     })?;
-    
-    // Apply sign bit from original input
+
+    eprintln!("DEBUG: Elligator2 succeeded");
+
+    // Convert our FieldElement u-coordinate to bytes for MontgomeryPoint
+    let u_bytes = mont_u.to_bytes();
+    eprintln!("DEBUG: u_bytes first 8: {:02x?}", &u_bytes[..8]);
+
+    // Use curve25519-dalek's MontgomeryPoint and its to_edwards conversion
+    // This handles the proper birational map from Montgomery to Edwards
+    let mont_point = MontgomeryPoint(u_bytes);
+    let mut point = mont_point.to_edwards(sign).ok_or_else(|| {
+        eprintln!("DEBUG: to_edwards FAILED with sign={}", sign);
+        crate::VrfError::InvalidPoint
+    })?;
+
+    eprintln!("DEBUG: to_edwards succeeded");
+
+    // Apply conditional negation based on sign bit from original input
+    // This matches the C implementation's logic
     if sign == 1 {
         point = -point;
     }
-    
+
     // Clear cofactor using Cardano-specific method
     let result = cardano_clear_cofactor(&point);
-    
+
     Ok(result)
 }
 
@@ -119,7 +99,7 @@ pub fn cardano_hash_to_curve(r: &[u8; 32]) -> VrfResult<EdwardsPoint> {
 /// The C implementation uses:
 /// ```c
 /// ge25519_double(&p2, p);  // p2 = 2*p
-/// ge25519_double(&p2, &p2); // p2 = 4*p  
+/// ge25519_double(&p2, &p2); // p2 = 4*p
 /// ge25519_double(&p2, &p2); // p2 = 8*p
 /// ```
 pub fn cardano_clear_cofactor(point: &EdwardsPoint) -> EdwardsPoint {
@@ -141,22 +121,25 @@ mod tests {
         // This is expected as we're using a simplified implementation
         match result {
             Ok(_) => { /* Success */ },
-            Err(_) => { /* Expected - simplified implementation */ }
+            Err(_) => { /* Expected - simplified implementation */ },
         }
     }
-    
+
     #[test]
     fn test_cofactor_clearing_with_basepoint() {
         use curve25519_dalek::constants::ED25519_BASEPOINT_POINT;
         use curve25519_dalek::traits::Identity;
-        
+
         // Test cofactor clearing on the basepoint
         let cleared = cardano_clear_cofactor(&ED25519_BASEPOINT_POINT);
-        
+
         // Should not be identity
         let identity = EdwardsPoint::identity();
-        assert_ne!(cleared.compress().as_bytes(), identity.compress().as_bytes());
-        
+        assert_ne!(
+            cleared.compress().as_bytes(),
+            identity.compress().as_bytes()
+        );
+
         // Should be 8 * basepoint
         use curve25519_dalek::scalar::Scalar;
         let eight = Scalar::from(8u8);
