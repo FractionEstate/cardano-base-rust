@@ -1,0 +1,60 @@
+{
+  "description": "Schnorr Secp256k1 DSIGN test vectors from Cardano Haskell reference",
+  "algorithm": "SchnorrSecp256k1DSIGN",
+  "source": "cardano-crypto-tests/src/Test/Crypto/Vector/Vectors.hs",
+  "sign_and_verify_vectors": [
+    {
+      "test_name": "sign_and_verify_1",
+      "secret_key": "0000000000000000000000000000000000000000000000000000000000000003",
+      "message": "0000000000000000000000000000000000000000000000000000000000000000",
+      "description": "Minimal secret key value"
+    },
+    {
+      "test_name": "sign_and_verify_2",
+      "secret_key": "B7E151628AED2A6ABF7158809CF4F3C762E7160F38B4DA56A784D9045190CFEF",
+      "message": "243F6A8885A308D313198A2E03707344A4093822299F31D0082EFA98EC4E6C89",
+      "description": "Standard test vector"
+    },
+    {
+      "test_name": "sign_and_verify_3",
+      "secret_key": "C90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B14E5C9",
+      "message": "7E2D58D8B3BCDF1ABADEC7829054F90DDA9805AAB56C77333024B9D0A508B75C",
+      "description": "Another standard vector"
+    },
+    {
+      "test_name": "sign_and_verify_4",
+      "secret_key": "0B432B2677937381AEF05BB02A66ECD012773062CF3FA2549E44F58ED2401710",
+      "message": "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+      "description": "Maximum message value"
+    }
+  ],
+  "verify_only_vectors": [
+    {
+      "test_name": "verify_with_known_signature",
+      "verification_key": "599de3e582e2a3779208a210dfeae8f330b9af00a47a7fb22e9bb8ef596f301b",
+      "message": "0000000000000000000000000000000000000000000000000000000000000000",
+      "signature": "5a56da88e6fd8419181dec4d3dd6997bab953d2fc71ab65e23cfc9e7e3d1a310613454a60f6703819a39fdac2a410a094442afd1fc083354443e8d8bb4461a9b",
+      "should_verify": true,
+      "description": "Known good Schnorr signature"
+    }
+  ],
+  "error_vectors": [
+    {
+      "test_name": "wrong_verification_key",
+      "verification_key": "D69C3509BB99E412E68B0FE8544E72837DFA30746D8BE2AA65975F29D22DC7B9",
+      "description": "Wrong verification key should fail verification"
+    },
+    {
+      "test_name": "invalid_signature_length_short",
+      "signature_raw": "5a56da88e6fd8419181dec4d3dd6997bab953d2fc71ab65e23cfc9e7e3d1a310613454a60f6703819a39fdac2a410a094442afd1fc083354443e8d8bb4461a",
+      "should_parse": false,
+      "description": "63-byte signature should fail"
+    },
+    {
+      "test_name": "invalid_signature_length_long",
+      "signature_raw": "5a56da88e6fd8419181dec4d3dd6997bab953d2fc71ab65e23cfc9e7e3d1a310613454a60f6703819a39fdac2a410a094442afd1fc083354443e8d8bb4461a9bFF",
+      "should_parse": false,
+      "description": "65-byte signature should fail"
+    }
+  ]
+}

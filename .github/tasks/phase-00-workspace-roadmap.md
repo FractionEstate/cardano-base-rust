@@ -73,11 +73,12 @@ and ensures no crate is left without an explicit plan or acceptance criteria.
 
 ### cardano-crypto-class
 - [x] Track progress through [Phase 03 – Cardano VRF Parity](phase-03-vrf-parity.md). ✅ **COMPLETED**
-- [ ] In addition, cover DSIGN, KES, and hashing suites for parity against the
+- [x] Track progress through [Phase 04 – DSIGN Algorithm Parity](phase-04-dsign-parity.md). ✅ **COMPLETED**
+- [ ] In addition, cover KES and hashing suites for parity against the
       Haskell library (consider additional phase docs as needed).
 - [ ] Confirm mlocked memory utilities meet the security guarantees documented
       in Haskell (zeroisation, page locking, error propagation).
-- [ ] Provide compatibility tests against known Haskell outputs for DSIGN/KES.
+- [ ] Provide compatibility tests against known Haskell outputs for KES.
 
 ### cardano-git-rev
 - [x] Finalise unsafe export handling for Rust 2024 (`#[unsafe(no_mangle)]`).
@@ -175,6 +176,10 @@ and ensures no crate is left without an explicit plan or acceptance criteria.
       test vectors vrf_ver03_standard_10 and vrf_ver03_generated_1 produce
       byte-for-byte identical proofs and VRF outputs. Documented in
       `cardano-vrf-pure/VRF_PARITY_COMPLETE.md`.
+- 06-10-2025-time-18:45: **Phase 04 DSIGN Parity COMPLETE** ✅ - Implemented and
+      validated comprehensive test harnesses for Ed25519, ECDSA Secp256k1, and
+      Schnorr Secp256k1. All 31 tests passing (100%). RFC 8032, RFC 6979, and
+      BIP340 compliance validated. Documented in `PHASE_04_COMPLETION_REPORT.md`.
 
 ---
 

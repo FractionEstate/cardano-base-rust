@@ -91,3 +91,84 @@ pub mod vrf {
         ALL.iter().map(|vector| vector.name)
     }
 }
+
+/// DSIGN (Digital Signature) fixtures extracted from the Haskell
+/// `cardano-crypto-tests` repository.
+pub mod dsign {
+    /// Metadata describing an embedded DSIGN test vector file.
+    #[derive(Clone, Copy, Debug)]
+    pub struct TestVector {
+        /// File name of the vector (for consistency with the upstream repo).
+        pub name: &'static str,
+        /// Raw file contents as JSON.
+        pub contents: &'static str,
+    }
+
+    /// All embedded DSIGN test vectors.
+    pub const ALL: &[TestVector] = &[
+        TestVector {
+            name: "ed25519_test_vectors.json",
+            contents: include_str!("../test_vectors/ed25519_test_vectors.json"),
+        },
+        TestVector {
+            name: "ecdsa_secp256k1_test_vectors.json",
+            contents: include_str!("../test_vectors/ecdsa_secp256k1_test_vectors.json"),
+        },
+        TestVector {
+            name: "schnorr_secp256k1_test_vectors.json",
+            contents: include_str!("../test_vectors/schnorr_secp256k1_test_vectors.json"),
+        },
+    ];
+
+    /// Look up a DSIGN test vector by its file name.
+    #[must_use]
+    pub fn get(name: &str) -> Option<&'static str> {
+        ALL.iter()
+            .find(|vector| vector.name == name)
+            .map(|vector| vector.contents)
+    }
+
+    /// Convenience helper that returns the list of vector names.
+    #[must_use]
+    pub fn names() -> impl Iterator<Item = &'static str> {
+        ALL.iter().map(|vector| vector.name)
+    }
+}
+
+/// KES (Key Evolving Signature) fixtures derived from deterministic Rust generation.
+pub mod kes {
+    /// Metadata describing an embedded KES test vector file.
+    #[derive(Clone, Copy, Debug)]
+    pub struct TestVector {
+        /// File name of the vector (for consistency with the upstream repo).
+        pub name: &'static str,
+        /// Raw file contents as JSON.
+        pub contents: &'static str,
+    }
+
+    /// All embedded KES test vectors.
+    pub const ALL: &[TestVector] = &[
+        TestVector {
+            name: "single_kes_test_vectors.json",
+            contents: include_str!("../test_vectors/single_kes_test_vectors.json"),
+        },
+        TestVector {
+            name: "compact_single_kes_test_vectors.json",
+            contents: include_str!("../test_vectors/compact_single_kes_test_vectors.json"),
+        },
+    ];
+
+    /// Look up a KES test vector by its file name.
+    #[must_use]
+    pub fn get(name: &str) -> Option<&'static str> {
+        ALL.iter()
+            .find(|vector| vector.name == name)
+            .map(|vector| vector.contents)
+    }
+
+    /// Convenience helper that returns the list of vector names.
+    #[must_use]
+    pub fn names() -> impl Iterator<Item = &'static str> {
+        ALL.iter().map(|vector| vector.name)
+    }
+}

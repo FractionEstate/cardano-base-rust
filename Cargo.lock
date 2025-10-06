@@ -186,6 +186,12 @@ dependencies = [
 [[package]]
 name = "cardano-test-vectors"
 version = "0.1.0"
+dependencies = [
+ "cardano-crypto-class",
+ "hex",
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "cardano-vrf-pure"
