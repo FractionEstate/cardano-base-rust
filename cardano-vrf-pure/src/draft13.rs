@@ -8,6 +8,7 @@ use curve25519_dalek::{edwards::EdwardsPoint, scalar::Scalar, traits::VartimeMul
 use sha2::{Digest, Sha512};
 use zeroize::Zeroizing;
 
+use crate::cardano_compat::point::{cardano_clear_cofactor, cardano_hash_to_curve};
 use crate::common::*;
 use crate::{VrfError, VrfResult};
 
@@ -71,10 +72,9 @@ impl VrfDraft13 {
         // Apply Elligator2
         let mut r_bytes = [0u8; 32];
         r_bytes.copy_from_slice(&r_string[0..32]);
-        r_bytes[31] &= 0x7f; // Clear sign bit
 
-        let h_string = elligator2_hash_to_curve(&r_bytes);
-        let h_point = bytes_to_point(&h_string)?;
+        let h_point = cardano_hash_to_curve(&r_bytes)?;
+        let h_string = h_point.compress().to_bytes();
 
         // Gamma = x * H
         let gamma = h_point * x;
@@ -180,10 +180,9 @@ impl VrfDraft13 {
 
         let mut r_bytes = [0u8; 32];
         r_bytes.copy_from_slice(&r_string[0..32]);
-        r_bytes[31] &= 0x7f;
 
-        let h_string = elligator2_hash_to_curve(&r_bytes);
-        let h_point = bytes_to_point(&h_string)?;
+        let h_point = cardano_hash_to_curve(&r_bytes)?;
+        let h_string = h_point.compress().to_bytes();
 
         // Compute U = s*B - c*Y
         // We need to compute c first from k*B, k*H
@@ -239,7 +238,7 @@ impl VrfDraft13 {
         let gamma = bytes_to_point(&gamma_bytes)?;
 
         // Clear cofactor
-        let gamma_cleared = clear_cofactor(&gamma);
+        let gamma_cleared = cardano_clear_cofactor(&gamma);
         let gamma_cleared_bytes = point_to_bytes(&gamma_cleared);
 
         // beta = hash(suite || 0x03 || cofactor*Gamma)

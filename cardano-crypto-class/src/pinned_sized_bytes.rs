@@ -6,7 +6,7 @@ use subtle::{Choice, ConstantTimeEq};
 use thiserror::Error;
 
 use crate::ffi::{SizedMutPtr, SizedPtr};
-use crate::util::{decode_hex_string, DecodeHexError};
+use crate::util::{DecodeHexError, decode_hex_string};
 
 /// Error raised when constructing a [`PinnedSizedBytes`] from an input with an
 /// unexpected length.
@@ -183,7 +183,7 @@ impl<const N: usize> PinnedSizedBytes<N> {
     pub unsafe fn ptr_to_sized_ptr(ptr: *const Self) -> SizedPtr<'static, N> {
         let raw = (ptr as *const [u8; N]) as *mut u8;
         // SAFETY: Caller guarantees ptr is valid, so casting through it is safe
-        let nn = NonNull::new_unchecked(raw);
+        let nn = unsafe { NonNull::new_unchecked(raw) };
         SizedPtr::new(nn)
     }
 }

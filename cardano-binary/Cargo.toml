@@ -1,7 +1,7 @@
 [package]
 name = "cardano-binary"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 authors = ["FractionEstate"]
 description = "Binary serialization and deserialization for Cardano - CBOR encoding with Haskell compatibility"
 license = "Apache-2.0 OR MIT"
@@ -11,13 +11,13 @@ documentation = "https://docs.rs/cardano-binary"
 readme = "README.md"
 keywords = ["cardano", "cbor", "serialization", "encoding", "blockchain"]
 categories = ["encoding"]
-rust-version = "1.70"
+rust-version = "1.85"
 
 [lints]
 workspace = true
 
 [dependencies]
-serde = { version = "1.0", features = ["derive"] }
+serde = { version = "1.0.228", features = ["derive"] }
 ciborium = "0.2"
 ciborium-io = "0.2"
 ciborium-ll = "0.2"
@@ -25,5 +25,5 @@ thiserror = "2.0.17"
 
 [dev-dependencies]
 serde_bytes = "0.11"
-proptest = "1.5"
+proptest = "1.8.0"
 hex = "0.4"

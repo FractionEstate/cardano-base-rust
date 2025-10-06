@@ -88,61 +88,74 @@ impl FieldElement {
     /// let fe = FieldElement::from_bytes(&bytes);
     /// ```
     pub fn from_bytes(bytes: &[u8; 32]) -> Self {
-        let mut h = [0i64; 10];
+        #[inline(always)]
+        fn load3(input: &[u8]) -> i64 {
+            (input[0] as i64) | ((input[1] as i64) << 8) | ((input[2] as i64) << 16)
+        }
 
-        // Extract limbs from bytes according to radix 2^25.5
-        h[0] = (bytes[0] as i64)
-            | ((bytes[1] as i64) << 8)
-            | ((bytes[2] as i64) << 16)
-            | (((bytes[3] as i64) & 0x3f) << 24);
+        #[inline(always)]
+        fn load4(input: &[u8]) -> i64 {
+            (input[0] as i64)
+                | ((input[1] as i64) << 8)
+                | ((input[2] as i64) << 16)
+                | ((input[3] as i64) << 24)
+        }
 
-        h[1] = (((bytes[3] as i64) >> 6) & 0x03)
-            | ((bytes[4] as i64) << 2)
-            | ((bytes[5] as i64) << 10)
-            | ((bytes[6] as i64) << 18)
-            | (((bytes[7] as i64) & 0x01) << 24);
+        let mut h0 = load4(&bytes[0..4]);
+        let mut h1 = load3(&bytes[4..7]) << 6;
+        let mut h2 = load3(&bytes[7..10]) << 5;
+        let mut h3 = load3(&bytes[10..13]) << 3;
+        let mut h4 = load3(&bytes[13..16]) << 2;
+        let mut h5 = load4(&bytes[16..20]);
+        let mut h6 = load3(&bytes[20..23]) << 7;
+        let mut h7 = load3(&bytes[23..26]) << 5;
+        let mut h8 = load3(&bytes[26..29]) << 4;
+        let mut h9 = (load3(&bytes[29..32]) & 0x7fffff) << 2;
 
-        h[2] = (((bytes[7] as i64) >> 1) & 0x7f)
-            | ((bytes[8] as i64) << 7)
-            | ((bytes[9] as i64) << 15)
-            | (((bytes[10] as i64) & 0x07) << 23);
+        let carry9 = (h9 + (1 << 24)) >> 25;
+        h0 += carry9 * 19;
+        h9 -= carry9 << 25;
 
-        h[3] = (((bytes[10] as i64) >> 3) & 0x1f)
-            | ((bytes[11] as i64) << 5)
-            | ((bytes[12] as i64) << 13)
-            | (((bytes[13] as i64) & 0x0f) << 21);
+        let carry1 = (h1 + (1 << 24)) >> 25;
+        h2 += carry1;
+        h1 -= carry1 << 25;
 
-        h[4] = (((bytes[13] as i64) >> 4) & 0x0f)
-            | ((bytes[14] as i64) << 4)
-            | ((bytes[15] as i64) << 12)
-            | (((bytes[16] as i64) & 0x3f) << 20);
+        let carry3 = (h3 + (1 << 24)) >> 25;
+        h4 += carry3;
+        h3 -= carry3 << 25;
 
-        h[5] = (((bytes[16] as i64) >> 6) & 0x03)
-            | ((bytes[17] as i64) << 2)
-            | ((bytes[18] as i64) << 10)
-            | ((bytes[19] as i64) << 18)
-            | (((bytes[20] as i64) & 0x01) << 24);
+        let carry5 = (h5 + (1 << 24)) >> 25;
+        h6 += carry5;
+        h5 -= carry5 << 25;
 
-        h[6] = (((bytes[20] as i64) >> 1) & 0x7f)
-            | ((bytes[21] as i64) << 7)
-            | ((bytes[22] as i64) << 15)
-            | (((bytes[23] as i64) & 0x07) << 23);
+        let carry7 = (h7 + (1 << 24)) >> 25;
+        h8 += carry7;
+        h7 -= carry7 << 25;
 
-        h[7] = (((bytes[23] as i64) >> 3) & 0x1f)
-            | ((bytes[24] as i64) << 5)
-            | ((bytes[25] as i64) << 13)
-            | (((bytes[26] as i64) & 0x0f) << 21);
+        let carry0 = (h0 + (1 << 25)) >> 26;
+        h1 += carry0;
+        h0 -= carry0 << 26;
 
-        h[8] = (((bytes[26] as i64) >> 4) & 0x0f)
-            | ((bytes[27] as i64) << 4)
-            | ((bytes[28] as i64) << 12)
-            | (((bytes[29] as i64) & 0x3f) << 20);
+        let carry2 = (h2 + (1 << 25)) >> 26;
+        h3 += carry2;
+        h2 -= carry2 << 26;
 
-        h[9] = (((bytes[29] as i64) >> 6) & 0x03)
-            | ((bytes[30] as i64) << 2)
-            | ((bytes[31] as i64) << 10);
+        let carry4 = (h4 + (1 << 25)) >> 26;
+        h5 += carry4;
+        h4 -= carry4 << 26;
 
-        FieldElement(h)
+        let carry6 = (h6 + (1 << 25)) >> 26;
+        h7 += carry6;
+        h6 -= carry6 << 26;
+
+        let carry8 = (h8 + (1 << 25)) >> 26;
+        h9 += carry8;
+        h8 -= carry8 << 26;
+
+        FieldElement([
+            h0 as i64, h1 as i64, h2 as i64, h3 as i64, h4 as i64, h5 as i64, h6 as i64, h7 as i64,
+            h8 as i64, h9 as i64,
+        ])
     }
 
     /// Convert field element to 32 bytes (little-endian)
@@ -461,6 +474,14 @@ impl FieldElement {
         z
     }
 
+    #[inline]
+    fn sqmul(mut acc: Self, squarings: usize, mul: &Self) -> Self {
+        for _ in 0..squarings {
+            acc = acc.square().reduce();
+        }
+        (acc * *mul).reduce()
+    }
+
     fn pow22501(&self) -> (Self, Self) {
         let t0 = self.square().reduce();
         let mut t1 = t0.square().reduce();
@@ -545,14 +566,43 @@ impl FieldElement {
     ///
     /// `true` if the element has a square root, `false` otherwise
     pub fn is_square(&self) -> bool {
-        let a = self.reduce();
-        if a.is_zero() {
+        let x = self.reduce();
+        if x.is_zero() {
             return true;
         }
 
-        let one = FieldElement::one();
-        let (is_square, _) = Self::sqrt_ratio(&a, &one);
-        is_square
+        // Mirror libsodium's fe25519_notsquare implementation exactly.
+        let _10 = (x * x).reduce(); // x^2
+        let _11 = (x * _10).reduce(); // x^3
+
+        let mut _1100 = _11.square().reduce(); // x^6
+        _1100 = _1100.square().reduce(); // x^12
+
+        let _1111 = (_11 * _1100).reduce(); // x^15
+
+        let mut _11110000 = _1111.square().reduce(); // x^30
+        _11110000 = _11110000.square().reduce(); // x^60
+        _11110000 = _11110000.square().reduce(); // x^120
+        _11110000 = _11110000.square().reduce(); // x^240
+
+        let _11111111 = (_1111 * _11110000).reduce(); // x^255
+
+        let mut t = FieldElement::sqmul(_11111111, 2, &_11);
+        let u = t;
+        t = FieldElement::sqmul(t, 10, &u);
+        t = FieldElement::sqmul(t, 10, &u);
+        let mut v = t;
+        t = FieldElement::sqmul(t, 30, &v);
+        v = t;
+        t = FieldElement::sqmul(t, 60, &v);
+        v = t;
+        t = FieldElement::sqmul(t, 120, &v);
+        t = FieldElement::sqmul(t, 10, &u);
+        t = FieldElement::sqmul(t, 3, &_11);
+        t = t.square().reduce();
+
+        let bytes = t.to_bytes();
+        (bytes[1] & 1) == 0
     }
 
     /// Compute modular square root
@@ -580,11 +630,7 @@ impl FieldElement {
         let one = FieldElement::one();
         let (is_square, root) = Self::sqrt_ratio(&a, &one);
 
-        if is_square {
-            Some(root)
-        } else {
-            None
-        }
+        if is_square { Some(root) } else { None }
     }
 
     /// Compute multiplicative inverse

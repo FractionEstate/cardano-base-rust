@@ -7,18 +7,18 @@
 //! themselves. This crate exists to preserve the package boundary from the
 //! Haskell project and re-exports the relevant functionality.
 
-pub use deepseq::{deepseq, force, NFData};
-pub use nothunks::{no_thunks, unsafe_no_thunks, NoThunks, NoThunksResult, ThunkInfo};
+pub use deepseq::{NFData, deepseq, force};
+pub use nothunks::{NoThunks, NoThunksResult, ThunkInfo, no_thunks, unsafe_no_thunks};
 
 pub mod prelude {
     //! Convenience re-exports mirroring the Haskell module hierarchy.
-    pub use super::{deepseq, force, no_thunks, unsafe_no_thunks, NFData, NoThunks};
-    pub use base_deriving_via::{impl_generic_for_struct, InstantiatedAt};
+    pub use super::{NFData, NoThunks, deepseq, force, no_thunks, unsafe_no_thunks};
+    pub use base_deriving_via::{InstantiatedAt, impl_generic_for_struct};
 }
 
 #[cfg(test)]
 mod tests {
-    use base_deriving_via::{impl_generic_for_struct, InstantiatedAt};
+    use base_deriving_via::{InstantiatedAt, impl_generic_for_struct};
     use deepseq::force;
     use nothunks::unsafe_no_thunks;
 

@@ -1,6 +1,6 @@
 use std::fmt;
 
-use cardano_vrf_pure::{common, VrfDraft13, VrfError as VrfPureError};
+use cardano_vrf_pure::{VrfDraft13, VrfError as VrfPureError, common};
 use thiserror::Error;
 
 use crate::mlocked_bytes::{MLockedBytes, MLockedError};
@@ -71,8 +71,8 @@ impl PraosBatchCompatSeed {
     pub fn generate() -> Result<Self, PraosBatchConstructionError> {
         let mut bytes = MLockedBytes::new_zeroed(seed_size())?;
         // Use Rust's rand crate
-        use rand::RngCore;
-        let mut rng = rand::thread_rng();
+        use rand_core::RngCore;
+        let mut rng = rand::rng();
         rng.fill_bytes(bytes.as_mut_slice());
         Ok(Self { bytes })
     }

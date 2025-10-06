@@ -1,8 +1,8 @@
 /// Test to verify that KES types use the correct hash algorithm (Blake2b256)
 #[cfg(test)]
 mod verify_hash_algorithm {
-    use crate::kes::sum::{Sum1Kes, Sum7Kes};
     use crate::kes::KesAlgorithm;
+    use crate::kes::sum::{Sum1Kes, Sum7Kes};
 
     #[test]
     fn test_sum_types_use_blake2b256() {

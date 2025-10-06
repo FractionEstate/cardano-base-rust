@@ -6,7 +6,7 @@
 //! algorithms and ensures consistent behavior across the codebase.
 
 use cardano_crypto_class::dsign::{
-    ecdsa_secp256k1, ed25519::Ed25519, schnorr_secp256k1, DsignAlgorithm,
+    DsignAlgorithm, ecdsa_secp256k1, ed25519::Ed25519, schnorr_secp256k1,
 };
 use cardano_crypto_class::hash::*;
 use cardano_crypto_class::seed::Seed;
@@ -140,14 +140,18 @@ fn test_cross_key_verification_fails() {
     let ecdsa_sig =
         ecdsa_secp256k1::EcdsaSecp256k1DSIGN::sign_bytes(&ecdsa_ctx, message, &ecdsa_sk1);
 
-    assert!(ecdsa_secp256k1::EcdsaSecp256k1DSIGN::verify_bytes(
-        &ecdsa_ctx, &ecdsa_vk1, message, &ecdsa_sig
-    )
-    .is_ok());
-    assert!(ecdsa_secp256k1::EcdsaSecp256k1DSIGN::verify_bytes(
-        &ecdsa_ctx, &ecdsa_vk2, message, &ecdsa_sig
-    )
-    .is_err());
+    assert!(
+        ecdsa_secp256k1::EcdsaSecp256k1DSIGN::verify_bytes(
+            &ecdsa_ctx, &ecdsa_vk1, message, &ecdsa_sig
+        )
+        .is_ok()
+    );
+    assert!(
+        ecdsa_secp256k1::EcdsaSecp256k1DSIGN::verify_bytes(
+            &ecdsa_ctx, &ecdsa_vk2, message, &ecdsa_sig
+        )
+        .is_err()
+    );
 }
 
 /// Test hash function output sizes are correct.
@@ -300,20 +304,14 @@ fn test_message_tampering_detection() {
         let ctx = ecdsa_secp256k1::Context::default();
 
         let sig = ecdsa_secp256k1::EcdsaSecp256k1DSIGN::sign_bytes(&ctx, original_message, &sk);
-        assert!(ecdsa_secp256k1::EcdsaSecp256k1DSIGN::verify_bytes(
-            &ctx,
-            &vk,
-            original_message,
-            &sig
-        )
-        .is_ok());
-        assert!(ecdsa_secp256k1::EcdsaSecp256k1DSIGN::verify_bytes(
-            &ctx,
-            &vk,
-            tampered_message,
-            &sig
-        )
-        .is_err());
+        assert!(
+            ecdsa_secp256k1::EcdsaSecp256k1DSIGN::verify_bytes(&ctx, &vk, original_message, &sig)
+                .is_ok()
+        );
+        assert!(
+            ecdsa_secp256k1::EcdsaSecp256k1DSIGN::verify_bytes(&ctx, &vk, tampered_message, &sig)
+                .is_err()
+        );
     }
 
     // Schnorr
@@ -323,20 +321,24 @@ fn test_message_tampering_detection() {
         let ctx = schnorr_secp256k1::Context::default();
 
         let sig = schnorr_secp256k1::SchnorrSecp256k1DSIGN::sign_bytes(&ctx, original_message, &sk);
-        assert!(schnorr_secp256k1::SchnorrSecp256k1DSIGN::verify_bytes(
-            &ctx,
-            &vk,
-            original_message,
-            &sig
-        )
-        .is_ok());
-        assert!(schnorr_secp256k1::SchnorrSecp256k1DSIGN::verify_bytes(
-            &ctx,
-            &vk,
-            tampered_message,
-            &sig
-        )
-        .is_err());
+        assert!(
+            schnorr_secp256k1::SchnorrSecp256k1DSIGN::verify_bytes(
+                &ctx,
+                &vk,
+                original_message,
+                &sig
+            )
+            .is_ok()
+        );
+        assert!(
+            schnorr_secp256k1::SchnorrSecp256k1DSIGN::verify_bytes(
+                &ctx,
+                &vk,
+                tampered_message,
+                &sig
+            )
+            .is_err()
+        );
     }
 }
 
@@ -420,10 +422,10 @@ fn test_bitcoin_taproot_workflow_integration() {
     let signature = schnorr_secp256k1::SchnorrSecp256k1DSIGN::sign_bytes(&ctx, &tx_hash, &sk);
 
     // Verify signature
-    assert!(schnorr_secp256k1::SchnorrSecp256k1DSIGN::verify_bytes(
-        &ctx, &vk, &tx_hash, &signature
-    )
-    .is_ok());
+    assert!(
+        schnorr_secp256k1::SchnorrSecp256k1DSIGN::verify_bytes(&ctx, &vk, &tx_hash, &signature)
+            .is_ok()
+    );
 
     // Taproot uses x-only public key (32 bytes)
     let vk_bytes = schnorr_secp256k1::SchnorrSecp256k1DSIGN::raw_serialize_verification_key(&vk);

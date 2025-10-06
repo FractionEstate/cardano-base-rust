@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 use thiserror::Error;
 
 use crate::mlocked_bytes::MLockedError;
-use crate::seed::{get_bytes_from_seed_t, Seed};
+use crate::seed::{Seed, get_bytes_from_seed_t};
 use crate::util::SignableRepresentation;
 
 pub mod compact_single;

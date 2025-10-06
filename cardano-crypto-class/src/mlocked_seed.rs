@@ -1,5 +1,5 @@
 use rand::rngs::OsRng;
-use rand::RngCore;
+use rand_core::TryRngCore;
 
 use crate::direct_serialise::{DirectDeserialise, DirectResult, DirectSerialise};
 use crate::ffi::{SizedMutPtr, SizedPtr};

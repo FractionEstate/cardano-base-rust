@@ -3,7 +3,7 @@ use std::fmt;
 use std::sync::Arc;
 
 use crate::slot::{EpochNo, EpochSize, SlotNo};
-use crate::time::{from_relative_time, RelativeTime, SlotLength, SystemStart};
+use crate::time::{RelativeTime, SlotLength, SystemStart, from_relative_time};
 use time::OffsetDateTime;
 
 pub type EpochResult<T, E> = Result<T, E>;

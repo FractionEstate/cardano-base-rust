@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use digest::Digest;
 use rand::rngs::OsRng;
-use rand::{CryptoRng, Error as RandError, RngCore};
+use rand_core::{CryptoRng, RngCore, TryRngCore};
 use thiserror::Error;
 
 /// Deterministic seed material for cryptographic operations.
@@ -159,7 +159,8 @@ where
 pub fn read_seed_from_system_entropy(n: usize) -> Seed {
     let mut buffer = vec![0u8; n];
     let mut rng = OsRng;
-    rng.fill_bytes(&mut buffer);
+    rng.try_fill_bytes(&mut buffer)
+        .expect("failed to read system entropy");
     Seed::from_bytes(buffer)
 }
 
@@ -247,11 +248,6 @@ impl RngCore for SeedRng {
     fn fill_bytes(&mut self, dest: &mut [u8]) {
         self.fill_bytes_checked(dest)
             .expect("seed bytes exhausted while filling bytes");
-    }
-
-    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), RandError> {
-        self.fill_bytes_checked(dest)
-            .map_err(|_| RandError::new("seed bytes exhausted"))
     }
 }
 

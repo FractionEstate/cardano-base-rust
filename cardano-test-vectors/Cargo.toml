@@ -1,0 +1,20 @@
+[package]
+name = "cardano-test-vectors"
+version = "0.1.0"
+edition = "2024"
+authors = ["FractionEstate"]
+license = "Apache-2.0 OR MIT"
+description = "Embedded test vector fixtures shared across the cardano-base-rust workspace"
+repository = "https://github.com/FractionEstate/cardano-base-rust"
+
+[lints]
+workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[features]
+default = []
+
+[package.metadata.docs.rs]
+all-features = true

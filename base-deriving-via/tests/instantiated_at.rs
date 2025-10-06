@@ -1,4 +1,4 @@
-use base_deriving_via::{impl_generic_for_struct, InstantiatedAt, Monoid, Semigroup};
+use base_deriving_via::{InstantiatedAt, Monoid, Semigroup, impl_generic_for_struct};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Metrics {

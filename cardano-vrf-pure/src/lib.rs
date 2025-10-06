@@ -7,6 +7,15 @@
 //!
 //! All implementations are memory-safe and use constant-time operations where appropriate
 //! to prevent timing attacks.
+//!
+//! ## Debug logging
+//!
+//! The crate ships completely silent cryptographic primitives by default. When
+//! troubleshooting interoperability issues you can enable feature `vrf-debug`
+//! and set the environment variable `CARDANO_VRF_DEBUG=1` to surface detailed
+//! diagnostics from the Cardano compatibility layer (including Elligator and
+//! hash-to-curve internals). Both the feature flag and environment variable are
+//! required to emit logs so production builds remain noise-free.
 
 // Allow some clippy lints for cryptographic code
 #![allow(clippy::missing_panics_doc)]

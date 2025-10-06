@@ -12,7 +12,7 @@
 //!
 //! This module handles Montgomery operations and conversion to Edwards.
 
-use super::field::FieldElement;
+use super::{debug, field::FieldElement};
 
 // Montgomery curve constants for Curve25519
 // By^2 = x^3 + Ax^2 + x where A = 486662, B = 1
@@ -40,7 +40,7 @@ fn montgomery_a_fe() -> FieldElement {
 ///
 /// # Returns
 ///
-/// Field elements (u, v) representing Montgomery coordinates
+/// Montgomery u-coordinate resulting from the mapping
 ///
 /// # Algorithm
 ///
@@ -53,75 +53,78 @@ fn montgomery_a_fe() -> FieldElement {
 ///
 /// The key insight: If v^3 + Av^2 + v is a QR, use x=v; otherwise x=-v-A.
 /// This ensures at least one of these x values will have a corresponding y.
-pub fn elligator2(r: &[u8; 32]) -> Option<(FieldElement, FieldElement)> {
-    // Load r as a field element
-    let r_fe = FieldElement::from_bytes(r);
-
-    // Compute r^2
-    let r2 = r_fe.square().reduce();
-
-    // u = 2 (constant in Elligator2)
-    let two = FieldElement::one() + FieldElement::one();
-    let u = two.reduce();
-
-    // Compute u*r^2
-    let ur2 = (u * r2).reduce();
-
-    // Compute 1 + u*r^2
-    let one_plus_ur2 = (FieldElement::one() + ur2).reduce();
-
-    // Compute -A as field element (A = 486662)
+pub fn elligator2(r: &[u8; 32]) -> Option<FieldElement> {
     let a_fe = montgomery_a_fe();
-    let neg_a = -a_fe;
+    let r_fe = FieldElement::from_bytes(r);
+    debug::log(|| {
+        let bytes: String = r_fe
+            .to_bytes()
+            .iter()
+            .map(|b| format!("{:02x}", b))
+            .collect();
+        format!("elligator2: r_fe = {}", bytes)
+    });
+    debug::log(|| {
+        let limbs: Vec<String> = r_fe.0.iter().map(|v| v.to_string()).collect();
+        format!("elligator2: r_fe limbs = [{}]", limbs.join(", "))
+    });
 
-    // Compute v = -A/(1 + ur^2)
-    let denom_inv = one_plus_ur2.invert();
-    let v = (neg_a * denom_inv).reduce();
+    // rr2 = 2 * r^2
+    let mut rr2 = r_fe.square2().reduce();
+    // rr2 = 1 + 2 * r^2
+    rr2 = (rr2 + FieldElement::one()).reduce();
 
-    // Compute v^2
-    let v2 = v.square().reduce();
+    let rr2_inv = rr2.invert();
+    debug::log(|| {
+        let bytes: String = rr2
+            .to_bytes()
+            .iter()
+            .map(|b| format!("{:02x}", b))
+            .collect();
+        format!("elligator2: rr2 = {}", bytes)
+    });
+    debug::log(|| {
+        let bytes: String = rr2_inv
+            .to_bytes()
+            .iter()
+            .map(|b| format!("{:02x}", b))
+            .collect();
+        format!("elligator2: rr2_inv = {}", bytes)
+    });
 
-    // Compute v^3 = v * v^2
-    let v3 = (v * v2).reduce();
+    // x1 = -A / (1 + 2r^2)
+    let mut x = (rr2_inv * a_fe).reduce();
+    debug::log(|| {
+        let bytes: String = x.to_bytes().iter().map(|b| format!("{:02x}", b)).collect();
+        format!("elligator2: a_over_denom = {}", bytes)
+    });
 
-    // Compute Av^2
-    let av2 = (a_fe * v2).reduce();
+    x = (-x).reduce();
+    debug::log(|| {
+        let bytes: String = x.to_bytes().iter().map(|b| format!("{:02x}", b)).collect();
+        format!("elligator2: x1 = {}", bytes)
+    });
 
-    // Compute v^3 + Av^2 + v (the curve equation right side for x=v)
-    let rhs_v = (v3 + av2 + v).reduce();
+    // gx1 = x^3 + A*x^2 + x
+    let x_sq = x.square().reduce();
+    let mut gx1 = (x_sq * x).reduce();
+    let ax_sq = (x_sq * a_fe).reduce();
+    gx1 = (gx1 + ax_sq + x).reduce();
 
-    // Check if rhs_v is a quadratic residue (has square root)
-    let is_qr = rhs_v.is_square();
+    let rhs_is_square = is_quadratic_residue(&gx1);
 
-    // Select x coordinate based on whether rhs_v is QR
-    // If QR: x = v and we know y exists
-    // If not QR: x = -v - A, and by Elligator2 properties, this MUST have a y
-    let x = if is_qr {
-        v
-    } else {
-        let neg_v = -v;
-        (neg_v - a_fe).reduce()
-    };
-
-    // Compute y from x using curve equation By^2 = x^3 + Ax^2 + x
-    // This should always succeed for the x we selected
-    let y_opt = xmont_to_ymont(&x, 0);
-
-    if y_opt.is_none() {
-        // eprintln!("DEBUG elligator2: xmont_to_ymont failed (should not happen!)");
-        // eprintln!("DEBUG elligator2: x = {}", hex::encode(x.to_bytes()));
-        // eprintln!("DEBUG elligator2: rhs_v was QR = {}", is_qr);
-
-        // Let's check the rhs for this x
-        let x2 = x.square().reduce();
-        let x3 = (x * x2).reduce();
-        let ax2 = (a_fe * x2).reduce();
-        let _rhs_x = (x3 + ax2 + x).reduce();
-        // eprintln!("DEBUG elligator2: rhs_x is QR = {}", rhs_x.is_square());
-        // eprintln!("DEBUG elligator2: rhs_x = {}", hex::encode(rhs_x.to_bytes()));
+    if !rhs_is_square {
+        x = (-x).reduce();
+        x = (x - a_fe).reduce();
     }
 
-    y_opt.map(|y| (x, y))
+    debug::log(|| format!("elligator2: rhs_v_is_square = {}", rhs_is_square));
+
+    Some(x.reduce())
+}
+
+fn is_quadratic_residue(value: &FieldElement) -> bool {
+    value.is_square()
 }
 
 /// Convert Montgomery coordinates to Edwards coordinates
@@ -146,28 +149,25 @@ pub fn mont_to_edwards(
     mont_u: &FieldElement,
     mont_v: &FieldElement,
 ) -> Option<(FieldElement, FieldElement)> {
-    // Check for division by zero in y = (u-1)/(u+1)
-    let u_plus_1 = (*mont_u + FieldElement::one()).reduce();
-    if u_plus_1.is_zero() {
-        return None;
+    let one = FieldElement::one();
+    let x_plus_one = (*mont_u + one).reduce();
+    let x_minus_one = (*mont_u - one).reduce();
+
+    let denom = (x_plus_one * *mont_v).reduce();
+    let denom_is_zero = denom.is_zero();
+    let denom_inv = denom.invert();
+
+    let mut ed_x = (*mont_u * FieldElement::SQRT_AM2).reduce();
+    ed_x = (ed_x * denom_inv).reduce();
+    ed_x = (ed_x * x_plus_one).reduce();
+
+    let mut ed_y = (denom_inv * *mont_v).reduce();
+    ed_y = (ed_y * x_minus_one).reduce();
+    if denom_is_zero {
+        ed_y = one;
     }
 
-    // Check for division by zero in x = u/v
-    if mont_v.is_zero() {
-        return None;
-    }
-
-    // Compute y = (u - 1) / (u + 1)
-    let u_minus_1 = (*mont_u - FieldElement::one()).reduce();
-    let denom_inv = u_plus_1.invert();
-    let ed_y = (u_minus_1 * denom_inv).reduce();
-
-    // Compute x = sqrt(-486664) * u / v using precomputed constant
-    let v_inv = mont_v.invert();
-    let u_over_v = (*mont_u * v_inv).reduce();
-    let ed_x = (FieldElement::SQRT_AM2 * u_over_v).reduce();
-
-    Some((ed_x, ed_y))
+    Some((ed_x.reduce(), ed_y.reduce()))
 }
 
 /// Recover Montgomery y-coordinate from x-coordinate

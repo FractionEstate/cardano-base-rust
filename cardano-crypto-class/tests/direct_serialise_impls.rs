@@ -5,8 +5,8 @@ use cardano_crypto_class::direct_serialise::{direct_deserialise_buf, direct_seri
 use cardano_crypto_class::dsign::ed25519::{Ed25519, Ed25519Signature, Ed25519VerificationKey};
 use cardano_crypto_class::dsign::{DsignAlgorithm, DsignMAlgorithm};
 use cardano_crypto_class::mlocked_seed::MLockedSeed;
-use cardano_crypto_class::vrf::praos::{PraosProof, PraosSeed, PraosVRF, PraosVerificationKey};
 use cardano_crypto_class::vrf::VRFAlgorithm;
+use cardano_crypto_class::vrf::praos::{PraosProof, PraosSeed, PraosVRF, PraosVerificationKey};
 use std::ptr::NonNull;
 
 #[test]

@@ -1,11 +1,12 @@
 [package]
 name = "nothunks"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 authors = ["IOHK"]
 license = "Apache-2.0"
 description = "Runtime checks mirroring the Haskell nothunks package"
 repository = "https://github.com/input-output-hk/cardano-base"
+rust-version = "1.85"
 
 [lints]
 workspace = true

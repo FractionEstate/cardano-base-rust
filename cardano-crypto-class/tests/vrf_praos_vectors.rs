@@ -1,11 +1,10 @@
+use cardano_crypto_class::VRFAlgorithm;
 use cardano_crypto_class::vrf::{
     PraosBatchCompatProof, PraosBatchCompatSigningKey, PraosBatchCompatVRF,
     PraosBatchCompatVerificationKey, PraosProof, PraosSigningKey, PraosVRF, PraosVerificationKey,
 };
-use cardano_crypto_class::VRFAlgorithm;
+use cardano_test_vectors::vrf::{self, TestVector as RawTestVector};
 use std::collections::BTreeMap;
-use std::fs;
-use std::path::{Path, PathBuf};
 
 struct TestVector {
     name: String,
@@ -18,36 +17,20 @@ struct TestVector {
     output: Vec<u8>,
 }
 
-fn vectors_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("test_vectors")
-}
-
 fn load_vectors(prefix: &str) -> Vec<TestVector> {
-    let dir = vectors_dir();
-    let mut entries: Vec<_> = fs::read_dir(&dir)
-        .expect("failed to list test vector directory")
-        .filter_map(|entry| {
-            let entry = entry.ok()?;
-            let path = entry.path();
-            let file_name = path.file_name()?.to_string_lossy().into_owned();
-            if file_name.starts_with(prefix) {
-                Some((file_name, path))
-            } else {
-                None
-            }
-        })
+    let mut entries: Vec<&RawTestVector> = vrf::ALL
+        .iter()
+        .filter(|vector| vector.name.starts_with(prefix))
         .collect();
-    entries.sort_by(|a, b| a.0.cmp(&b.0));
+    entries.sort_by(|a, b| a.name.cmp(b.name));
 
     entries
         .into_iter()
-        .map(|(name, path)| parse_vector(&name, path.as_path()))
+        .map(|vector| parse_vector(vector.name, vector.contents))
         .collect()
 }
 
-fn parse_vector(name: &str, path: &Path) -> TestVector {
-    let contents = fs::read_to_string(path)
-        .unwrap_or_else(|err| panic!("failed to read {}: {}", path.display(), err));
+fn parse_vector(name: &str, contents: &str) -> TestVector {
     let mut fields = BTreeMap::new();
     for line in contents.lines() {
         let trimmed = line.trim();
@@ -55,7 +38,7 @@ fn parse_vector(name: &str, path: &Path) -> TestVector {
             continue;
         }
         let Some((key, value)) = trimmed.split_once(':') else {
-            panic!("malformed line in {}: {}", path.display(), line);
+            panic!("malformed line in {}: {}", name, line);
         };
         fields.insert(key.trim().to_string(), value.trim().to_string());
     }

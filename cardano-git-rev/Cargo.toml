@@ -1,7 +1,7 @@
 [package]
 name = "cardano-git-rev"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 description = "Embed and retrieve the Git revision for Cardano components during Rust builds."
 authors = ["Cardano Engineering"]
 license = "Apache-2.0"
@@ -9,6 +9,7 @@ repository = "https://github.com/FractionEstate/cardano-base"
 readme = "README.md"
 keywords = ["cardano", "git", "build", "revision"]
 categories = ["development-tools", "config"]
+rust-version = "1.85"
 
 [lints]
 workspace = true

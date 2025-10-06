@@ -1,6 +1,6 @@
 use std::fmt;
 
-use cardano_vrf_pure::{common, VrfDraft03, VrfError as VrfPureError};
+use cardano_vrf_pure::{VrfDraft03, VrfError as VrfPureError, common};
 use thiserror::Error;
 
 use crate::direct_serialise::{DirectDeserialise, DirectResult, DirectSerialise, SizeCheckError};
@@ -62,8 +62,8 @@ impl PraosSeed {
         let mut bytes = MLockedBytes::new_zeroed(seed_size())?;
         let slice = bytes.as_mut_slice();
         // Use Rust's rand crate instead of FFI
-        use rand::RngCore;
-        let mut rng = rand::thread_rng();
+        use rand_core::RngCore;
+        let mut rng = rand::rng();
         rng.fill_bytes(slice);
         Ok(Self { bytes })
     }

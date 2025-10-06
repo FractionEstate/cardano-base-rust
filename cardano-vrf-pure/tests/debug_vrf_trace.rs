@@ -4,6 +4,7 @@
 
 use cardano_vrf_pure::cardano_compat::field::FieldElement;
 use cardano_vrf_pure::cardano_compat::montgomery;
+use cardano_vrf_pure::cardano_compat::point::cardano_hash_to_curve;
 use cardano_vrf_pure::cardano_compat::{cardano_vrf_prove, cardano_vrf_verify};
 use curve25519_dalek::montgomery::MontgomeryPoint as DalekMontgomeryPoint;
 use sha2::{Digest, Sha512};
@@ -63,7 +64,36 @@ fn debug_vrf_ver03_generated_1() {
     r_bytes[31] &= 0x7f;
     println!("r_bytes (sign cleared): {}", hex::encode(&r_bytes));
 
-    if let Some((u_fe, v_fe)) = montgomery::elligator2(&r_bytes) {
+    if let Some(u_fe) = montgomery::elligator2(&r_bytes) {
+        let r_fe = FieldElement::from_bytes(&r_bytes);
+        let mut rr2 = r_fe.square2();
+        println!("rr2 raw: {}", hex::encode(rr2.to_bytes()));
+        rr2 = rr2.reduce();
+        println!("rr2 reduced: {}", hex::encode(rr2.to_bytes()));
+        let rr2_plus = (rr2 + FieldElement::one()).reduce();
+        println!("rr2 + 1: {}", hex::encode(rr2_plus.to_bytes()));
+        let rr2_inv = rr2_plus.invert();
+        println!("rr2_inv: {}", hex::encode(rr2_inv.to_bytes()));
+        let check = (rr2_plus * rr2_inv).reduce();
+        println!("rr2 * inv: {}", hex::encode(check.to_bytes()));
+
+        let expected_u_bytes =
+            hex::decode("58a9499d48d9ec7ee9aeaf05035c05decff66beca27d8bf7bf374363f5dc0a5e")
+                .unwrap();
+        let mut expected_u_array = [0u8; 32];
+        expected_u_array.copy_from_slice(&expected_u_bytes);
+        let expected_u = FieldElement::from_bytes(&expected_u_array);
+        let diff_expected = (u_fe - expected_u).reduce();
+        println!(
+            "diff (ours - expected): {}",
+            hex::encode(diff_expected.to_bytes())
+        );
+
+        let Some(v_fe) = montgomery::xmont_to_ymont(&u_fe, 0) else {
+            println!("Elligator2 produced u without recoverable v");
+            return;
+        };
+
         let u_bytes = u_fe.to_bytes();
         let v_bytes = v_fe.to_bytes();
         println!("\nElligator2 u: {}", hex::encode(u_bytes));
@@ -92,8 +122,9 @@ fn debug_vrf_ver03_generated_1() {
         );
         println!("rhs is_square: {}", rhs.is_square());
 
-        let alt_u = (-v_fe - a_fe).reduce();
+        let alt_u = ((-u_fe) - a_fe).reduce();
         let alt_u_bytes = alt_u.to_bytes();
+        println!("Alt Elligator2 u: {}", hex::encode(alt_u_bytes));
         let mont_primary = DalekMontgomeryPoint(u_bytes);
         let mont_alt = DalekMontgomeryPoint(alt_u_bytes);
         println!(
@@ -101,11 +132,94 @@ fn debug_vrf_ver03_generated_1() {
             mont_primary.to_edwards(0).is_some()
         );
         println!(
+            "primary to_edwards (sign 1) ok: {}",
+            mont_primary.to_edwards(1).is_some()
+        );
+        println!(
             "alternate to_edwards ok: {}",
             mont_alt.to_edwards(0).is_some()
         );
+
+        if let Some((alt_x, alt_y)) = montgomery::mont_to_edwards(&alt_u, &v_fe) {
+            println!("alt branch edwards eq: {}", {
+                let x2 = alt_x.square().reduce();
+                let y2 = alt_y.square().reduce();
+                let lhs = (x2 + y2).reduce();
+                let d = FieldElement([
+                    -10913610, 13857413, -15372611, 6949391, 114729, -8787816, -6275908, -3247719,
+                    -18696448, -12055116,
+                ]);
+                let rhs = (FieldElement::one() + (d * (x2 * y2).reduce()).reduce()).reduce();
+                lhs.to_bytes() == rhs.to_bytes()
+            });
+        }
+
+        if let Some((custom_x, custom_y)) = montgomery::mont_to_edwards(&u_fe, &v_fe) {
+            let custom_x_bytes = custom_x.to_bytes();
+            let custom_y_bytes = custom_y.to_bytes();
+            println!("custom ed_x: {}", hex::encode(custom_x_bytes));
+            println!("custom ed_y: {}", hex::encode(custom_y_bytes));
+
+            let custom_x2 = custom_x.square().reduce();
+            let custom_y2 = custom_y.square().reduce();
+            let lhs = (custom_x2 + custom_y2).reduce();
+            let d = FieldElement([
+                -10913610, 13857413, -15372611, 6949391, 114729, -8787816, -6275908, -3247719,
+                -18696448, -12055116,
+            ]);
+            let xy2 = (custom_x2 * custom_y2).reduce();
+            let rhs = (FieldElement::one() + (d * xy2).reduce()).reduce();
+            println!(
+                "edwards equation holds: {}",
+                lhs.to_bytes() == rhs.to_bytes()
+            );
+            let diff = (lhs - rhs).reduce();
+            println!("edwards lhs-rhs: {}", hex::encode(diff.to_bytes()));
+
+            let one = FieldElement::one();
+            let numerator = (u_fe - one).reduce();
+            let denominator = (u_fe + one).reduce();
+            let denominator_inv = denominator.invert();
+            let direct_y = (numerator * denominator_inv).reduce();
+            println!("direct ed_y: {}", hex::encode(direct_y.to_bytes()));
+            let direct_diff = (direct_y - custom_y).reduce();
+            println!(
+                "direct_y - custom_y: {}",
+                hex::encode(direct_diff.to_bytes())
+            );
+
+            let sqrt_am2 = FieldElement::SQRT_AM2;
+            let mut direct_x = (sqrt_am2 * u_fe).reduce();
+            let v_inv = v_fe.invert();
+            direct_x = (direct_x * v_inv).reduce();
+            println!("direct ed_x: {}", hex::encode(direct_x.to_bytes()));
+            let x_diff = (direct_x - custom_x).reduce();
+            println!("direct_x - custom_x: {}", hex::encode(x_diff.to_bytes()));
+
+            let mut y_bytes = custom_y_bytes;
+            y_bytes[31] &= 0x7f;
+            for bit in 0..=1 {
+                y_bytes[31] = (y_bytes[31] & 0x7f) | ((bit as u8) << 7);
+                let compressed = curve25519_dalek::edwards::CompressedEdwardsY(y_bytes);
+                println!(
+                    "compressed with sign {} decompresses: {}",
+                    bit,
+                    compressed.decompress().is_some()
+                );
+            }
+        }
     } else {
         println!("\nElligator2 returned None");
+    }
+
+    match cardano_hash_to_curve(&r_bytes) {
+        Ok(hash_point) => {
+            let h_bytes = hash_point.compress().to_bytes();
+            println!("hash_to_curve -> H: {}", hex::encode(h_bytes));
+        },
+        Err(e) => {
+            println!("hash_to_curve failed: {:?}", e);
+        },
     }
 
     // Now call the actual prove function

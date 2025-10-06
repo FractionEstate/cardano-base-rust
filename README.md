@@ -12,8 +12,9 @@ Cardano ecosystem.
   Praos VRF implementations in [`cardano-crypto-class`](cardano-crypto-class/src).
 - **Key Evolving Signatures**: `SingleKes`, `Sum{0-7}Kes`, and compact variants with
   Blake2b hashing and serialisation helpers.
-- **VRF reference implementation**: Draft-03 and Draft-13 VRFs over Curve25519 in
-  [`cardano-vrf-pure`](cardano-vrf-pure/src).
+- **VRF reference implementation** ✅: Draft-03 and Draft-13 VRFs over Curve25519 in
+  [`cardano-vrf-pure`](cardano-vrf-pure/src) with **byte-for-byte parity** to Cardano
+  libsodium. See [`VRF_PARITY_COMPLETE.md`](cardano-vrf-pure/VRF_PARITY_COMPLETE.md).
 - **CBOR tooling**: Strict CBOR serialisation with tag-24 helpers in
   [`cardano-binary`](cardano-binary/src).
 - **Slotting primitives**: Epoch and time arithmetic in

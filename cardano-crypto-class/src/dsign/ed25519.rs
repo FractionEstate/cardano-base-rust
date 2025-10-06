@@ -351,8 +351,8 @@ impl DsignAlgorithm for Ed25519 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::dsign::{signed_dsign, verify_signed_dsign, DsignError};
-    use crate::seed::{mk_seed_from_bytes, Seed};
+    use crate::dsign::{DsignError, signed_dsign, verify_signed_dsign};
+    use crate::seed::{Seed, mk_seed_from_bytes};
 
     #[test]
     fn key_generation_is_deterministic() {

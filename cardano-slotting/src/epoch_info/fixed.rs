@@ -2,7 +2,7 @@ use std::convert::Infallible;
 
 use crate::epoch_info::api::EpochInfo;
 use crate::slot::{EpochNo, EpochSize, SlotNo};
-use crate::time::{get_slot_length, mult_nominal_diff_time, RelativeTime, SlotLength};
+use crate::time::{RelativeTime, SlotLength, get_slot_length, mult_nominal_diff_time};
 
 #[must_use]
 pub fn fixed_epoch_info(epoch_size: EpochSize, slot_length: SlotLength) -> EpochInfo<Infallible> {

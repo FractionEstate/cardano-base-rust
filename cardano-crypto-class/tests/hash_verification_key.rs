@@ -2,10 +2,10 @@
 
 #[test]
 fn test_hash_verification_key_kes() {
+    use cardano_crypto_class::Ed25519;
     use cardano_crypto_class::kes::{
         Blake2b256, Blake2b512, KesAlgorithm, KesHashAlgorithm, SingleKes,
     };
-    use cardano_crypto_class::Ed25519;
 
     // For this test, we just need any verification key
     // We'll create a dummy one by using the serialization/deserialization

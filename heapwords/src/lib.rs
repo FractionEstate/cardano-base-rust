@@ -547,7 +547,9 @@ macro_rules! impl_heap_words_for_int {
     };
 }
 
-impl_heap_words_for_int!(i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, f32, f64);
+impl_heap_words_for_int!(
+    i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, f32, f64
+);
 
 impl HeapWords for bool {
     fn heap_words(&self) -> usize {

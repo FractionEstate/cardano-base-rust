@@ -1,4 +1,4 @@
-use core::array::{from_fn, IntoIter};
+use core::array::{IntoIter, from_fn};
 use core::time::Duration;
 
 /// The algebraic structure with an associative binary operation.
@@ -63,7 +63,9 @@ macro_rules! impl_numeric_semigroup {
     };
 }
 
-impl_numeric_semigroup!(i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, f32, f64,);
+impl_numeric_semigroup!(
+    i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, f32, f64,
+);
 
 impl Semigroup for Duration {
     fn combine(self, other: Self) -> Self {

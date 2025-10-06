@@ -163,7 +163,7 @@ fn cbor_compat_maps() {
     map.insert("a", 1u32);
     let encoded = serialize(&map).unwrap();
     assert_eq!(encoded[0], 0xa1); // map(1)
-                                  // Rest of encoding: 0x61 'a' 0x01
+    // Rest of encoding: 0x61 'a' 0x01
 }
 
 /// Test struct encoding (structs encode as maps)

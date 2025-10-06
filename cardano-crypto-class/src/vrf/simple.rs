@@ -3,8 +3,8 @@
 use std::convert::TryFrom;
 use std::fmt;
 
-use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
+use blake2::digest::{Update, VariableOutput};
 use cardano_binary::serialize;
 use ciborium::value::Value;
 use num_bigint::BigUint;

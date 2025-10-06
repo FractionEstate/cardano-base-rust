@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use hex::{FromHex, FromHexError};
 use num_bigint::BigUint;
-use rand::RngCore;
+use rand_core::RngCore;
 use thiserror::Error;
 
 /// Marker trait equivalent to the Haskell `Empty` class. Implemented for all types.
@@ -185,8 +185,9 @@ macro_rules! decode_hex_string_or_panic {
 mod tests {
     use super::*;
     use num_bigint::BigUint;
+    use rand::SeedableRng;
     use rand::rngs::StdRng;
-    use rand::{RngCore, SeedableRng};
+    use rand_core::RngCore;
 
     #[test]
     fn random_word64_matches_rng() {

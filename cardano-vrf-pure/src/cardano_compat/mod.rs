@@ -18,6 +18,7 @@
 //! in cardano-crypto-praos/cbits/vrf03/ for all inputs. Every operation has been
 //! carefully matched to the reference implementation.
 
+mod debug;
 pub mod field;
 pub mod montgomery;
 pub mod point;

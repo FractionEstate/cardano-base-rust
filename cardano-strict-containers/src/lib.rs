@@ -13,12 +13,12 @@ pub mod strict_seq;
 pub mod unit;
 
 pub use strict_finger_tree::{
-    add_measure, bin_measure, Measured, Monoid, SearchResult, Semigroup, StrictFingerTree, ViewL,
-    ViewR,
+    Measured, Monoid, SearchResult, Semigroup, StrictFingerTree, ViewL, ViewR, add_measure,
+    bin_measure,
 };
 pub use strict_maybe::{
-    from_s_maybe, is_s_just, is_s_nothing, maybe_to_strict_maybe, strict_maybe,
-    strict_maybe_to_maybe, StrictMaybe,
+    StrictMaybe, from_s_maybe, is_s_just, is_s_nothing, maybe_to_strict_maybe, strict_maybe,
+    strict_maybe_to_maybe,
 };
 pub use strict_seq::StrictSeq;
 pub use unit::force_elems_to_whnf;

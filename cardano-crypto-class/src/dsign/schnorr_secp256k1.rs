@@ -12,9 +12,9 @@
 //! For Cardano consensus, use Ed25519 signatures instead.
 
 use crate::dsign::{DsignAlgorithm, DsignError};
-use rand::{CryptoRng, RngCore};
+use rand_core::{CryptoRng, RngCore};
 use secp256k1::{
-    schnorr::Signature as SchnorrSignature, Keypair, Secp256k1, SecretKey, XOnlyPublicKey,
+    Keypair, Secp256k1, SecretKey, XOnlyPublicKey, schnorr::Signature as SchnorrSignature,
 };
 use std::fmt;
 
@@ -215,25 +215,22 @@ mod tests {
 
     #[test]
     fn test_schnorr_secp256k1_round_trip() {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let (signing_key, verification_key) = generate_keypair(&mut rng);
 
         let context = Context::default();
         let message = b"Hello, Bitcoin Taproot!";
         let signature = SchnorrSecp256k1DSIGN::sign_bytes(&context, message, &signing_key);
 
-        assert!(SchnorrSecp256k1DSIGN::verify_bytes(
-            &context,
-            &verification_key,
-            message,
-            &signature
-        )
-        .is_ok());
+        assert!(
+            SchnorrSecp256k1DSIGN::verify_bytes(&context, &verification_key, message, &signature)
+                .is_ok()
+        );
     }
 
     #[test]
     fn test_schnorr_secp256k1_serialization() {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let (signing_key, verification_key) = generate_keypair(&mut rng);
 
         // Test signing key serialization
@@ -255,7 +252,7 @@ mod tests {
 
     #[test]
     fn test_schnorr_secp256k1_signature_format() {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let (signing_key, _) = generate_keypair(&mut rng);
         let context = Context::default();
         let message = b"Test message";
@@ -285,7 +282,7 @@ mod tests {
 
     #[test]
     fn test_schnorr_secp256k1_wrong_signature() {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let (signing_key, verification_key) = generate_keypair(&mut rng);
         let context = Context::default();
 
@@ -293,13 +290,15 @@ mod tests {
         let signature = SchnorrSecp256k1DSIGN::sign_bytes(&context, message, &signing_key);
 
         let wrong_message = b"Modified message";
-        assert!(SchnorrSecp256k1DSIGN::verify_bytes(
-            &context,
-            &verification_key,
-            wrong_message,
-            &signature
-        )
-        .is_err());
+        assert!(
+            SchnorrSecp256k1DSIGN::verify_bytes(
+                &context,
+                &verification_key,
+                wrong_message,
+                &signature
+            )
+            .is_err()
+        );
     }
 
     #[test]

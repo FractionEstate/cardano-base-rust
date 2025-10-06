@@ -3,6 +3,7 @@ use std::ptr::{self, NonNull};
 use std::slice;
 
 use crate::ffi::{SizedMutPtr, SizedPtr};
+use rand_core::OsError;
 use thiserror::Error;
 
 /// Errors that can occur when working with mlocked memory.
@@ -17,7 +18,7 @@ pub enum MLockedError {
     #[error("requested size is too large")]
     AllocationTooLarge,
     #[error("random generator failure: {source}")]
-    RandomFailed { source: rand::Error },
+    RandomFailed { source: OsError },
 }
 
 #[derive(Debug)]
@@ -498,7 +499,9 @@ pub unsafe fn zero_mem(ptr: *mut u8, len: usize) {
     if len == 0 {
         return;
     }
-    ptr::write_bytes(ptr, 0, len);
+    unsafe {
+        ptr::write_bytes(ptr, 0, len);
+    }
 }
 
 /// Copy `len` bytes from `src` to `dst`. The regions must not overlap.
@@ -514,7 +517,9 @@ pub unsafe fn copy_mem(dst: *mut u8, src: *const u8, len: usize) {
     if len == 0 {
         return;
     }
-    ptr::copy_nonoverlapping(src, dst, len);
+    unsafe {
+        ptr::copy_nonoverlapping(src, dst, len);
+    }
 }
 
 #[cfg(test)]

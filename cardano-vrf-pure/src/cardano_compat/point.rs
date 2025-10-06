@@ -3,107 +3,197 @@
 //! This module implements operations on Edwards curve points, including
 //! Cardano-specific cofactor clearing that differs from standard implementations.
 
-use super::montgomery;
-use crate::VrfResult;
-use curve25519_dalek::edwards::EdwardsPoint;
-use curve25519_dalek::montgomery::MontgomeryPoint;
+use crate::{VrfError, VrfResult};
+use curve25519_dalek::edwards::{CompressedEdwardsY, EdwardsPoint};
+use num_bigint::BigUint;
+use num_traits::{One, Zero};
+use once_cell::sync::Lazy;
+
+/// Prime modulus for Curve25519 field: 2^255 - 19
+static P: Lazy<BigUint> = Lazy::new(|| (BigUint::one() << 255) - BigUint::from(19u8));
+/// Montgomery curve parameter A = 486662
+static A_BIG: Lazy<BigUint> = Lazy::new(|| BigUint::from(486662u32));
+/// sqrt(-1) mod p
+static SQRT_M1_BIG: Lazy<BigUint> = Lazy::new(|| {
+    let exp = (&*P - BigUint::one()) >> 2;
+    mod_pow(&BigUint::from(2u8), &exp)
+});
+/// sqrt(-A-2) mod p (Cardano constant)
+static SQRT_AM2_BIG: Lazy<BigUint> = Lazy::new(|| {
+    let neg_a_minus_two = mod_neg(&mod_add(&*A_BIG, &BigUint::from(2u8)));
+    sqrt_mod(&neg_a_minus_two).expect("sqrt(-A-2) must exist")
+});
+
+/// Convert little-endian bytes to BigUint modulo p
+fn bytes_to_biguint(bytes: &[u8; 32]) -> BigUint {
+    BigUint::from_bytes_le(bytes) % &*P
+}
+
+/// Convert BigUint (already reduced) to 32-byte little-endian array
+fn biguint_to_bytes(value: &BigUint) -> [u8; 32] {
+    let mut bytes = value.to_bytes_le();
+    bytes.resize(32, 0);
+    let mut out = [0u8; 32];
+    out.copy_from_slice(&bytes);
+    out
+}
+
+fn mod_add(a: &BigUint, b: &BigUint) -> BigUint {
+    let mut res = a + b;
+    if res >= *P {
+        res -= &*P;
+    }
+    res
+}
+
+fn mod_sub(a: &BigUint, b: &BigUint) -> BigUint {
+    if a >= b { a - b } else { &*P - (b - a) }
+}
+
+fn mod_neg(a: &BigUint) -> BigUint {
+    if a.is_zero() {
+        BigUint::zero()
+    } else {
+        &*P - (a % &*P)
+    }
+}
+
+fn mod_mul(a: &BigUint, b: &BigUint) -> BigUint {
+    ((a % &*P) * (b % &*P)) % &*P
+}
+
+fn mod_pow(base: &BigUint, exp: &BigUint) -> BigUint {
+    base.modpow(exp, &*P)
+}
+
+fn mod_inv(a: &BigUint) -> BigUint {
+    if a.is_zero() {
+        BigUint::zero()
+    } else {
+        let exp = &*P - BigUint::from(2u8);
+        mod_pow(a, &exp)
+    }
+}
+
+fn is_quadratic_residue(n: &BigUint) -> bool {
+    if n.is_zero() {
+        return true;
+    }
+    let exp = (&*P - BigUint::one()) >> 1;
+    mod_pow(&(n % &*P), &exp) == BigUint::one()
+}
+
+fn sqrt_mod(n: &BigUint) -> Option<BigUint> {
+    let n = n % &*P;
+    if n.is_zero() {
+        return Some(BigUint::zero());
+    }
+    let legendre = mod_pow(&n, &((&*P - BigUint::one()) >> 1));
+    if legendre != BigUint::one() {
+        return None;
+    }
+    let exp = (&*P + BigUint::from(3u8)) >> 3;
+    let mut root = mod_pow(&n, &exp);
+    if mod_mul(&root, &root) != n {
+        root = mod_mul(&root, &*SQRT_M1_BIG);
+    }
+    if mod_mul(&root, &root) == n {
+        Some(root)
+    } else {
+        None
+    }
+}
+
+fn mont_rhs(x: &BigUint) -> BigUint {
+    let x_sq = mod_mul(x, x);
+    let x_cu = mod_mul(&x_sq, x);
+    let ax_sq = mod_mul(&*A_BIG, &x_sq);
+    mod_add(&mod_add(&x_cu, &ax_sq), x)
+}
+
+fn mont_to_edwards(x: &BigUint, y: &BigUint) -> (BigUint, BigUint) {
+    let one = BigUint::one();
+    let x_plus_one = mod_add(x, &one);
+    let x_minus_one = mod_sub(x, &one);
+    let denom = mod_mul(&x_plus_one, y);
+    let denom_inv = if denom.is_zero() {
+        BigUint::zero()
+    } else {
+        mod_inv(&denom)
+    };
+
+    let mut ed_x = mod_mul(&mod_mul(&*SQRT_AM2_BIG, x), &denom_inv);
+    ed_x = mod_mul(&ed_x, &x_plus_one);
+
+    let mut ed_y = mod_mul(&denom_inv, y);
+    ed_y = mod_mul(&ed_y, &x_minus_one);
+    if denom_inv.is_zero() {
+        ed_y = one;
+    }
+
+    (ed_x, ed_y)
+}
+
+fn is_negative(fe: &BigUint) -> bool {
+    (fe % &*P) % 2u8 == BigUint::one()
+}
+
+fn hash_to_curve_bigint(r: &[u8; 32], x_sign: u8) -> VrfResult<EdwardsPoint> {
+    let r_val = bytes_to_biguint(r);
+
+    let mut rr2 = mod_mul(&r_val, &r_val);
+    rr2 = mod_mul(&rr2, &BigUint::from(2u8));
+    let denom = mod_add(&rr2, &BigUint::one());
+    let denom_inv = mod_inv(&denom);
+
+    let mut x = mod_neg(&mod_mul(&denom_inv, &*A_BIG));
+    let mut gx1 = mont_rhs(&x);
+
+    if !is_quadratic_residue(&gx1) {
+        x = mod_sub(&mod_neg(&x), &*A_BIG);
+        gx1 = mont_rhs(&x);
+    }
+
+    let y = sqrt_mod(&gx1).ok_or(VrfError::InvalidPoint)?;
+    let (mut ed_x, ed_y) = mont_to_edwards(&x, &y);
+
+    if is_negative(&ed_x) ^ (x_sign != 0) {
+        ed_x = mod_neg(&ed_x);
+    }
+
+    let mut compressed = biguint_to_bytes(&ed_y);
+    let sign_bit = is_negative(&ed_x) as u8;
+    compressed[31] = (compressed[31] & 0x7f) | (sign_bit << 7);
+
+    let point = CompressedEdwardsY(compressed)
+        .decompress()
+        .ok_or(VrfError::InvalidPoint)?;
+
+    // Apply cofactor clearing and re-serialize to get correct sign bit
+    let cleared = cardano_clear_cofactor(&point);
+
+    Ok(cleared)
+}
 
 /// Cardano-specific hash-to-curve function
 ///
-/// Maps a uniform 32-byte value to a point on the Edwards curve using
-/// Cardano's custom Elligator2 implementation and cofactor clearing.
+/// Maps a uniform 32-byte value to a point on the Edwards curve using the exact
+/// procedure implemented by libsodium's `cardano_ge25519_from_uniform`.
 ///
 /// # Arguments
 ///
 /// * `r` - 32-byte uniform random value
-///
-/// # Returns
-///
-/// Edwards point on Curve25519
-///
-/// # Implementation
-///
-/// This function must match libsodium's `cardano_ge25519_from_uniform` exactly:
-/// 1. Extract sign bit from r[31]
-/// 2. Apply Elligator2 to get Montgomery point
-/// 3. Convert Montgomery to Edwards
-/// 4. Apply conditional negation based on sign
-/// 5. Clear cofactor using Cardano-specific method
-///
-/// # Errors
-///
-/// Returns error if point generation fails
 pub fn cardano_hash_to_curve(r: &[u8; 32]) -> VrfResult<EdwardsPoint> {
-    // Extract sign bit from high bit of r[31]
     let sign = (r[31] >> 7) & 1;
-    eprintln!("DEBUG hash_to_curve: sign bit = {}", sign);
-
-    // Create modified r with sign bit cleared for Elligator2
     let mut r_masked = *r;
     r_masked[31] &= 0x7f;
-
-    // Apply Elligator2 to get Montgomery coordinates
-    // We only need the u-coordinate for Montgomery to Edwards conversion
-    let (mont_u, _mont_v) = montgomery::elligator2(&r_masked).ok_or_else(|| {
-        eprintln!("DEBUG: Elligator2 FAILED");
-        crate::VrfError::InvalidPoint
-    })?;
-
-    eprintln!("DEBUG: Elligator2 succeeded");
-
-    // Convert our FieldElement u-coordinate to bytes for MontgomeryPoint
-    let u_bytes = mont_u.to_bytes();
-    eprintln!("DEBUG: u_bytes first 8: {:02x?}", &u_bytes[..8]);
-
-    // Use curve25519-dalek's MontgomeryPoint and its to_edwards conversion
-    // This handles the proper birational map from Montgomery to Edwards
-    let mont_point = MontgomeryPoint(u_bytes);
-    let mut point = mont_point.to_edwards(sign).ok_or_else(|| {
-        eprintln!("DEBUG: to_edwards FAILED with sign={}", sign);
-        crate::VrfError::InvalidPoint
-    })?;
-
-    eprintln!("DEBUG: to_edwards succeeded");
-
-    // Apply conditional negation based on sign bit from original input
-    // This matches the C implementation's logic
-    if sign == 1 {
-        point = -point;
-    }
-
-    // Clear cofactor using Cardano-specific method
-    let result = cardano_clear_cofactor(&point);
-
-    Ok(result)
+    hash_to_curve_bigint(&r_masked, sign)
 }
 
 /// Cardano-specific cofactor clearing
 ///
-/// Multiplies point by cofactor (8) using Cardano's specific method.
-/// This differs from standard cofactor clearing and must match libsodium exactly.
-///
-/// # Arguments
-///
-/// * `point` - Edwards point to clear cofactor
-///
-/// # Returns
-///
-/// Point with cofactor cleared
-///
-/// # Implementation
-///
-/// The Edwards curve for Curve25519 has cofactor 8 = 2^3.
-/// Cardano clears the cofactor by multiplying the point by 8.
-/// This is equivalent to doubling the point 3 times.
-///
-/// The C implementation uses:
-/// ```c
-/// ge25519_double(&p2, p);  // p2 = 2*p
-/// ge25519_double(&p2, &p2); // p2 = 4*p
-/// ge25519_double(&p2, &p2); // p2 = 8*p
-/// ```
+/// Multiplies point by cofactor (8) using Cardano's method.
 pub fn cardano_clear_cofactor(point: &EdwardsPoint) -> EdwardsPoint {
-    // Multiply by 8 (cofactor) via scalar multiplication
     use curve25519_dalek::scalar::Scalar;
     let eight = Scalar::from(8u8);
     eight * point
@@ -112,35 +202,19 @@ pub fn cardano_clear_cofactor(point: &EdwardsPoint) -> EdwardsPoint {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_hash_to_curve() {
-        let r = [0u8; 32];
-        let result = cardano_hash_to_curve(&r);
-        // May fail if point construction from field elements doesn't work
-        // This is expected as we're using a simplified implementation
-        match result {
-            Ok(_) => { /* Success */ },
-            Err(_) => { /* Expected - simplified implementation */ },
-        }
-    }
+    use curve25519_dalek::constants::ED25519_BASEPOINT_POINT;
+    use curve25519_dalek::traits::Identity;
 
     #[test]
     fn test_cofactor_clearing_with_basepoint() {
-        use curve25519_dalek::constants::ED25519_BASEPOINT_POINT;
-        use curve25519_dalek::traits::Identity;
-
-        // Test cofactor clearing on the basepoint
         let cleared = cardano_clear_cofactor(&ED25519_BASEPOINT_POINT);
 
-        // Should not be identity
         let identity = EdwardsPoint::identity();
         assert_ne!(
             cleared.compress().as_bytes(),
             identity.compress().as_bytes()
         );
 
-        // Should be 8 * basepoint
         use curve25519_dalek::scalar::Scalar;
         let eight = Scalar::from(8u8);
         let expected = eight * ED25519_BASEPOINT_POINT;

@@ -3,8 +3,8 @@ use cardano_slotting::epoch_info::{
 };
 use cardano_slotting::epoch_info::{fixed::fixed_epoch_info, unsafe_linear_extend_epoch_info};
 use cardano_slotting::slot::{
-    add_epoch_interval, at, bin_op_epoch_no, origin, EpochInterval, EpochNo, EpochSize, SlotNo,
-    WithOrigin,
+    EpochInterval, EpochNo, EpochSize, SlotNo, WithOrigin, add_epoch_interval, at, bin_op_epoch_no,
+    origin,
 };
 use cardano_slotting::time::{
     diff_relative_time, slot_length_from_millisec, slot_length_to_millisec,

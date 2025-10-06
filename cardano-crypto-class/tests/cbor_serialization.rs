@@ -1,8 +1,8 @@
 #[cfg(feature = "serde")]
 mod cbor_tests {
+    use cardano_crypto_class::Ed25519;
     use cardano_crypto_class::dsign::DsignAlgorithm;
     use cardano_crypto_class::seed::mk_seed_from_bytes;
-    use cardano_crypto_class::Ed25519;
 
     const SEED_BYTES: usize = 32;
 
@@ -179,9 +179,9 @@ mod vrf_cbor_tests {
 
     #[test]
     fn test_simple_vrf_verification_key_cbor_roundtrip() {
-        use cardano_crypto_class::seed::{mk_seed_from_bytes, Seed};
-        use cardano_crypto_class::vrf::simple::{gen_keypair, SimpleVRF};
+        use cardano_crypto_class::seed::{Seed, mk_seed_from_bytes};
         use cardano_crypto_class::vrf::VRFAlgorithm;
+        use cardano_crypto_class::vrf::simple::{SimpleVRF, gen_keypair};
 
         let seed_bytes = vec![42u8; SimpleVRF::SEED_SIZE];
         let seed = Seed::from_bytes(seed_bytes);
@@ -202,9 +202,9 @@ mod vrf_cbor_tests {
 
     #[test]
     fn test_simple_vrf_proof_cbor_roundtrip() {
-        use cardano_crypto_class::seed::{mk_seed_from_bytes, Seed};
-        use cardano_crypto_class::vrf::simple::{gen_keypair, SimpleVRF};
+        use cardano_crypto_class::seed::{Seed, mk_seed_from_bytes};
         use cardano_crypto_class::vrf::VRFAlgorithm;
+        use cardano_crypto_class::vrf::simple::{SimpleVRF, gen_keypair};
 
         let seed_bytes = vec![7u8; SimpleVRF::SEED_SIZE];
         let seed = Seed::from_bytes(seed_bytes);
@@ -229,8 +229,8 @@ mod vrf_cbor_tests {
     #[test]
     fn test_mock_vrf_verification_key_cbor_roundtrip() {
         use cardano_crypto_class::seed::Seed;
-        use cardano_crypto_class::vrf::mock::{gen_keypair, MockVRF};
         use cardano_crypto_class::vrf::VRFAlgorithm;
+        use cardano_crypto_class::vrf::mock::{MockVRF, gen_keypair};
 
         let seed_bytes = vec![99u8; MockVRF::SEED_SIZE];
         let seed = Seed::from_bytes(seed_bytes);
@@ -252,8 +252,8 @@ mod vrf_cbor_tests {
     #[test]
     fn test_mock_vrf_proof_cbor_roundtrip() {
         use cardano_crypto_class::seed::Seed;
-        use cardano_crypto_class::vrf::mock::{gen_keypair, MockVRF};
         use cardano_crypto_class::vrf::VRFAlgorithm;
+        use cardano_crypto_class::vrf::mock::{MockVRF, gen_keypair};
 
         let seed_bytes = vec![123u8; MockVRF::SEED_SIZE];
         let seed = Seed::from_bytes(seed_bytes);
@@ -277,8 +277,8 @@ mod vrf_cbor_tests {
 
 #[cfg(feature = "serde")]
 mod kes_cbor_tests {
-    use cardano_crypto_class::dsign::ed25519::Ed25519;
     use cardano_crypto_class::dsign::DsignMAlgorithm;
+    use cardano_crypto_class::dsign::ed25519::Ed25519;
     use cardano_crypto_class::kes::{KesAlgorithm, SingleKes};
     use cardano_crypto_class::mlocked_seed::MLockedSeed;
 
@@ -383,8 +383,8 @@ mod kes_cbor_tests {
 
     #[test]
     fn test_compact_single_kes_verification_key_cbor_roundtrip() {
-        use cardano_crypto_class::dsign::ed25519::Ed25519;
         use cardano_crypto_class::dsign::DsignMAlgorithm;
+        use cardano_crypto_class::dsign::ed25519::Ed25519;
         use cardano_crypto_class::kes::compact_single::CompactSingleKes;
         use cardano_crypto_class::mlocked_seed::MLockedSeed;
 
@@ -418,8 +418,8 @@ mod kes_cbor_tests {
 
     #[test]
     fn test_compact_single_kes_signature_cbor_roundtrip() {
-        use cardano_crypto_class::dsign::ed25519::Ed25519;
         use cardano_crypto_class::dsign::DsignMAlgorithm;
+        use cardano_crypto_class::dsign::ed25519::Ed25519;
         use cardano_crypto_class::kes::compact_single::CompactSingleKes;
         use cardano_crypto_class::mlocked_seed::MLockedSeed;
 
@@ -453,8 +453,8 @@ mod kes_cbor_tests {
 
     #[test]
     fn test_compact_single_kes_cbor_signature_verification() {
-        use cardano_crypto_class::dsign::ed25519::Ed25519;
         use cardano_crypto_class::dsign::DsignMAlgorithm;
+        use cardano_crypto_class::dsign::ed25519::Ed25519;
         use cardano_crypto_class::kes::compact_single::CompactSingleKes;
         use cardano_crypto_class::mlocked_seed::MLockedSeed;
 

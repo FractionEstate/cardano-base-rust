@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 use thiserror::Error;
 
 use crate::mlocked_bytes::MLockedError;
-use crate::seed::{get_bytes_from_seed_t, Seed};
+use crate::seed::{Seed, get_bytes_from_seed_t};
 use crate::util::SignableRepresentation;
 
 pub mod ecdsa_secp256k1;
@@ -277,7 +277,7 @@ pub trait DsignMAlgorithm: DsignAlgorithm {
 
     /// Extract the seed material from an mlocked signing key.
     fn get_seed_m(signing_key: &Self::MLockedSigningKey)
-        -> Result<Self::SeedMaterial, DsignMError>;
+    -> Result<Self::SeedMaterial, DsignMError>;
 
     /// Securely forget an mlocked signing key by consuming it.
     fn forget_signing_key_m(signing_key: Self::MLockedSigningKey);

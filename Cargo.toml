@@ -3,6 +3,7 @@ members = [
     "base-deriving-via",
     "cardano-base",
     "cardano-binary",
+    "cardano-test-vectors",
     "cardano-git-rev",
     "cardano-crypto-class",
     "cardano-vrf-pure",
@@ -22,8 +23,8 @@ authors = ["FractionEstate"]
 repository = "https://github.com/FractionEstate/cardano-base-rust"
 homepage = "https://github.com/FractionEstate/cardano-base-rust"
 license = "Apache-2.0 OR MIT"
-edition = "2021"
-rust-version = "1.70"
+edition = "2024"
+rust-version = "1.85"
 keywords = ["cardano", "blockchain", "cryptography", "vrf", "rust"]
 categories = ["cryptography", "encoding", "data-structures"]
 

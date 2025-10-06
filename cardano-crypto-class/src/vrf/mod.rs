@@ -9,6 +9,7 @@ pub mod praos_batch;
 pub mod simple;
 
 pub use praos::{
+    PraosConstructionError, PraosProof, PraosSeed, PraosSigningKey, PraosVRF, PraosVerificationKey,
     gen_seed as praos_gen_seed, keypair_from_seed as praos_keypair_from_seed,
     keypair_from_seed_bytes as praos_keypair_from_seed_bytes,
     output_from_proof as praos_output_from_proof,
@@ -20,45 +21,44 @@ pub use praos::{
     sk_to_batch_compat as praos_sk_to_batch_compat,
     verification_key_from_bytes as praos_verification_key_from_bytes,
     verification_key_to_bytes as praos_verification_key_to_bytes,
-    vk_to_batch_compat as praos_vk_to_batch_compat, PraosConstructionError, PraosProof, PraosSeed,
-    PraosSigningKey, PraosVRF, PraosVerificationKey,
+    vk_to_batch_compat as praos_vk_to_batch_compat,
 };
 
 pub use praos_batch::{
-    gen_seed as praos_batch_gen_seed, keypair_from_seed as praos_batch_keypair_from_seed,
+    PraosBatchCompatProof, PraosBatchCompatSeed, PraosBatchCompatSigningKey, PraosBatchCompatVRF,
+    PraosBatchCompatVerificationKey, PraosBatchConstructionError, gen_seed as praos_batch_gen_seed,
+    keypair_from_seed as praos_batch_keypair_from_seed,
     keypair_from_seed_bytes as praos_batch_keypair_from_seed_bytes,
     output_from_proof as praos_batch_output_from_proof,
     proof_from_bytes as praos_batch_proof_from_bytes, proof_to_bytes as praos_batch_proof_to_bytes,
-    r#unsafe_raw_seed as praos_batch_unsafe_raw_seed,
     seed_from_bytes as praos_batch_seed_from_bytes, seed_to_bytes as praos_batch_seed_to_bytes,
     signing_key_from_bytes as praos_batch_signing_key_from_bytes,
     signing_key_to_bytes as praos_batch_signing_key_to_bytes,
+    r#unsafe_raw_seed as praos_batch_unsafe_raw_seed,
     verification_key_from_bytes as praos_batch_verification_key_from_bytes,
-    verification_key_to_bytes as praos_batch_verification_key_to_bytes, PraosBatchCompatProof,
-    PraosBatchCompatSeed, PraosBatchCompatSigningKey, PraosBatchCompatVRF,
-    PraosBatchCompatVerificationKey, PraosBatchConstructionError,
+    verification_key_to_bytes as praos_batch_verification_key_to_bytes,
 };
 
 pub use mock::{
-    gen_key as mock_gen_key, gen_keypair as mock_gen_keypair, MockCertificate, MockSigningKey,
-    MockVRF, MockVerificationKey,
+    MockCertificate, MockSigningKey, MockVRF, MockVerificationKey, gen_key as mock_gen_key,
+    gen_keypair as mock_gen_keypair,
 };
 
 pub use never::{
-    gen_key as never_gen_key, gen_keypair as never_gen_keypair, NeverCertificate, NeverSigningKey,
-    NeverVRF, NeverVerificationKey,
+    NeverCertificate, NeverSigningKey, NeverVRF, NeverVerificationKey, gen_key as never_gen_key,
+    gen_keypair as never_gen_keypair,
 };
 
 pub use simple::{
-    gen_key as simple_gen_key, gen_keypair as simple_gen_keypair, SimpleCertificate,
-    SimpleSigningKey, SimpleVRF, SimpleVerificationKey,
+    SimpleCertificate, SimpleSigningKey, SimpleVRF, SimpleVerificationKey,
+    gen_key as simple_gen_key, gen_keypair as simple_gen_keypair,
 };
 
 use num_bigint::BigUint;
 use thiserror::Error;
 
-use crate::seed::{get_bytes_from_seed_t, Seed};
-use crate::util::{bytes_to_natural, natural_to_bytes, SignableRepresentation};
+use crate::seed::{Seed, get_bytes_from_seed_t};
+use crate::util::{SignableRepresentation, bytes_to_natural, natural_to_bytes};
 
 /// Errors that can occur when working with VRF helpers.
 #[derive(Debug, Error, Clone, PartialEq, Eq)]

@@ -1,5 +1,5 @@
-use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
+use blake2::digest::{Update, VariableOutput};
 use std::fmt;
 
 use crate::seed::Seed;
@@ -227,11 +227,7 @@ impl VRFAlgorithm for MockVRF {
     ) -> Option<OutputVRF<Self>> {
         let signing_key = MockSigningKey(verification_key.0);
         let (output, cert) = Self::evaluate_bytes(context, message, &signing_key);
-        if cert == *proof {
-            Some(output)
-        } else {
-            None
-        }
+        if cert == *proof { Some(output) } else { None }
     }
 
     fn gen_key_from_seed_bytes(seed: &[u8]) -> Self::SigningKey {

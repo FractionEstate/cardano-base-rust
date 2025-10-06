@@ -1,6 +1,6 @@
 use crate::epoch_info::api::{
-    epoch_info_epoch, epoch_info_first, epoch_info_size, epoch_info_slot_length,
-    epoch_info_slot_to_relative_time, EpochInfo,
+    EpochInfo, epoch_info_epoch, epoch_info_first, epoch_info_size, epoch_info_slot_length,
+    epoch_info_slot_to_relative_time,
 };
 use crate::slot::{EpochNo, EpochSize, SlotNo};
 use crate::time::{add_relative_time, get_slot_length, mult_nominal_diff_time};

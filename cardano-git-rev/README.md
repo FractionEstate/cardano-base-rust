@@ -17,10 +17,18 @@ At runtime you can obtain the revision through
 let current_rev = cardano_git_rev::git_rev();
 ```
 
-The function prefers the build-time value embedded by the build script. If that value
-is still the all-zero placeholder, it attempts to call `git rev-parse --verify HEAD`
-at runtime before finally falling back to the placeholder. Any trailing whitespace is
-stripped and the result is always lower-case hexadecimal.
+The lookup order mirrors the Haskell implementation:
+
+1. Read the `_cardano_git_rev` symbol. Downstream tooling (for example
+	[`set-git-rev.hs`][set-git-rev.hs]) patches this payload after the build completes.
+2. Fall back to the build-script supplied `CARDANO_GIT_REV` environment variable
+	when available (for local builds or when `git` metadata is present).
+3. As a last resort, execute `git rev-parse --verify HEAD` at runtime and use the
+	trimmed output when it looks like a valid 40-character SHA1.
+
+If every step fails, the crate returns the all-zero placeholder and emits a single
+warning to `stderr`, matching the behaviour of the upstream Haskell library. The
+returned value preserves the letter casing reported by `git`.
 
 See [set-git-rev.hs][set-git-rev.hs] for the patching step performed by nix builds.
 

@@ -1,7 +1,7 @@
 [package]
 name = "base-deriving-via"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 description = "Generic-based Semigroup and Monoid derivation helpers inspired by Cardano's base-deriving-via package."
 license = "Apache-2.0"
 repository = "https://github.com/FractionEstate/cardano-base"
@@ -9,6 +9,7 @@ authors = ["Cardano Engineering"]
 readme = "README.md"
 keywords = ["algebra", "semigroup", "monoid", "generic"]
 categories = ["algorithms", "development-tools"]
+rust-version = "1.85"
 
 [lints]
 workspace = true

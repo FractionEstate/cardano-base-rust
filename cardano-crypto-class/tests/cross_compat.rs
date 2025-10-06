@@ -6,9 +6,9 @@
 
 #[cfg(feature = "serde")]
 mod cross_compat {
+    use cardano_crypto_class::Ed25519;
     use cardano_crypto_class::dsign::DsignAlgorithm;
     use cardano_crypto_class::seed::mk_seed_from_bytes;
-    use cardano_crypto_class::Ed25519;
     use serde::{Deserialize, Serialize};
     use std::fs;
 
@@ -344,8 +344,8 @@ mod cross_compat {
     #[test]
     fn test_generate_simple_vrf_test_vectors() {
         use cardano_crypto_class::seed::Seed;
-        use cardano_crypto_class::vrf::simple::{gen_keypair, SimpleVRF};
         use cardano_crypto_class::vrf::VRFAlgorithm;
+        use cardano_crypto_class::vrf::simple::{SimpleVRF, gen_keypair};
 
         println!("\n=== Simple VRF Test Vector Generation ===\n");
         println!(
@@ -415,8 +415,8 @@ mod cross_compat {
     #[test]
     fn test_generate_mock_vrf_test_vectors() {
         use cardano_crypto_class::seed::Seed;
-        use cardano_crypto_class::vrf::mock::{gen_keypair, MockVRF};
         use cardano_crypto_class::vrf::VRFAlgorithm;
+        use cardano_crypto_class::vrf::mock::{MockVRF, gen_keypair};
 
         println!("\n=== Mock VRF Test Vector Generation ===\n");
         println!("Note: MockVRF requires {} byte seeds\n", MockVRF::SEED_SIZE);
@@ -477,8 +477,8 @@ mod cross_compat {
 
     #[test]
     fn test_generate_single_kes_test_vectors() {
-        use cardano_crypto_class::dsign::ed25519::Ed25519;
         use cardano_crypto_class::dsign::DsignMAlgorithm;
+        use cardano_crypto_class::dsign::ed25519::Ed25519;
         use cardano_crypto_class::kes::{KesAlgorithm, SingleKes};
         use cardano_crypto_class::mlocked_seed::MLockedSeed;
 
@@ -544,8 +544,8 @@ mod cross_compat {
 
     #[test]
     fn test_generate_compact_single_kes_test_vectors() {
-        use cardano_crypto_class::dsign::ed25519::Ed25519;
         use cardano_crypto_class::dsign::DsignMAlgorithm;
+        use cardano_crypto_class::dsign::ed25519::Ed25519;
         use cardano_crypto_class::kes::{CompactSingleKes, KesAlgorithm};
         use cardano_crypto_class::mlocked_seed::MLockedSeed;
 

@@ -8,11 +8,11 @@ use curve25519_dalek::{
 };
 use sha2::{Digest, Sha512};
 
-use super::point::cardano_hash_to_curve;
+use super::point::{cardano_clear_cofactor, cardano_hash_to_curve};
 use crate::{VrfError, VrfResult};
 
 /// Suite identifier for VRF draft-03
-const SUITE_DRAFT03: u8 = 0x03;
+const SUITE_DRAFT03: u8 = 0x04;
 const ONE: u8 = 0x01;
 const TWO: u8 = 0x02;
 const THREE: u8 = 0x03;
@@ -86,7 +86,7 @@ pub fn cardano_vrf_verify(
 
     let mut r_bytes = [0u8; 32];
     r_bytes.copy_from_slice(&r_string[0..32]);
-    r_bytes[31] &= 0x7f;
+    r_bytes[31] &= 0x7f; // Clear sign bit per Cardano reference implementation
 
     // CRITICAL: Must use Cardano-specific hash-to-curve
     let h_point = cardano_hash_to_curve(&r_bytes)?;
@@ -111,7 +111,7 @@ pub fn cardano_vrf_verify(
     c_hasher.update(&[SUITE_DRAFT03]);
     c_hasher.update(&[TWO]);
     c_hasher.update(&h_string);
-    c_hasher.update(&gamma.compress().to_bytes());
+    c_hasher.update(&gamma_bytes);
     c_hasher.update(&k_b_bytes);
     c_hasher.update(&k_h_bytes);
     let c_hash = c_hasher.finalize();
@@ -122,10 +122,11 @@ pub fn cardano_vrf_verify(
     }
 
     // Step 7: Compute VRF output
+    let gamma_cleared = cardano_clear_cofactor(&gamma);
     let mut output_hasher = Sha512::new();
     output_hasher.update(&[SUITE_DRAFT03]);
     output_hasher.update(&[THREE]);
-    output_hasher.update(&gamma.compress().to_bytes());
+    output_hasher.update(&gamma_cleared.compress().to_bytes());
     let output_hash = output_hasher.finalize();
 
     let mut output = [0u8; 64];

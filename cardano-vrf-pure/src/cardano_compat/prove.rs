@@ -11,7 +11,7 @@ use super::point::cardano_hash_to_curve;
 use crate::VrfResult;
 
 /// Suite identifier for VRF draft-03
-const SUITE_DRAFT03: u8 = 0x03;
+const SUITE_DRAFT03: u8 = 0x04;
 const ONE: u8 = 0x01;
 const TWO: u8 = 0x02;
 
