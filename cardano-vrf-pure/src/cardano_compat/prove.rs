@@ -8,12 +8,12 @@ use sha2::{Digest, Sha512};
 use zeroize::Zeroizing;
 
 use super::point::cardano_hash_to_curve;
-use crate::VrfResult;
+use crate::{
+    VrfResult,
+    common::{ONE, SUITE_DRAFT03, TWO},
+};
 
-/// Suite identifier for VRF draft-03
-const SUITE_DRAFT03: u8 = 0x04;
-const ONE: u8 = 0x01;
-const TWO: u8 = 0x02;
+// Suite / marker constants imported from common.rs to avoid duplication
 
 /// Generate VRF proof using Cardano-compatible method
 ///

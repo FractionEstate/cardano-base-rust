@@ -1,7 +1,10 @@
 use cardano_crypto_class::dsign::DsignAlgorithm;
 use cardano_crypto_class::dsign::ed25519::Ed25519;
 use cardano_crypto_class::kes::compact_single::OptimizedKesSignature;
-use cardano_crypto_class::kes::{CompactSingleKes, KesAlgorithm, SingleKes};
+use cardano_crypto_class::kes::{
+    CompactSingleKes, KesAlgorithm, SingleKes, Sum1Kes, Sum2Kes, Sum3Kes, Sum4Kes, Sum5Kes,
+    Sum6Kes, Sum7Kes,
+};
 use cardano_test_vectors::kes;
 use hex::{decode, encode_upper};
 use serde::Deserialize;
@@ -43,6 +46,33 @@ struct CompactSingleKesVectorEntry {
 struct CompactSingleExpected {
     derived_verification_key: String,
     embedded_verification_key: String,
+    signature: String,
+    raw_signature: String,
+}
+
+#[derive(Deserialize)]
+struct SumKesVectors {
+    levels: Vec<SumKesLevel>,
+}
+
+#[derive(Deserialize)]
+struct SumKesLevel {
+    level: u8,
+    total_periods: u64,
+    vectors: Vec<SumKesVectorEntry>,
+}
+
+#[derive(Deserialize)]
+struct SumKesVectorEntry {
+    seed: String,
+    verification_key: String,
+    tracked_periods: Vec<SumKesPeriodEntry>,
+}
+
+#[derive(Deserialize)]
+struct SumKesPeriodEntry {
+    period: u64,
+    message: String,
     signature: String,
     raw_signature: String,
 }
@@ -170,6 +200,93 @@ fn compact_single_kes_vectors_match_generated_data() {
         );
 
         CompactSingleKes::<Ed25519>::forget_signing_key_kes(signing_key);
+    }
+}
+
+#[test]
+fn sum_kes_vectors_cover_period_boundaries() {
+    let fixture = kes::get("sum_kes_test_vectors.json").expect("sum KES vectors present");
+    let parsed: SumKesVectors = serde_json::from_str(fixture).expect("valid sum KES JSON");
+
+    for level in &parsed.levels {
+        match level.level {
+            1 => exercise_sum_level::<Sum1Kes>(level),
+            2 => exercise_sum_level::<Sum2Kes>(level),
+            3 => exercise_sum_level::<Sum3Kes>(level),
+            4 => exercise_sum_level::<Sum4Kes>(level),
+            5 => exercise_sum_level::<Sum5Kes>(level),
+            6 => exercise_sum_level::<Sum6Kes>(level),
+            7 => exercise_sum_level::<Sum7Kes>(level),
+            other => panic!("unexpected SumKES level {other}"),
+        }
+    }
+}
+
+fn exercise_sum_level<K>(level: &SumKesLevel)
+where
+    K: KesAlgorithm<Context = ()>,
+{
+    assert_eq!(level.total_periods, K::total_periods());
+
+    for vector in &level.vectors {
+        let seed_bytes = decode_hex(&vector.seed);
+        let mut signing_key =
+            K::gen_key_kes_from_seed_bytes(&seed_bytes).expect("sum signing key generation");
+        let verification_key =
+            K::derive_verification_key(&signing_key).expect("sum verification key");
+
+        let vk_bytes = K::raw_serialize_verification_key_kes(&verification_key);
+        assert_eq!(
+            vector.verification_key,
+            encode_upper(vk_bytes),
+            "verification key mismatch for level {}",
+            level.level
+        );
+
+        let mut period_entries = vector.tracked_periods.iter().peekable();
+        let total_periods = K::total_periods();
+
+        for period in 0..total_periods {
+            if let Some(expected) = period_entries.peek() {
+                if expected.period == period {
+                    let message = decode_hex(&expected.message);
+                    assert_eq!(
+                        expected.signature, expected.raw_signature,
+                        "signature/raw mismatch at level {} period {}",
+                        level.level, period
+                    );
+                    let expected_signature = decode_hex(&expected.raw_signature);
+
+                    let signature =
+                        K::sign_kes(&(), period, &message, &signing_key).expect("sum signing");
+                    let raw_signature = K::raw_serialize_signature_kes(&signature);
+
+                    assert_eq!(
+                        expected_signature, raw_signature,
+                        "signature mismatch at level {} period {}",
+                        level.level, period
+                    );
+
+                    let deserialised = K::raw_deserialize_signature_kes(&raw_signature)
+                        .expect("sum signature deserialise");
+                    K::verify_kes(&(), &verification_key, period, &message, &deserialised)
+                        .expect("sum verification");
+
+                    period_entries.next();
+                }
+            }
+
+            if period + 1 == total_periods {
+                K::forget_signing_key_kes(signing_key);
+                break;
+            }
+
+            signing_key = K::update_kes(&(), signing_key, period)
+                .expect("sum key update")
+                .expect("sum key remains valid");
+        }
+
+        assert!(period_entries.next().is_none(), "unused period entries");
     }
 }
 

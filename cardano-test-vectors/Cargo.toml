@@ -27,8 +27,13 @@ path = "src/bin/generate_kes_vectors.rs"
 name = "generate_ed25519_outputs"
 path = "src/bin/generate_ed25519_outputs.rs"
 
+[[bin]]
+name = "check_vrf_vectors"
+path = "src/bin/check_vrf_vectors.rs"
+
 [features]
 default = []
+ed25519-debug = []
 
 [package.metadata.docs.rs]
 all-features = true

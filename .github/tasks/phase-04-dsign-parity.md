@@ -268,6 +268,8 @@ Bring the Rust DSIGN (Digital Signature) implementations to 100% functional pari
     - Added `cardano-test-vectors/src/bin/generate_ed25519_outputs.rs` and removed Haskell helper
     - Created regression test `cardano-test-vectors/tests/dsign_ed25519_vectors.rs`
     - Added sanity checks for vector metadata and clearer logging when fixtures omit expected values
+    - Introduced `ed25519-debug` feature with `CARDANO_ED25519_DEBUG` env toggle to mirror VRF debugging strategy
+    - Added debug trace and performance harnesses (`tests/debug_ed25519_trace.rs`, `tests/performance.rs`) aligning with `cardano-vrf-pure`
     - Verified vectors via `cargo test -p cardano-test-vectors` (all passing)
 
 ---

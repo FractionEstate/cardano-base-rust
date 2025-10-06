@@ -123,6 +123,70 @@ pub fn elligator2(r: &[u8; 32]) -> Option<FieldElement> {
     Some(x.reduce())
 }
 
+/// Faithful port of libsodium/cardano C ge25519_elligator2
+///
+/// Returns (x, y, notsquare) where (x,y) are Montgomery coordinates and
+/// notsquare indicates whether the first candidate gx1 was a nonsquare
+/// (i.e. 1 if gx1 not square, 0 if square) exactly like C sets notsquare.
+pub fn ge25519_elligator2_faithful(r: &FieldElement) -> (FieldElement, FieldElement, u8) {
+    // Mirrors C:
+    // cardano_fe25519_sq2(rr2, r); rr2[0]++; invert; x = -A * rr2; (neg afterwards) etc.
+    let mut rr2 = r.square2().reduce(); // 2*r^2
+    // rr2[0]++ equivalent: add 1
+    rr2 = (rr2 + FieldElement::one()).reduce();
+    let rr2_inv = rr2.invert(); // 1/(1+2*r^2)
+
+    // x = -A * rr2_inv  (C: cardano_fe25519_mul(x, cardano_curve25519_A, rr2); cardano_fe25519_neg(x,x))
+    let a_fe = montgomery_a_fe();
+    let mut x = (a_fe * rr2_inv).reduce();
+    x = (-x).reduce(); // x = x1
+
+    // gx1 = x1^3 + A*x1^2 + x1
+    let x_sq = x.square().reduce();
+    let x_cu = (x_sq * x).reduce();
+    let ax_sq = (x_sq * a_fe).reduce();
+    let gx1 = (x_cu + x + ax_sq).reduce();
+
+    let notsquare = (!gx1.is_square()) as u8; // fe25519_notsquare(gx1)
+
+    // If not square: x = -x1 - A
+    if notsquare == 1 {
+        let negx = (-x).reduce();
+        x = (negx - a_fe).reduce();
+    }
+
+    // Recover y from curve equation y = sqrt(x^3 + A*x^2 + x)
+    let mut y_opt = {
+        let x_sq2 = x.square().reduce();
+        let x_cu2 = (x_sq2 * x).reduce();
+        let ax_sq2 = (x_sq2 * a_fe).reduce();
+        let rhs = (x_cu2 + ax_sq2 + x).reduce();
+        rhs.sqrt()
+    };
+
+    if y_opt.is_none() {
+        debug::log(|| "ge25519_elligator2_faithful: sqrt failed (should not happen)".to_string());
+        // In C they abort(); we propagate by returning zero y.
+        y_opt = Some(FieldElement::zero());
+    }
+    let y = y_opt.unwrap();
+
+    fn fe_hex(fe: &FieldElement) -> String {
+        fe.to_bytes().iter().map(|b| format!("{:02x}", b)).collect()
+    }
+    debug::log(|| {
+        format!(
+            "ge25519_elligator2_faithful:\n  rr2 = {}\n  x_final = {}\n  gx1_notsquare = {}\n  y = {}",
+            fe_hex(&rr2),
+            fe_hex(&x),
+            notsquare,
+            fe_hex(&y)
+        )
+    });
+
+    (x, y, notsquare)
+}
+
 fn is_quadratic_residue(value: &FieldElement) -> bool {
     value.is_square()
 }
@@ -168,6 +232,62 @@ pub fn mont_to_edwards(
     }
 
     Some((ed_x.reduce(), ed_y.reduce()))
+}
+
+/// Faithful port of libsodium/cardano C ge25519_mont_to_ed
+/// Input: Montgomery (x,y) -> Output: Edwards (X,Y)
+pub fn ge25519_mont_to_ed_faithful(
+    x: &FieldElement,
+    y: &FieldElement,
+) -> (FieldElement, FieldElement) {
+    let one = FieldElement::one();
+    let x_plus_one = (*x + one).reduce();
+    let x_minus_one = (*x - one).reduce();
+
+    // xed = sqrt(-A-2)*x/((x+1)*y)*(x+1)
+    let denom = (x_plus_one * *y).reduce();
+    let denom_inv = denom.invert();
+    let mut xed = (*x * FieldElement::SQRT_AM2).reduce();
+    xed = (xed * denom_inv).reduce();
+    xed = (xed * x_plus_one).reduce();
+
+    // yed = (x-1)/(x+1) = (x-1) * 1/(x+1)
+    // reuse denom_inv * y = 1/(x+1)
+    let inv_x_plus_one = (denom_inv * *y).reduce();
+    let mut yed = (inv_x_plus_one * x_minus_one).reduce();
+    if denom.is_zero() {
+        // condition on original (x+1)*y pre-invert
+        yed = one;
+    }
+    debug::log(|| {
+        format!(
+            "ge25519_mont_to_ed_faithful:\n  x = {}\n  y = {}\n  xed = {}\n  yed = {}\n  denom_zero = {}",
+            fe_hex(x),
+            fe_hex(y),
+            fe_hex(&xed),
+            fe_hex(&yed),
+            denom.is_zero() as u8
+        )
+    });
+    // Alternate direct formula: x' = sqrt(-A-2)*x / y, y' = (x-1)/(x+1)
+    let y_inv = y.invert();
+    let x_alt = ((*x * FieldElement::SQRT_AM2).reduce() * y_inv).reduce();
+    let x_plus_one_inv = x_plus_one.invert();
+    let y_alt = (x_minus_one * x_plus_one_inv).reduce();
+    if x_alt.to_bytes() != xed.to_bytes() || y_alt.to_bytes() != yed.to_bytes() {
+        debug::log(|| {
+            format!(
+                "alt formula diff:\n  x_alt = {}\n  y_alt = {}",
+                fe_hex(&x_alt),
+                fe_hex(&y_alt)
+            )
+        });
+    }
+    (xed, yed)
+}
+
+fn fe_hex(fe: &FieldElement) -> String {
+    fe.to_bytes().iter().map(|b| format!("{:02x}", b)).collect()
 }
 
 /// Recover Montgomery y-coordinate from x-coordinate

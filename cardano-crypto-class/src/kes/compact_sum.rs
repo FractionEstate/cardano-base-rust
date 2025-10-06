@@ -63,6 +63,20 @@ where
     _phantom: PhantomData<H>,
 }
 
+impl<D, H> OptimizedKesSignature for CompactSumSignature<D, H>
+where
+    D: KesAlgorithm,
+    D::VerificationKey: Clone,
+    D::Signature: OptimizedKesSignature<VerificationKey = D::VerificationKey>,
+    H: KesHashAlgorithm,
+{
+    type VerificationKey = D::VerificationKey;
+
+    fn extract_verification_key(&self) -> &Self::VerificationKey {
+        self.sigma.extract_verification_key()
+    }
+}
+
 impl<D, H> KesAlgorithm for CompactSumKes<D, H>
 where
     D: KesAlgorithm,

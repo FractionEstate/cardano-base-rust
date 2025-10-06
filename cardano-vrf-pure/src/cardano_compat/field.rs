@@ -41,7 +41,7 @@ impl FieldElement {
     ///
     /// # Examples
     ///
-    /// ```ignore
+    /// ```rust
     /// use cardano_vrf_pure::cardano_compat::field::FieldElement;
     /// let zero = FieldElement::zero();
     /// assert_eq!(zero.0[0], 0);
@@ -55,7 +55,7 @@ impl FieldElement {
     ///
     /// # Examples
     ///
-    /// ```ignore
+    /// ```rust
     /// use cardano_vrf_pure::cardano_compat::field::FieldElement;
     /// let one = FieldElement::one();
     /// assert_eq!(one.0[0], 1);
@@ -82,7 +82,7 @@ impl FieldElement {
     ///
     /// # Examples
     ///
-    /// ```ignore
+    /// ```rust
     /// use cardano_vrf_pure::cardano_compat::field::FieldElement;
     /// let bytes = [0u8; 32];
     /// let fe = FieldElement::from_bytes(&bytes);
@@ -169,7 +169,7 @@ impl FieldElement {
     ///
     /// # Examples
     ///
-    /// ```ignore
+    /// ```rust
     /// use cardano_vrf_pure::cardano_compat::field::FieldElement;
     /// let fe = FieldElement::one();
     /// let bytes = fe.to_bytes();
@@ -177,196 +177,106 @@ impl FieldElement {
     /// ```
     pub fn to_bytes(&self) -> [u8; 32] {
         // Start from a reduced representation to keep limb ranges small
-        let mut h = self.reduce().0;
+        let h = self.reduce().0;
 
-        // This implementation mirrors the ref10 fe_tobytes routine exactly.
-        // It guarantees a canonical encoding strictly less than 2^255 - 19.
+        let mut h0 = h[0];
+        let mut h1 = h[1];
+        let mut h2 = h[2];
+        let mut h3 = h[3];
+        let mut h4 = h[4];
+        let mut h5 = h[5];
+        let mut h6 = h[6];
+        let mut h7 = h[7];
+        let mut h8 = h[8];
+        let mut h9 = h[9];
 
-        let mut q = (19 * h[9] + (1 << 24)) >> 25;
-        q = (h[0] + q) >> 26;
-        q = (h[1] + q) >> 25;
-        q = (h[2] + q) >> 26;
-        q = (h[3] + q) >> 25;
-        q = (h[4] + q) >> 26;
-        q = (h[5] + q) >> 25;
-        q = (h[6] + q) >> 26;
-        q = (h[7] + q) >> 25;
-        q = (h[8] + q) >> 26;
-        q = (h[9] + q) >> 25;
+        let mut q = (19 * h9 + (1 << 24)) >> 25;
+        q = (h0 + q) >> 26;
+        q = (h1 + q) >> 25;
+        q = (h2 + q) >> 26;
+        q = (h3 + q) >> 25;
+        q = (h4 + q) >> 26;
+        q = (h5 + q) >> 25;
+        q = (h6 + q) >> 26;
+        q = (h7 + q) >> 25;
+        q = (h8 + q) >> 26;
+        q = (h9 + q) >> 25;
 
-        h[0] += 19 * q;
+        h0 += 19 * q;
 
-        // First carry propagation pass
-        let mut carry = h[0] >> 26;
-        h[1] += carry;
-        h[0] -= carry << 26;
+        let mut carry0 = h0 >> 26;
+        h1 += carry0;
+        h0 -= carry0 << 26;
+        let mut carry1 = h1 >> 25;
+        h2 += carry1;
+        h1 -= carry1 << 25;
+        let carry2 = h2 >> 26;
+        h3 += carry2;
+        h2 -= carry2 << 26;
+        let carry3 = h3 >> 25;
+        h4 += carry3;
+        h3 -= carry3 << 25;
+        let carry4 = h4 >> 26;
+        h5 += carry4;
+        h4 -= carry4 << 26;
+        let carry5 = h5 >> 25;
+        h6 += carry5;
+        h5 -= carry5 << 25;
+        let carry6 = h6 >> 26;
+        h7 += carry6;
+        h6 -= carry6 << 26;
+        let carry7 = h7 >> 25;
+        h8 += carry7;
+        h7 -= carry7 << 25;
+        let carry8 = h8 >> 26;
+        h9 += carry8;
+        h8 -= carry8 << 26;
+        let carry9 = h9 >> 25;
+        h9 -= carry9 << 25;
+        h0 += carry9 * 19;
 
-        carry = h[1] >> 25;
-        h[2] += carry;
-        h[1] -= carry << 25;
+        carry0 = h0 >> 26;
+        h1 += carry0;
+        h0 -= carry0 << 26;
+        carry1 = h1 >> 25;
+        h2 += carry1;
+        h1 -= carry1 << 25;
 
-        carry = h[2] >> 26;
-        h[3] += carry;
-        h[2] -= carry << 26;
+        let mut s = [0u8; 32];
+        s[0] = (h0 >> 0) as u8;
+        s[1] = (h0 >> 8) as u8;
+        s[2] = (h0 >> 16) as u8;
+        s[3] = ((h0 >> 24) | (h1 << 2)) as u8;
+        s[4] = (h1 >> 6) as u8;
+        s[5] = (h1 >> 14) as u8;
+        s[6] = ((h1 >> 22) | (h2 << 3)) as u8;
+        s[7] = (h2 >> 5) as u8;
+        s[8] = (h2 >> 13) as u8;
+        s[9] = ((h2 >> 21) | (h3 << 5)) as u8;
+        s[10] = (h3 >> 3) as u8;
+        s[11] = (h3 >> 11) as u8;
+        s[12] = ((h3 >> 19) | (h4 << 6)) as u8;
+        s[13] = (h4 >> 2) as u8;
+        s[14] = (h4 >> 10) as u8;
+        s[15] = (h4 >> 18) as u8;
+        s[16] = (h5 >> 0) as u8;
+        s[17] = (h5 >> 8) as u8;
+        s[18] = (h5 >> 16) as u8;
+        s[19] = ((h5 >> 24) | (h6 << 1)) as u8;
+        s[20] = (h6 >> 7) as u8;
+        s[21] = (h6 >> 15) as u8;
+        s[22] = ((h6 >> 23) | (h7 << 3)) as u8;
+        s[23] = (h7 >> 5) as u8;
+        s[24] = (h7 >> 13) as u8;
+        s[25] = ((h7 >> 21) | (h8 << 4)) as u8;
+        s[26] = (h8 >> 4) as u8;
+        s[27] = (h8 >> 12) as u8;
+        s[28] = ((h8 >> 20) | (h9 << 6)) as u8;
+        s[29] = (h9 >> 2) as u8;
+        s[30] = (h9 >> 10) as u8;
+        s[31] = (h9 >> 18) as u8;
 
-        carry = h[3] >> 25;
-        h[4] += carry;
-        h[3] -= carry << 25;
-
-        carry = h[4] >> 26;
-        h[5] += carry;
-        h[4] -= carry << 26;
-
-        carry = h[5] >> 25;
-        h[6] += carry;
-        h[5] -= carry << 25;
-
-        carry = h[6] >> 26;
-        h[7] += carry;
-        h[6] -= carry << 26;
-
-        carry = h[7] >> 25;
-        h[8] += carry;
-        h[7] -= carry << 25;
-
-        carry = h[8] >> 26;
-        h[9] += carry;
-        h[8] -= carry << 26;
-
-        carry = h[9] >> 25;
-        h[9] -= carry << 25;
-        h[0] += carry * 19;
-
-        // Second carry propagation pass
-        carry = h[0] >> 26;
-        h[1] += carry;
-        h[0] -= carry << 26;
-
-        carry = h[1] >> 25;
-        h[2] += carry;
-        h[1] -= carry << 25;
-
-        carry = h[2] >> 26;
-        h[3] += carry;
-        h[2] -= carry << 26;
-
-        carry = h[3] >> 25;
-        h[4] += carry;
-        h[3] -= carry << 25;
-
-        carry = h[4] >> 26;
-        h[5] += carry;
-        h[4] -= carry << 26;
-
-        carry = h[5] >> 25;
-        h[6] += carry;
-        h[5] -= carry << 25;
-
-        carry = h[6] >> 26;
-        h[7] += carry;
-        h[6] -= carry << 26;
-
-        carry = h[7] >> 25;
-        h[8] += carry;
-        h[7] -= carry << 25;
-
-        carry = h[8] >> 26;
-        h[9] += carry;
-        h[8] -= carry << 26;
-
-        carry = h[9] >> 25;
-        h[9] -= carry << 25;
-        h[0] += carry * 19;
-
-        carry = h[0] >> 26;
-        h[1] += carry;
-        h[0] -= carry << 26;
-
-        carry = h[1] >> 25;
-        h[2] += carry;
-        h[1] -= carry << 25;
-
-        // After the full propagation, h[9] fits in 25 bits and the remaining limbs alternate between 26 and 25 bits.
-
-        let mut output = [0u8; 32];
-
-        output[0] = (h[0] & 0xff) as u8;
-        output[1] = ((h[0] >> 8) & 0xff) as u8;
-        output[2] = ((h[0] >> 16) & 0xff) as u8;
-        output[3] = ((h[0] >> 24) & 0x3f) as u8 | ((h[1] << 6) & 0xc0) as u8;
-
-        output[4] = ((h[1] >> 2) & 0xff) as u8;
-        output[5] = ((h[1] >> 10) & 0xff) as u8;
-        output[6] = ((h[1] >> 18) & 0xff) as u8;
-        output[7] = ((h[1] >> 26) & 0x01) as u8 | ((h[2] << 1) & 0xfe) as u8;
-
-        output[8] = ((h[2] >> 7) & 0xff) as u8;
-        output[9] = ((h[2] >> 15) & 0xff) as u8;
-        output[10] = ((h[2] >> 23) & 0x07) as u8 | ((h[3] << 3) & 0xf8) as u8;
-
-        output[11] = ((h[3] >> 5) & 0xff) as u8;
-        output[12] = ((h[3] >> 13) & 0xff) as u8;
-        output[13] = ((h[3] >> 21) & 0x0f) as u8 | ((h[4] << 4) & 0xf0) as u8;
-
-        output[14] = ((h[4] >> 4) & 0xff) as u8;
-        output[15] = ((h[4] >> 12) & 0xff) as u8;
-        output[16] = ((h[4] >> 20) & 0x3f) as u8 | ((h[5] << 6) & 0xc0) as u8;
-
-        output[17] = ((h[5] >> 2) & 0xff) as u8;
-        output[18] = ((h[5] >> 10) & 0xff) as u8;
-        output[19] = ((h[5] >> 18) & 0xff) as u8;
-        output[20] = ((h[5] >> 26) & 0x01) as u8 | ((h[6] << 1) & 0xfe) as u8;
-
-        output[21] = ((h[6] >> 7) & 0xff) as u8;
-        output[22] = ((h[6] >> 15) & 0xff) as u8;
-        output[23] = ((h[6] >> 23) & 0x07) as u8 | ((h[7] << 3) & 0xf8) as u8;
-
-        output[24] = ((h[7] >> 5) & 0xff) as u8;
-        output[25] = ((h[7] >> 13) & 0xff) as u8;
-        output[26] = ((h[7] >> 21) & 0x0f) as u8 | ((h[8] << 4) & 0xf0) as u8;
-
-        output[27] = ((h[8] >> 4) & 0xff) as u8;
-        output[28] = ((h[8] >> 12) & 0xff) as u8;
-        output[29] = ((h[8] >> 20) & 0x3f) as u8 | ((h[9] << 6) & 0xc0) as u8;
-
-        output[30] = ((h[9] >> 2) & 0xff) as u8;
-        output[31] = ((h[9] >> 10) & 0xff) as u8;
-
-        const P_BYTES: [u8; 32] = [
-            0xed, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-            0xff, 0xff, 0xff, 0x7f,
-        ];
-
-        let mut needs_sub = (output[31] >> 7) & 1;
-
-        if needs_sub == 0 {
-            // Compare output with p to detect wrap-around values equal to or above the modulus
-            for i in (0..32).rev() {
-                if output[i] > P_BYTES[i] {
-                    needs_sub = 1;
-                    break;
-                } else if output[i] < P_BYTES[i] {
-                    break;
-                }
-            }
-        }
-
-        if needs_sub == 1 {
-            let mut borrow: i16 = 0;
-            for i in 0..32 {
-                let diff = output[i] as i16 - P_BYTES[i] as i16 - borrow;
-                if diff < 0 {
-                    output[i] = (diff + 256) as u8;
-                    borrow = 1;
-                } else {
-                    output[i] = diff as u8;
-                    borrow = 0;
-                }
-            }
-        }
-
-        output
+        s
     }
 
     /// Reduce field element modulo 2^255-19
@@ -772,231 +682,242 @@ impl Mul for FieldElement {
     /// Uses the fact that reduction modulo 2^255-19 can be done by multiplying
     /// high limbs by 19.
     fn mul(self, other: Self) -> Self {
+        // Exact translation of ref10 fe_mul.c (see SUPERCOP / libsodium) into Rust with i128 temporaries.
+        // This version intentionally mirrors term structure for auditability.
         let f = self.0;
         let g = other.0;
+        let f0 = f[0] as i128;
+        let f1 = f[1] as i128;
+        let f2 = f[2] as i128;
+        let f3 = f[3] as i128;
+        let f4 = f[4] as i128;
+        let f5 = f[5] as i128;
+        let f6 = f[6] as i128;
+        let f7 = f[7] as i128;
+        let f8 = f[8] as i128;
+        let f9 = f[9] as i128;
+        let g0 = g[0] as i128;
+        let g1 = g[1] as i128;
+        let g2 = g[2] as i128;
+        let g3 = g[3] as i128;
+        let g4 = g[4] as i128;
+        let g5 = g[5] as i128;
+        let g6 = g[6] as i128;
+        let g7 = g[7] as i128;
+        let g8 = g[8] as i128;
+        let g9 = g[9] as i128;
 
-        // Convert to i128 to prevent overflow during multiplication
-        let f: [i128; 10] = [
-            f[0] as i128,
-            f[1] as i128,
-            f[2] as i128,
-            f[3] as i128,
-            f[4] as i128,
-            f[5] as i128,
-            f[6] as i128,
-            f[7] as i128,
-            f[8] as i128,
-            f[9] as i128,
-        ];
-        let g: [i128; 10] = [
-            g[0] as i128,
-            g[1] as i128,
-            g[2] as i128,
-            g[3] as i128,
-            g[4] as i128,
-            g[5] as i128,
-            g[6] as i128,
-            g[7] as i128,
-            g[8] as i128,
-            g[9] as i128,
-        ];
+        // Precomputations identical to ref10
+        let f1_2 = 2 * f1;
+        let f3_2 = 2 * f3;
+        let f5_2 = 2 * f5;
+        let f7_2 = 2 * f7;
+        let f9_2 = 2 * f9;
 
-        // Precompute doubled values
-        let f1_2 = 2 * f[1];
-        let f3_2 = 2 * f[3];
-        let f5_2 = 2 * f[5];
-        let f7_2 = 2 * f[7];
-        let f9_2 = 2 * f[9];
+        let g1_19 = 19 * g1; // 1.959375 * 2^29 < 2^55
+        let g2_19 = 19 * g2;
+        let g3_19 = 19 * g3;
+        let g4_19 = 19 * g4;
+        let g5_19 = 19 * g5;
+        let g6_19 = 19 * g6;
+        let g7_19 = 19 * g7;
+        let g8_19 = 19 * g8;
+        let g9_19 = 19 * g9;
 
-        // Precompute values multiplied by 19
-        let g1_19 = 19 * g[1];
-        let g2_19 = 19 * g[2];
-        let g3_19 = 19 * g[3];
-        let g4_19 = 19 * g[4];
-        let g5_19 = 19 * g[5];
-        let g6_19 = 19 * g[6];
-        let g7_19 = 19 * g[7];
-        let g8_19 = 19 * g[8];
-        let g9_19 = 19 * g[9];
+        // Products with 38 (= 2*19) appear for terms where an odd f_i is doubled then multiplied by g_j*19
+        let f1g9_38 = f1_2 * g9_19;
+        let f2g8_19 = f2 * g8_19;
+        let f3g7_38 = f3_2 * g7_19;
+        let f4g6_19 = f4 * g6_19;
+        let f5g5_38 = f5_2 * g5_19;
+        let f6g4_19 = f6 * g4_19;
+        let f7g3_38 = f7_2 * g3_19;
+        let f8g2_19 = f8 * g2_19;
+        let f9g1_38 = f9_2 * g1_19;
+        let f2g9_19 = f2 * g9_19;
+        let f3g8_19 = f3 * g8_19;
+        let f4g7_19 = f4 * g7_19;
+        let f5g6_19 = f5 * g6_19;
+        let f6g5_19 = f6 * g5_19;
+        let f7g4_19 = f7 * g4_19;
+        let f8g3_19 = f8 * g3_19;
+        let f9g2_19 = f9 * g2_19;
+        let f3g9_38 = f3_2 * g9_19;
+        let f5g7_38 = f5_2 * g7_19;
+        let f7g5_38 = f7_2 * g5_19;
+        let f9g3_38 = f9_2 * g3_19;
+        let f5g9_38 = f5_2 * g9_19;
+        let f7g7_38 = f7_2 * g7_19;
+        let f9g5_38 = f9_2 * g5_19;
+        let f4g8_19 = f4 * g8_19;
+        let f4g9_19 = f4 * g9_19;
+        let f6g7_19 = f6 * g7_19;
+        let f7g6_19 = f7 * g6_19;
+        let f8g5_19 = f8 * g5_19;
+        let f9g4_19 = f9 * g4_19;
+        let f6g8_19 = f6 * g8_19;
+        let f8g6_19 = f8 * g6_19;
+        let f8g7_19 = f8 * g7_19;
+        let f9g6_19 = f9 * g6_19;
+        let f7g9_38 = f7_2 * g9_19;
+        let f9g7_38 = f9_2 * g7_19;
+        let f8g9_19 = f8 * g9_19;
+        let f9g8_19 = f9 * g8_19;
+        let f9g9_38 = f9_2 * g9_19;
+        let f5g8_19 = f5 * g8_19; // used in h3
+        let f6g9_19 = f6 * g9_19; // used in h5
+        let f7g8_19 = f7 * g8_19; // used in h5
+        let f8g8_19 = f8 * g8_19; // used in h6
+        let f6g6_19 = f6 * g6_19; // used in h2
+        let f8g4_19 = f8 * g4_19; // used in h2
 
-        let mut h = [0i128; 10];
+        // h0..h9 exact formulas
+        let mut h0 = f0 * g0
+            + f1g9_38
+            + f2g8_19
+            + f3g7_38
+            + f4g6_19
+            + f5g5_38
+            + f6g4_19
+            + f7g3_38
+            + f8g2_19
+            + f9g1_38;
+        let mut h1 = f0 * g1
+            + f1 * g0
+            + f2g9_19
+            + f3g8_19
+            + f4g7_19
+            + f5g6_19
+            + f6g5_19
+            + f7g4_19
+            + f8g3_19
+            + f9g2_19;
+        let mut h2 = f0 * g2
+            + f1_2 * g1
+            + f2 * g0
+            + f3g9_38
+            + f4g8_19
+            + f5g7_38
+            + f6g6_19
+            + f7g5_38
+            + f8g4_19
+            + f9g3_38;
+        let mut h3 = f0 * g3
+            + f1 * g2
+            + f2 * g1
+            + f3 * g0
+            + f4g9_19
+            + f5g8_19
+            + f6g7_19
+            + f7g6_19
+            + f8g5_19
+            + f9g4_19;
+        let mut h4 = f0 * g4
+            + f1_2 * g3
+            + f2 * g2
+            + f3_2 * g1
+            + f4 * g0
+            + f5g9_38
+            + f6g8_19
+            + f7g7_38
+            + f8g6_19
+            + f9g5_38;
+        let mut h5 = f0 * g5
+            + f1 * g4
+            + f2 * g3
+            + f3 * g2
+            + f4 * g1
+            + f5 * g0
+            + f6g9_19
+            + f7g8_19
+            + f8g7_19
+            + f9g6_19;
+        let mut h6 = f0 * g6
+            + f1_2 * g5
+            + f2 * g4
+            + f3_2 * g3
+            + f4 * g2
+            + f5_2 * g1
+            + f6 * g0
+            + f7g9_38
+            + f8g8_19
+            + f9g7_38;
+        let mut h7 = f0 * g7
+            + f1 * g6
+            + f2 * g5
+            + f3 * g4
+            + f4 * g3
+            + f5 * g2
+            + f6 * g1
+            + f7 * g0
+            + f8g9_19
+            + f9g8_19;
+        let mut h8 = f0 * g8
+            + f1_2 * g7
+            + f2 * g6
+            + f3_2 * g5
+            + f4 * g4
+            + f5_2 * g3
+            + f6 * g2
+            + f7_2 * g1
+            + f8 * g0
+            + f9g9_38;
+        let mut h9 = f0 * g9
+            + f1 * g8
+            + f2 * g7
+            + f3 * g6
+            + f4 * g5
+            + f5 * g4
+            + f6 * g3
+            + f7 * g2
+            + f8 * g1
+            + f9 * g0;
 
-        // Compute product limbs
-        h[0] = f[0] * g[0]
-            + f1_2 * g9_19
-            + f[2] * g8_19
-            + f3_2 * g7_19
-            + f[4] * g6_19
-            + f5_2 * g5_19
-            + f[6] * g4_19
-            + f7_2 * g3_19
-            + f[8] * g2_19
-            + f9_2 * g1_19;
+        // Carry chain (unchanged from ref10)
+        let mut carry0 = (h0 + (1 << 25)) >> 26;
+        h1 += carry0;
+        h0 -= carry0 << 26;
+        let mut carry4 = (h4 + (1 << 25)) >> 26;
+        h5 += carry4;
+        h4 -= carry4 << 26;
+        let mut carry1 = (h1 + (1 << 24)) >> 25;
+        h2 += carry1;
+        h1 -= carry1 << 25;
+        let carry5 = (h5 + (1 << 24)) >> 25;
+        h6 += carry5;
+        h5 -= carry5 << 25;
+        let carry2 = (h2 + (1 << 25)) >> 26;
+        h3 += carry2;
+        h2 -= carry2 << 26;
+        let carry6 = (h6 + (1 << 25)) >> 26;
+        h7 += carry6;
+        h6 -= carry6 << 26;
+        let carry3 = (h3 + (1 << 24)) >> 25;
+        h4 += carry3;
+        h3 -= carry3 << 25;
+        let carry7 = (h7 + (1 << 24)) >> 25;
+        h8 += carry7;
+        h7 -= carry7 << 25;
+        carry4 = (h4 + (1 << 25)) >> 26;
+        h5 += carry4;
+        h4 -= carry4 << 26;
+        let carry8 = (h8 + (1 << 25)) >> 26;
+        h9 += carry8;
+        h8 -= carry8 << 26;
+        let carry9 = (h9 + (1 << 24)) >> 25;
+        h0 += carry9 * 19;
+        h9 -= carry9 << 25;
+        carry0 = (h0 + (1 << 25)) >> 26;
+        h1 += carry0;
+        h0 -= carry0 << 26;
+        carry1 = (h1 + (1 << 24)) >> 25;
+        h2 += carry1;
+        h1 -= carry1 << 25;
 
-        h[1] = f[0] * g[1]
-            + f[1] * g[0]
-            + f[2] * g9_19
-            + f[3] * g8_19
-            + f[4] * g7_19
-            + f[5] * g6_19
-            + f[6] * g5_19
-            + f[7] * g4_19
-            + f[8] * g3_19
-            + f[9] * g2_19;
-
-        h[2] = f[0] * g[2]
-            + f1_2 * g[1]
-            + f[2] * g[0]
-            + f3_2 * g9_19
-            + f[4] * g8_19
-            + f5_2 * g7_19
-            + f[6] * g6_19
-            + f7_2 * g5_19
-            + f[8] * g4_19
-            + f9_2 * g3_19;
-
-        h[3] = f[0] * g[3]
-            + f[1] * g[2]
-            + f[2] * g[1]
-            + f[3] * g[0]
-            + f[4] * g9_19
-            + f[5] * g8_19
-            + f[6] * g7_19
-            + f[7] * g6_19
-            + f[8] * g5_19
-            + f[9] * g4_19;
-
-        h[4] = f[0] * g[4]
-            + f1_2 * g[3]
-            + f[2] * g[2]
-            + f3_2 * g[1]
-            + f[4] * g[0]
-            + f5_2 * g9_19
-            + f[6] * g8_19
-            + f7_2 * g7_19
-            + f[8] * g6_19
-            + f9_2 * g5_19;
-
-        h[5] = f[0] * g[5]
-            + f[1] * g[4]
-            + f[2] * g[3]
-            + f[3] * g[2]
-            + f[4] * g[1]
-            + f[5] * g[0]
-            + f[6] * g9_19
-            + f[7] * g8_19
-            + f[8] * g7_19
-            + f[9] * g6_19;
-
-        h[6] = f[0] * g[6]
-            + f1_2 * g[5]
-            + f[2] * g[4]
-            + f3_2 * g[3]
-            + f[4] * g[2]
-            + f5_2 * g[1]
-            + f[6] * g[0]
-            + f7_2 * g9_19
-            + f[8] * g8_19
-            + f9_2 * g7_19;
-
-        h[7] = f[0] * g[7]
-            + f[1] * g[6]
-            + f[2] * g[5]
-            + f[3] * g[4]
-            + f[4] * g[3]
-            + f[5] * g[2]
-            + f[6] * g[1]
-            + f[7] * g[0]
-            + f[8] * g9_19
-            + f[9] * g8_19;
-
-        h[8] = f[0] * g[8]
-            + f1_2 * g[7]
-            + f[2] * g[6]
-            + f3_2 * g[5]
-            + f[4] * g[4]
-            + f5_2 * g[3]
-            + f[6] * g[2]
-            + f7_2 * g[1]
-            + f[8] * g[0]
-            + f9_2 * g9_19;
-
-        h[9] = f[0] * g[9]
-            + f[1] * g[8]
-            + f[2] * g[7]
-            + f[3] * g[6]
-            + f[4] * g[5]
-            + f[5] * g[4]
-            + f[6] * g[3]
-            + f[7] * g[2]
-            + f[8] * g[1]
-            + f[9] * g[0];
-
-        // Now do proper carry propagation from i128 to i64 with reduction
-        // This is critical - we can't just truncate i128 to i64
-        let mut carry: i128;
-
-        // First carry propagation pass
-        carry = (h[0] + (1i128 << 25)) >> 26;
-        h[1] += carry;
-        h[0] -= carry << 26;
-
-        carry = (h[4] + (1i128 << 25)) >> 26;
-        h[5] += carry;
-        h[4] -= carry << 26;
-
-        carry = (h[1] + (1i128 << 24)) >> 25;
-        h[2] += carry;
-        h[1] -= carry << 25;
-
-        carry = (h[5] + (1i128 << 24)) >> 25;
-        h[6] += carry;
-        h[5] -= carry << 25;
-
-        carry = (h[2] + (1i128 << 25)) >> 26;
-        h[3] += carry;
-        h[2] -= carry << 26;
-
-        carry = (h[6] + (1i128 << 25)) >> 26;
-        h[7] += carry;
-        h[6] -= carry << 26;
-
-        carry = (h[3] + (1i128 << 24)) >> 25;
-        h[4] += carry;
-        h[3] -= carry << 25;
-
-        carry = (h[7] + (1i128 << 24)) >> 25;
-        h[8] += carry;
-        h[7] -= carry << 25;
-
-        carry = (h[8] + (1i128 << 25)) >> 26;
-        h[9] += carry;
-        h[8] -= carry << 26;
-
-        carry = (h[9] + (1i128 << 24)) >> 25;
-        h[0] += carry * 19;
-        h[9] -= carry << 25;
-
-        // Second pass to handle overflow from h[0]
-        carry = h[0] >> 26;
-        h[1] += carry;
-        h[0] -= carry << 26;
-
-        // Convert to i64 - now safe because all limbs are in range
-        let h_i64 = [
-            h[0] as i64,
-            h[1] as i64,
-            h[2] as i64,
-            h[3] as i64,
-            h[4] as i64,
-            h[5] as i64,
-            h[6] as i64,
-            h[7] as i64,
-            h[8] as i64,
-            h[9] as i64,
-        ];
-
-        FieldElement(h_i64)
+        FieldElement([
+            h0 as i64, h1 as i64, h2 as i64, h3 as i64, h4 as i64, h5 as i64, h6 as i64, h7 as i64,
+            h8 as i64, h9 as i64,
+        ])
     }
 }
 
@@ -1035,6 +956,59 @@ mod tests {
     }
 
     #[test]
+    fn test_mul_matches_biguint_random() {
+        use num_bigint::BigUint;
+        use num_traits::One;
+        use rand::rngs::StdRng;
+        use rand::{Rng, SeedableRng};
+
+        // modulus p = 2^255 - 19
+        let p = (&BigUint::one() << 255u32) - BigUint::from(19u32);
+        let mut rng = StdRng::seed_from_u64(0xF1E1D1C1B1A19088);
+
+        fn fe_to_big(fe: &FieldElement) -> BigUint {
+            // convert canonical bytes to BigUint
+            let bytes = fe.reduce().to_bytes();
+            BigUint::from_bytes_le(&bytes)
+        }
+
+        fn random_fe(rng: &mut StdRng) -> FieldElement {
+            // sample uniformly from 0..p by generating 255 bits and reducing
+            let mut bytes = [0u8; 32];
+            rng.fill(&mut bytes);
+            bytes[31] &= 0x7f; // clamp to < 2^255
+            // Interpret as little endian number then mod p using BigUint then to FieldElement via from_bytes
+            let n = BigUint::from_bytes_le(&bytes)
+                % ((&BigUint::one() << 255u32) - BigUint::from(19u32));
+            let mut out = [0u8; 32];
+            let nbytes = n.to_bytes_le();
+            for (i, b) in nbytes.iter().enumerate() {
+                out[i] = *b;
+            }
+            FieldElement::from_bytes(&out)
+        }
+
+        for _ in 0..200u32 {
+            let a = random_fe(&mut rng);
+            let b = random_fe(&mut rng);
+            let prod = a * b;
+            let prod_bytes = prod.reduce().to_bytes();
+            let expected = (fe_to_big(&a) * fe_to_big(&b)) % &p;
+            let mut exp_bytes = [0u8; 32];
+            let eb = expected.to_bytes_le();
+            for (i, b) in eb.iter().enumerate() {
+                exp_bytes[i] = *b;
+            }
+            if prod_bytes != exp_bytes {
+                panic!(
+                    "Mul mismatch: a={:?} b={:?} got={:02x?} expect={:02x?}",
+                    a.0, b.0, prod_bytes, exp_bytes
+                );
+            }
+        }
+    }
+
+    #[test]
     fn test_square() {
         let two = FieldElement::one() + FieldElement::one();
         let four1 = two.square();
@@ -1061,6 +1035,46 @@ mod tests {
         let bytes_zero = zero.to_bytes();
         let fe_zero_back = FieldElement::from_bytes(&bytes_zero);
         assert_eq!(bytes_zero, fe_zero_back.to_bytes());
+    }
+
+    #[test]
+    fn test_random_canonical_roundtrip() {
+        use num_bigint::BigUint;
+        use num_traits::One;
+        use rand::rngs::StdRng;
+        use rand::{RngCore, SeedableRng};
+
+        let mut rng = StdRng::seed_from_u64(0xC0DEC0DECAFEBABE);
+        let p = (&BigUint::one() << 255u32) - BigUint::from(19u32);
+
+        for _ in 0..1024 {
+            let mut bytes = [0u8; 32];
+            rng.fill_bytes(&mut bytes);
+            bytes[31] &= 0x7f;
+            let value = BigUint::from_bytes_le(&bytes) % &p;
+            let mut canonical = [0u8; 32];
+            let vb = value.to_bytes_le();
+            canonical[..vb.len()].copy_from_slice(&vb);
+
+            let fe = FieldElement::from_bytes(&canonical);
+            let round = fe.to_bytes();
+            assert_eq!(canonical, round, "roundtrip failed for value {}", value);
+        }
+    }
+
+    #[test]
+    fn test_specific_bytes_roundtrip() {
+        let canonical = [
+            0x07, 0xc1, 0xd6, 0x85, 0x0b, 0x5b, 0x94, 0x2c, 0xc6, 0x1b, 0x8e, 0x55, 0xfd, 0x1e,
+            0x0f, 0x2a, 0x00, 0xc8, 0x17, 0x3b, 0xaa, 0xc7, 0x96, 0x0b, 0xc6, 0xff, 0x93, 0x15,
+            0x68, 0xf4, 0x91, 0x09,
+        ];
+        let fe = FieldElement::from_bytes(&canonical);
+        let round = fe.to_bytes();
+        assert_eq!(
+            canonical, round,
+            "specific canonical bytes failed roundtrip"
+        );
     }
 
     #[test]

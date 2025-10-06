@@ -29,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sign bit handling in Elligator2 hash-to-curve mapping now matches C reference
 - VRF proof generation and verification now produce identical outputs to libsodium
 - Beta output computation now correctly hashes cofactor-cleared gamma point
+- Draft-13 proof hashing now appends the trailing `0x00` byte expected by libsodium,
+  restoring parity for official `vrf_ver13_*` beta outputs while keeping draft-03
+  vectors unchanged
 
 ## [0.1.0] - Initial Implementation
 

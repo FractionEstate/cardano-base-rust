@@ -208,6 +208,6 @@ Our pure Rust field arithmetic implementation maintains compatibility while avoi
 
 ## Conclusion
 
-The Rust VRF implementation now produces **byte-for-byte identical** outputs to Cardano's libsodium implementation for all tested operations. This achievement validates the pure Rust cryptographic primitives and ensures compatibility with the Cardano blockchain's VRF requirements.
+The Rust VRF implementation now produces **bit-for-bit identical** outputs to Cardano's libsodium implementation for all tested operations. This achievement validates the pure Rust cryptographic primitives and ensures compatibility with the Cardano blockchain's VRF requirements.
 
 **All 35 unit tests pass. All official test vectors validate. VRF parity: COMPLETE. ✅**

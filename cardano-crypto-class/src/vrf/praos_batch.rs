@@ -327,7 +327,7 @@ impl PraosBatchCompatProof {
     ///
     /// # Errors
     ///
-    /// Returns an error if the byte length is not 80 bytes.
+    /// Returns an error if the byte length is not 128 bytes.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, PraosBatchConstructionError> {
         if bytes.len() != proof_size() {
             return Err(PraosBatchConstructionError::WrongLength {
@@ -455,7 +455,7 @@ pub fn verification_key_to_bytes(verification_key: &PraosBatchCompatVerification
 ///
 /// # Errors
 ///
-/// Returns an error if the byte length is not 80 bytes.
+/// Returns an error if the byte length is not 128 bytes.
 pub fn proof_from_bytes(
     bytes: &[u8],
 ) -> Result<PraosBatchCompatProof, PraosBatchConstructionError> {
@@ -524,7 +524,7 @@ impl VRFAlgorithm for PraosBatchCompatVRF {
     const SEED_SIZE: usize = 32;
     const VERIFICATION_KEY_SIZE: usize = 32;
     const SIGNING_KEY_SIZE: usize = 64;
-    const PROOF_SIZE: usize = 80;
+    const PROOF_SIZE: usize = 128;
     const OUTPUT_SIZE: usize = 64;
 
     fn derive_verification_key(signing_key: &Self::SigningKey) -> Self::VerificationKey {

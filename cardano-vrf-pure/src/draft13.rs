@@ -8,7 +8,7 @@ use curve25519_dalek::{edwards::EdwardsPoint, scalar::Scalar, traits::VartimeMul
 use sha2::{Digest, Sha512};
 use zeroize::Zeroizing;
 
-use crate::cardano_compat::point::{cardano_clear_cofactor, cardano_hash_to_curve};
+use crate::cardano_compat::point::{cardano_clear_cofactor, cardano_hash_to_curve_draft13};
 use crate::common::*;
 use crate::{VrfError, VrfResult};
 
@@ -61,20 +61,7 @@ impl VrfDraft13 {
         // Extract public key
         let pk = &secret_key[32..64];
 
-        // Compute H = hash_to_curve(pk || message)
-        let mut h_hasher = Sha512::new();
-        h_hasher.update(&[SUITE_DRAFT13]);
-        h_hasher.update(&[ONE]);
-        h_hasher.update(pk);
-        h_hasher.update(message);
-        let r_string = h_hasher.finalize();
-
-        // Apply Elligator2
-        let mut r_bytes = [0u8; 32];
-        r_bytes.copy_from_slice(&r_string[0..32]);
-
-        let h_point = cardano_hash_to_curve(&r_bytes)?;
-        let h_string = h_point.compress().to_bytes();
+        let (h_point, h_string) = cardano_hash_to_curve_draft13(pk, message)?;
 
         // Gamma = x * H
         let gamma = h_point * x;
@@ -170,19 +157,7 @@ impl VrfDraft13 {
             return Err(VrfError::InvalidScalar);
         }
 
-        // Compute H = hash_to_curve(pk || message)
-        let mut h_hasher = Sha512::new();
-        h_hasher.update(&[SUITE_DRAFT13]);
-        h_hasher.update(&[ONE]);
-        h_hasher.update(public_key);
-        h_hasher.update(message);
-        let r_string = h_hasher.finalize();
-
-        let mut r_bytes = [0u8; 32];
-        r_bytes.copy_from_slice(&r_string[0..32]);
-
-        let h_point = cardano_hash_to_curve(&r_bytes)?;
-        let h_string = h_point.compress().to_bytes();
+        let (h_point, h_string) = cardano_hash_to_curve_draft13(public_key, message)?;
 
         // Compute U = s*B - c*Y
         // We need to compute c first from k*B, k*H
@@ -246,6 +221,7 @@ impl VrfDraft13 {
         hasher.update(&[SUITE_DRAFT13]);
         hasher.update(&[THREE]);
         hasher.update(&gamma_cleared_bytes);
+        hasher.update(&[0u8]);
         let beta = hasher.finalize();
 
         let mut output = [0u8; OUTPUT_SIZE];
@@ -267,6 +243,7 @@ impl VrfDraft13 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use hex::FromHex;
 
     #[test]
     fn test_prove_verify_roundtrip() {
@@ -298,5 +275,74 @@ mod tests {
             PROOF_SIZE, 128,
             "Draft-13 batch-compatible proof should be 128 bytes"
         );
+    }
+
+    #[test]
+    fn test_official_vector_generated_1() {
+        let seed = [0u8; SEED_SIZE];
+        let pk_bytes = <[u8; PUBLIC_KEY_SIZE]>::from_hex(
+            "3b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29",
+        )
+        .expect("valid hex pk");
+
+        let mut sk = [0u8; SECRET_KEY_SIZE];
+        sk[..SEED_SIZE].copy_from_slice(&seed);
+        sk[SEED_SIZE..].copy_from_slice(&pk_bytes);
+
+        let message = [0u8];
+
+        let expected_proof = <[u8; PROOF_SIZE]>::from_hex(
+            "93d70c5ed59ccb21ca9991be561756939ff9753bf85764d2a7b937d6fbf9183443cd118bee8a0f61e8bdc5403c03d6c94ead31956e98bfd6a5e02d3be5900d17a540852d586f0891caed3e3b0e0871d6a741fb0edcdb586f7f10252f79c35176474ece4936e0190b5167832c10712884ad12acdfff2e434aacb165e1f789660f",
+        )
+        .expect("valid hex proof");
+
+        let expected_beta = <[u8; OUTPUT_SIZE]>::from_hex(
+            "9a4d34f87003412e413ca42feba3b6158bdf11db41c2bbde98961c5865400cfdee07149b928b376db365c5d68459378b0981f1cb0510f1e0c194c4a17603d44d",
+        )
+        .expect("valid beta");
+
+        let proof = VrfDraft13::prove(&sk, &message).expect("prove failed");
+        assert_eq!(proof, expected_proof, "proof mismatch");
+
+        let output = VrfDraft13::verify(&pk_bytes, &proof, &message).expect("verify failed");
+        assert_eq!(output, expected_beta, "verify output mismatch");
+
+        let beta = VrfDraft13::proof_to_hash(&proof).expect("proof_to_hash failed");
+        assert_eq!(beta, expected_beta, "proof_to_hash mismatch");
+    }
+
+    #[test]
+    fn test_official_vector_standard_10() {
+        // IETF draft-13 example 10 (from test vector vrf_ver13_standard_10)
+        let seed_hex = "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60";
+        let pk_hex = "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a";
+
+        let seed = <[u8; 32]>::from_hex(seed_hex).expect("valid hex seed");
+        let pk_bytes = <[u8; PUBLIC_KEY_SIZE]>::from_hex(pk_hex).expect("valid hex pk");
+        let mut sk = [0u8; SECRET_KEY_SIZE];
+        sk[..SEED_SIZE].copy_from_slice(&seed);
+        sk[SEED_SIZE..].copy_from_slice(&pk_bytes);
+
+        let message = b""; // empty message
+
+        let expected_proof = <[u8; PROOF_SIZE]>::from_hex(
+            "7d9c633ffeee27349264cf5c667579fc583b4bda63ab71d001f89c10003ab46f762f5c178b68f0cddcc1157918edf45ec334ac8e8286601a3256c3bbf858edd94652eba1c4612e6fce762977a59420b451e12964adbe4fbecd58a7aeff5860afcafa73589b023d14311c331a9ad15ff2fb37831e00f0acaa6d73bc9997b06501",
+        )
+        .expect("valid hex proof");
+
+        let expected_beta = <[u8; OUTPUT_SIZE]>::from_hex(
+            "9d574bf9b8302ec0fc1e21c3ec5368269527b87b462ce36dab2d14ccf80c53cccf6758f058c5b1c856b116388152bbe509ee3b9ecfe63d93c3b4346c1fbc6c54",
+        )
+        .expect("valid beta");
+
+        let proof = VrfDraft13::prove(&sk, message).expect("prove failed");
+
+        assert_eq!(proof, expected_proof, "proof mismatch");
+
+        let output = VrfDraft13::verify(&pk_bytes, &proof, message).expect("verify failed");
+        assert_eq!(output, expected_beta, "verify output mismatch");
+
+        let beta = VrfDraft13::proof_to_hash(&proof).expect("proof_to_hash failed");
+        assert_eq!(beta, expected_beta, "proof_to_hash mismatch");
     }
 }

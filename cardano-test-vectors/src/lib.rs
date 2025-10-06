@@ -5,6 +5,11 @@
 //! compile time so consumers can rely on the fixtures without performing any
 //! I/O at runtime or maintaining their own copies.
 
+/// Internal debugging helpers mirroring the strategy used by `cardano-vrf-pure`.
+/// Enable the `ed25519-debug` feature (and optionally set the
+/// `CARDANO_ED25519_DEBUG` environment variable) to surface detailed logs.
+pub mod debug;
+
 /// VRF (Verifiable Random Function) fixtures originating from the Haskell
 /// `cardano-base` repository.
 pub mod vrf {
@@ -156,9 +161,64 @@ pub mod kes {
             name: "compact_single_kes_test_vectors.json",
             contents: include_str!("../test_vectors/compact_single_kes_test_vectors.json"),
         },
+        TestVector {
+            name: "sum_kes_test_vectors.json",
+            contents: include_str!("../test_vectors/sum_kes_test_vectors.json"),
+        },
     ];
 
     /// Look up a KES test vector by its file name.
+    #[must_use]
+    pub fn get(name: &str) -> Option<&'static str> {
+        ALL.iter()
+            .find(|vector| vector.name == name)
+            .map(|vector| vector.contents)
+    }
+
+    /// Convenience helper that returns the list of vector names.
+    #[must_use]
+    pub fn names() -> impl Iterator<Item = &'static str> {
+        ALL.iter().map(|vector| vector.name)
+    }
+}
+
+/// BLS12-381 (pairings and signature operations) fixtures from the Haskell
+/// `cardano-crypto-tests` repository.
+pub mod bls12_381 {
+    /// Metadata describing an embedded BLS12-381 test vector file.
+    #[derive(Clone, Copy, Debug)]
+    pub struct TestVector {
+        /// File name of the vector (matching the upstream naming convention).
+        pub name: &'static str,
+        /// Raw file contents as plain text.
+        pub contents: &'static str,
+    }
+
+    /// All embedded BLS12-381 test vectors.
+    pub const ALL: &[TestVector] = &[
+        TestVector {
+            name: "bls_sig_aug_test_vectors",
+            contents: include_str!("../test_vectors/bls12-381/bls_sig_aug_test_vectors"),
+        },
+        TestVector {
+            name: "ec_operations_test_vectors",
+            contents: include_str!("../test_vectors/bls12-381/ec_operations_test_vectors"),
+        },
+        TestVector {
+            name: "h2c_large_dst",
+            contents: include_str!("../test_vectors/bls12-381/h2c_large_dst"),
+        },
+        TestVector {
+            name: "pairing_test_vectors",
+            contents: include_str!("../test_vectors/bls12-381/pairing_test_vectors"),
+        },
+        TestVector {
+            name: "serde_test_vectors",
+            contents: include_str!("../test_vectors/bls12-381/serde_test_vectors"),
+        },
+    ];
+
+    /// Look up a BLS12-381 test vector by its file name.
     #[must_use]
     pub fn get(name: &str) -> Option<&'static str> {
         ALL.iter()

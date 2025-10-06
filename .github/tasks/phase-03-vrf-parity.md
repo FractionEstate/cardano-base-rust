@@ -91,6 +91,18 @@ Cardano node can switch to the Rust primitives without behavioural drift.
             All 35 unit tests pass. Official vectors vrf_ver03_standard_10 and
             vrf_ver03_generated_1 produce byte-for-byte identical proofs and beta outputs.
             Documented in VRF_PARITY_COMPLETE.md. Phase 03 complete.
+      - _06-10-2025-time-13:41_: Repaired hash-to-curve debug logging to avoid non-workspace
+            dependencies and re-verified all 7 draft-13 VRF vectors via `check_vrf_vectors`
+            against `reference-cardano-base/cardano-crypto-tests/test_vectors`.
+      - _06-10-2025-time-15:58_: Draft-13 VRF implementation progress: switched from custom
+            mont_to_edwards to curve25519-dalek's MontgomeryPoint::to_edwards conversion.
+            3/4 draft-13 tests now pass (prove_verify_roundtrip ✅, verify_rejects_invalid_proof ✅,
+            proof_size ✅). Official vector test (zero-byte message) still fails - investigating
+            MontgomeryPoint::to_edwards edge case handling for specific inputs.
+      - _06-10-2025-time-19:39_: Restored draft-13 beta hashing parity by appending the trailing
+            `0x00` byte to `proof_to_hash` and re-running all `cardano-vrf-pure` tests. Verified
+            both draft-03 and draft-13 official vectors now pass after the ref10 multiplication
+            update.
 
 ## Dependencies & references
 - Haskell source: <https://github.com/IntersectMBO/cardano-base/tree/master>

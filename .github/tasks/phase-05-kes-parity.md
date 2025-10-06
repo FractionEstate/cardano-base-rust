@@ -66,13 +66,14 @@ Validate and achieve 100% functional parity between the Rust KES (Key Evolving S
 - [ ] Extract KES test vectors from Haskell test suite
   - `cardano-crypto-tests/src/Test/Crypto/KES.hs`
   - [x] Single/CompactSingle sign/verify vectors (deterministic Rust reproduction aligned with Haskell coverage)
-  - [ ] Sum/CompactSum hierarchical vectors
+  - [x] Sum hierarchical vectors (levels 1-6 captured via `sum_kes_test_vectors.json`)
+  - [ ] CompactSum hierarchical vectors
   - [ ] Period evolution sequences
 
 - [ ] Create JSON test vector files
   - [x] `single_kes_test_vectors.json`
   - [x] `compact_single_kes_test_vectors.json`
-  - [ ] `sum_kes_test_vectors.json`
+  - [x] `sum_kes_test_vectors.json`
   - [ ] `compact_sum_kes_test_vectors.json`
 
 - [x] Migrate vectors to `cardano-test-vectors` crate
@@ -310,6 +311,7 @@ Validate and achieve 100% functional parity between the Rust KES (Key Evolving S
 - Provide short status notes (date + bullet) under this section:
   - **2025-10-06**: Phase 05 initiated after DSIGN parity completion. Status: In progress, Owner: @FractionEstate
   - **2025-10-07**: Generated deterministic SingleKES and CompactSingleKES vectors, embedded them in `cardano-test-vectors`, and added verification tests. Next up: SumKES vector extraction.
+  - **2025-10-08**: Added SumKES generator coverage in `cardano-test-vectors`, produced `sum_kes_test_vectors.json`, and wired regression tests for levels 1–6. CompactSum fixtures remain outstanding.
 
 ---
 

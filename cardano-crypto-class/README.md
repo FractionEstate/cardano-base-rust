@@ -33,7 +33,46 @@ generators.
   interacting with raw memory.
 - Ed25519 DSIGN has been ported with both the pure and mlocked variants,
   including deterministic key generation from seeds, raw and direct
-  serialisation helpers, and constant-time pinned or mlocked key storage.
+  serialisation helpers, and constant-time pinned or mlocked key storage. The
+  Ed25519 harness now ships with RFC 8032 parity tests driven by fixtures in
+  [`cardano-test-vectors`](../cardano-test-vectors).
+
+## DSIGN parity progress
+
+| Algorithm | Status | Notes |
+|-----------|--------|-------|
+| **Ed25519** | ✅ RFC 8032 parity | Harness in `tests/dsign_ed25519_vectors.rs` exercises 11 scenarios, including official RFC vectors and Cardano-specific cases. Signatures and public keys match byte-for-byte. |
+| **Ed25519 mlocked** | ✅ Functional parity | Mirrors Ed25519 behaviour with sensitive material kept in `MLockedSeed`. Shares the same serialization and verification logic. |
+| **ECDSA secp256k1** | 🟡 Validation pending | Implementation uses `k256`/`ecdsa` with RFC 6979 nonces and low-s normalisation. JSON vectors live in `cardano-test-vectors/test_vectors/ecdsa_secp256k1_test_vectors.json`; harness work is queued in Phase 04. |
+| **Schnorr secp256k1** | 🟡 Validation pending | Backed by `k256` Schnorr support. Test vectors (including error cases) are embedded in `cardano-test-vectors/test_vectors/schnorr_secp256k1_test_vectors.json`. |
+
+Key takeaways from the latest DSIGN audit:
+
+- Dedicated JSON fixtures for Ed25519, ECDSA, and Schnorr now live in
+  `cardano-test-vectors/test_vectors/`, and the generator script at
+  `.github/scripts/generate_dsign_test_vectors.sh` can rebuild them from the
+  Haskell reference.
+- Pending work focuses on byte-for-byte CBOR parity validation, richer error
+  case testing (invalid signatures/keys), and extending the harnesses to cover
+  RFC 6979/BIP 340 vectors once the scaffolding is in place.
+
+## Tests
+
+Run the complete suite (unit tests, property tests, and DSIGN harnesses) with:
+
+```bash
+cargo test -p cardano-crypto-class
+```
+
+The Ed25519 harness (`tests/dsign_ed25519_vectors.rs`) exercises:
+
+- Four Cardano reference vectors migrated into `cardano-test-vectors`
+- Three RFC 8032 canonical vectors (empty, single-byte, multi-byte messages)
+- Failure scenarios for mismatched messages and verification keys
+- Serialization round-trips and large-message signing
+
+Additional DSIGN harnesses for ECDSA and Schnorr will live alongside the
+Ed25519 suite as Phase 04 progresses.
 
 ## Usage
 

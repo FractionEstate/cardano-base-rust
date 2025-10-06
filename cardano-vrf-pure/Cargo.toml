@@ -40,4 +40,7 @@ harness = false
 
 [features]
 default = []
+# Enable verbose VRF debug logging
 vrf-debug = []
+# Experimental FieldElement-based draft13 hash-to-curve path (currently unstable)
+field-h2c-experimental = []

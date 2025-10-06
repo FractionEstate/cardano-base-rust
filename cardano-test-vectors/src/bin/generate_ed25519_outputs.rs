@@ -4,6 +4,7 @@ use std::path::PathBuf;
 
 use cardano_crypto_class::dsign::DsignAlgorithm;
 use cardano_crypto_class::dsign::ed25519::Ed25519;
+use cardano_test_vectors::debug;
 use hex::encode_upper;
 use serde::Deserialize;
 
@@ -30,6 +31,10 @@ struct TestVector {
 
 fn main() -> Result<(), Box<dyn Error>> {
     println!("=== Ed25519 DSIGN Reference Output Generator (Rust) ===\n");
+    println!(
+        "Hint: re-run with `--features ed25519-debug` and set `CARDANO_ED25519_DEBUG=1` \
+for detailed logging.\n"
+    );
 
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let vector_path = manifest_dir.join("test_vectors/ed25519_test_vectors.json");
@@ -59,7 +64,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     for vector in &file.vectors {
         println!("Processing: {}", vector.test_name);
         if let Some(desc) = vector.description.as_deref() {
-            println!("  {}", desc);
+            debug::log(|| format!("  {}", desc));
         }
 
         let seed_bytes = decode_hex(&vector.seed)?;
@@ -86,15 +91,15 @@ fn main() -> Result<(), Box<dyn Error>> {
         let vk_hex = encode_upper(&vk_bytes);
         let sig_hex = encode_upper(&sig_bytes);
 
-        println!("  Seed:             {}", vector.seed);
-        println!("  Message:          {}", vector.message);
-        println!("  Verification Key: {}", vk_hex);
-        println!("  Signature:        {}", sig_hex);
+        debug::log(|| format!("  Seed:             {}", vector.seed));
+        debug::log(|| format!("  Message:          {}", vector.message));
+        debug::log(|| format!("  Verification Key: {}", vk_hex));
+        debug::log(|| format!("  Signature:        {}", sig_hex));
 
         if let Some(expected) = vector.expected_public_key.as_deref() {
             let expected_upper = expected.to_ascii_uppercase();
             if expected_upper == vk_hex {
-                println!("  ✅ Verification key matches existing expected value");
+                debug::log(|| "  ✅ Verification key matches existing expected value".to_string());
             } else {
                 println!(
                     "  ⚠️  Verification key differs! expected {}, got {}",
@@ -102,13 +107,13 @@ fn main() -> Result<(), Box<dyn Error>> {
                 );
             }
         } else {
-            println!("  ℹ️ No expected verification key stored in fixture");
+            debug::log(|| "  ℹ️ No expected verification key stored in fixture".to_string());
         }
 
         if let Some(expected) = vector.expected_signature.as_deref() {
             let expected_upper = expected.to_ascii_uppercase();
             if expected_upper == sig_hex {
-                println!("  ✅ Signature matches existing expected value");
+                debug::log(|| "  ✅ Signature matches existing expected value".to_string());
             } else {
                 println!(
                     "  ⚠️  Signature differs! expected {}, got {}",
@@ -116,7 +121,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 );
             }
         } else {
-            println!("  ℹ️ No expected signature stored in fixture");
+            debug::log(|| "  ℹ️ No expected signature stored in fixture".to_string());
         }
 
         match <Ed25519 as DsignAlgorithm>::verify_bytes(

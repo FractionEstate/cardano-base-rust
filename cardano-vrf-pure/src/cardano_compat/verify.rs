@@ -9,13 +9,12 @@ use curve25519_dalek::{
 use sha2::{Digest, Sha512};
 
 use super::point::{cardano_clear_cofactor, cardano_hash_to_curve};
-use crate::{VrfError, VrfResult};
+use crate::{
+    VrfError, VrfResult,
+    common::{ONE, SUITE_DRAFT03, THREE, TWO},
+};
 
-/// Suite identifier for VRF draft-03
-const SUITE_DRAFT03: u8 = 0x04;
-const ONE: u8 = 0x01;
-const TWO: u8 = 0x02;
-const THREE: u8 = 0x03;
+// Suite / marker constants imported from common.rs to avoid duplication
 
 /// Verify VRF proof using Cardano-compatible method
 ///
