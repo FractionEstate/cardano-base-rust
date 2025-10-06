@@ -37,6 +37,19 @@ cargo clippy --workspace --all-targets -- -D warnings
 The full test suite includes VRF and KES golden tests that depend on vectors in
 [`test_vectors/`](test_vectors).
 
+### Dev Container (VS Code)
+
+The repository ships with `.devcontainer/devcontainer.json`, preloading the
+`mcr.microsoft.com/devcontainers/base:bookworm` image and the official Rust feature.
+To (re)build the environment in VS Code:
+
+1. Install the **Dev Containers** extension.
+2. Open the command palette and choose `Dev Containers: Rebuild and Reopen in Container`.
+3. Wait for the Rust toolchain to install automatically (no manual `rustup` steps required).
+
+The container bundles the same tool versions used in CI, ensuring repeatable
+`cargo` builds and tests.
+
 ## Documentation
 
 Authoritative documentation lives under [`docs/`](docs):

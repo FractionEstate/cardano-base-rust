@@ -180,6 +180,10 @@ and ensures no crate is left without an explicit plan or acceptance criteria.
       validated comprehensive test harnesses for Ed25519, ECDSA Secp256k1, and
       Schnorr Secp256k1. All 31 tests passing (100%). RFC 8032, RFC 6979, and
       BIP340 compliance validated. Documented in `PHASE_04_COMPLETION_REPORT.md`.
+- 06-10-2025-time-21:05: Repaired `.devcontainer/devcontainer.json` by restoring
+      the base image and Rust feature wiring so contributors can rebuild the
+      container without manual tweaks. Validated JSON structure locally and
+      documented the rebuild flow in the root `README.md`.
 
 ---
 
