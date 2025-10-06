@@ -1,4 +1,6 @@
 {
-  "image": ""ghcr.io/devcontainers/features/rust:1": {}",
-  "features": {}
+  "image": "mcr.microsoft.com/devcontainers/base:bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/rust:1": {}
+  }
 }
