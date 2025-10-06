@@ -11,7 +11,9 @@ Cardano ecosystem.
 - **Cryptography**: Ed25519, Ed25519 (mlocked), ECDSA secp256k1, Schnorr secp256k1, and
   Praos VRF implementations in [`cardano-crypto-class`](cardano-crypto-class/src).
 - **Key Evolving Signatures**: `SingleKes`, `Sum{0-7}Kes`, and compact variants with
-  Blake2b hashing and serialisation helpers.
+  Blake2b hashing, serde-gated regression vectors for CompactSum levels 1–7, and
+  boundary tests that enforce expiry and tamper resistance in
+  [`cardano-crypto-class`](cardano-crypto-class/tests).
 - **VRF reference implementation** ✅: Draft-03 and Draft-13 VRFs over Curve25519 in
   [`cardano-vrf-pure`](cardano-vrf-pure/src) with **byte-for-byte parity** to Cardano
   libsodium. See [`VRF_PARITY_COMPLETE.md`](cardano-vrf-pure/VRF_PARITY_COMPLETE.md).
@@ -59,15 +61,13 @@ Authoritative documentation lives under [`docs/`](docs):
 - [Development: testing checklist](docs/development/testing.md)
 - [Development: release checklist](docs/development/releasing.md)
 
-### Code Audit and Compatibility
+### Status tracking
 
-Comprehensive audit documentation comparing this Rust implementation with the official
-Haskell cardano-base:
+Progress across parity phases is captured in the repository root:
 
-- [**Audit Report**](AUDIT_REPORT.md) - Detailed comparison and accuracy assessment
-- [**Compatibility Matrix**](COMPATIBILITY_MATRIX.md) - Algorithm-by-algorithm compatibility
-- [**Missing Features**](MISSING_FEATURES.md) - Tracking of unimplemented features
-- [**Action Plan**](ACTION_PLAN.md) - Prioritized recommendations and timeline
+- [Phase 04 – DSIGN recap](PHASE_04_DSIGN_QUICK_SUMMARY.md)
+- [Phase 04 completion notes](PHASE_04_COMPLETION_REPORT.md)
+- [Phase 05 – KES audit](PHASE_05_AUDIT.md)
 
 Security and conduct policies remain at the repository root:
 [`SECURITY.md`](SECURITY.md) and [`CODE-OF-CONDUCT.md`](CODE-OF-CONDUCT.md).

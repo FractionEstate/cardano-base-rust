@@ -1,47 +1,26 @@
 # cardano-crypto-class (Rust)
 
-A work-in-progress pure-Rust port of the original `cardano-crypto-class`
-package. The initial milestone reimplements the deterministic seed utilities
-used across the Haskell codebase to seed key generation and pseudo-random
-generators.
+A pure-Rust port of the original `cardano-crypto-class` package. The crate now
+covers deterministic seed handling, Ed25519 DSIGN (including the mlocked
+variant), secure memory helpers, VRF plumbing, and the family of
+Cardano-specific Key Evolving Signatures (KES).
 
 ## Highlights
 
-- `Seed` type mirrors the Haskell newtype, exposing helpers to construct,
-  split, expand, and consume deterministic entropy.
-- `SeedRng` provides a deterministic RNG implementing `rand_core::RngCore`
-  and `CryptoRng`, making it easy to integrate with typical Rust APIs.
-- `run_with_seed` executes closures with a seed-backed RNG, mirroring the
-  behaviour of `runMonadRandomWithSeed`.
-- `read_seed_from_system_entropy` fetches entropy directly from the operating
-  system using `OsRng`.
-- Utility helpers from `Cardano.Crypto.Util`: hex decoding with length checks,
-  natural/word serialisation helpers, `SignableRepresentation`, and the
-  `decode_hex_string_or_panic!` macro.
-- `PackedBytes<N>` implements the packed-byte optimisations used throughout
-  the Haskell library, including XOR helpers and safe packing/unpacking from
-  byte slices.
-- `PinnedSizedBytes<N>` provides pinned heap allocations with sized pointer
-  helpers, mirroring `Cardano.Crypto.PinnedSizedBytes` for safe FFI access.
-- Libsodium-style memory helpers expose runtime-sized mlocked buffers,
-  allocators, and low-level `zero_mem`/`copy_mem` utilities, matching the
-  ergonomics of `Cardano.Crypto.Libsodium.Memory`.
-- `MLockedSeed<N>` stores sensitive seeds in `mlock`-backed memory, including
-  zeroing helpers, random initialisation, and direct-serialise support.
-- Direct serialisation helpers mirror `Cardano.Crypto.DirectSerialise`,
-  providing zero-copy traits and size-checked buffer utilities for
-  interacting with raw memory.
-- Ed25519 DSIGN has been ported with both the pure and mlocked variants,
-  including deterministic key generation from seeds, raw and direct
-  serialisation helpers, and constant-time pinned or mlocked key storage. The
-  Ed25519 harness now ships with RFC 8032 parity tests driven by fixtures in
-  [`cardano-test-vectors`](../cardano-test-vectors).
-- CompactSumKES reuses a recursive verification-key helper so the compact tree
-  matches SumKES hashing for levels 1–7, backed by regenerated fixtures in
-  [`cardano-test-vectors`](../cardano-test-vectors).
-- KES boundary suites assert that `SingleKES`/`CompactSingleKES` expire after
-  their lone period and that CompactSum verification rejects tampered
-  signatures or verification keys.
+- **Deterministic entropy**: `Seed`, `SeedRng`, and `run_with_seed` mirror the
+  Haskell APIs for reproducible randomness, with helpers to split, expand, and
+  consume seed material (including mlocked variants).
+- **Secure memory and packing**: `PackedBytes`, `PinnedSizedBytes`,
+  `MLockedSeed`, and libsodium-style allocators provide safe, zeroed buffers
+  for sensitive material, together with zero-copy direct-serialise traits.
+- **DSIGN**: Ed25519 (pure + mlocked) parity harnesses exercise RFC 8032 and
+  Cardano fixtures housed in [`cardano-test-vectors`](../cardano-test-vectors).
+- **KES**: `SingleKes`, `Sum{0-7}Kes`, and `CompactSum{0-7}Kes` share
+  recursive verification-key reconstruction routines. Serde-gated fixtures keep
+  CompactSum levels 1–7 in lock-step with the Haskell reference, and dedicated
+  boundary tests assert expiry and tamper behaviour.
+- **VRF plumbing**: The crate wires through Praos VRF primitives so higher
+  layers can embed them without crossing FFI boundaries.
 
 ## DSIGN parity progress
 
@@ -51,6 +30,16 @@ generators.
 | **Ed25519 mlocked** | ✅ Functional parity | Mirrors Ed25519 behaviour with sensitive material kept in `MLockedSeed`. Shares the same serialization and verification logic. |
 | **ECDSA secp256k1** | 🟡 Validation pending | Implementation uses `k256`/`ecdsa` with RFC 6979 nonces and low-s normalisation. JSON vectors live in `cardano-test-vectors/test_vectors/ecdsa_secp256k1_test_vectors.json`; harness work is queued in Phase 04. |
 | **Schnorr secp256k1** | 🟡 Validation pending | Backed by `k256` Schnorr support. Test vectors (including error cases) are embedded in `cardano-test-vectors/test_vectors/schnorr_secp256k1_test_vectors.json`. |
+
+## KES status snapshot
+
+| Algorithm | Status | Notes |
+|-----------|--------|-------|
+| **SingleKes** | ✅ Boundary-tested | Expiry enforced via `tests/kes_boundary.rs`; out-of-range signing returns `KesError::PeriodOutOfRange`. Cross-language vectors are still to be captured. |
+| **CompactSingleKes** | ✅ Boundary-tested | Verification keys embedded in signatures are checked against derived keys and expiry logic matches Haskell. |
+| **Sum{0-7}Kes** | 🟡 Targeted tests | Exercised indirectly through CompactSum vectors; dedicated Sum harnesses remain a TODO. |
+| **CompactSum{1-7}Kes** | ✅ Vector parity | Serde-gated fixtures in `tests/compact_sum_kes_vectors.rs` assert byte-for-byte signatures for levels 1–7, including evolution and tamper checks. |
+| **Forward security** | 🟡 Planned | Boundary suite verifies tamper rejection; multi-level forward-security regression is scheduled in Phase 05 follow-up work. |
 
 Key takeaways from the latest DSIGN audit:
 
@@ -64,7 +53,7 @@ Key takeaways from the latest DSIGN audit:
 
 ## Tests
 
-Run the complete suite (unit tests, property tests, and DSIGN harnesses) with:
+Run the complete suite (unit tests, property tests, KES boundary checks, and DSIGN harnesses) with:
 
 ```bash
 cargo test -p cardano-crypto-class
@@ -81,14 +70,25 @@ Additional DSIGN harnesses for ECDSA and Schnorr will live alongside the
 Ed25519 suite as Phase 04 progresses.
 
 The feature-gated test `tests/compact_sum_kes_vectors.rs` consumes the shared
-CompactSumKES vectors to ensure all levels remain byte-for-byte compatible
-with the hash reconstruction logic.
+CompactSumKES vectors to ensure levels 1–7 remain byte-for-byte compatible with
+the hash reconstruction logic. Enable the `serde` feature to run it:
+
+```bash
+cargo test -p cardano-crypto-class --features serde --test compact_sum_kes_vectors
+```
 
 `tests/kes_boundary.rs` focuses on evolution edge cases: Single/CompactSingle
-expiry, CompactSum period rollovers, and tamper detection for verification key
-reconstruction.
+expiry, CompactSum period rollovers, tamper detection for verification key
+reconstruction, and out-of-range signing behaviour. To run only the boundary
+suite:
+
+```bash
+cargo test -p cardano-crypto-class --test kes_boundary
+```
 
 ## Usage
+
+### Deterministic entropy helpers
 
 ```rust
 use cardano_crypto_class::{
@@ -102,10 +102,11 @@ let seed = mk_seed_from_bytes([0u8; 32]);
 let (left, right) = expand_seed::<Sha256>(&seed);
 
 let value = run_with_seed(left, |rng| {
-    let mut buf = [0u8; 4];
-    rng.fill_bytes_checked(&mut buf)?;
-    Ok(u32::from_le_bytes(buf))
-})?;
+  let mut buf = [0u8; 4];
+  rng.fill_bytes_checked(&mut buf)?;
+  Ok(u32::from_le_bytes(buf))
+})
+.expect("seeded RNG execution");
 
 println!("deterministic value: {value}");
 
@@ -118,6 +119,34 @@ let xored = cardano_crypto_class::xor_packed_bytes(&lhs, &rhs);
 assert_eq!(xored.as_slice(), &[0xf0; 8]);
 ```
 
-> **Note**: Additional cryptographic suites (Ed448, VRF, KES, SECP256k1, etc.)
-> are still provided by the original Haskell source tree. They will be ported
-> incrementally.
+### Single-period KES lifecycle
+
+```rust
+use cardano_crypto_class::dsign::ed25519::Ed25519;
+use cardano_crypto_class::kes::{KesAlgorithm, KesError, KesMError, SingleKes};
+
+fn demo_single_kes() -> Result<(), KesMError> {
+  let seed = vec![0u8; SingleKes::<Ed25519>::SEED_SIZE];
+  let signing_key = SingleKes::<Ed25519>::gen_key_kes_from_seed_bytes(&seed)?;
+  let verification_key = SingleKes::<Ed25519>::derive_verification_key(&signing_key)?;
+
+  let message = b"boundary-check";
+  let signature = SingleKes::<Ed25519>::sign_kes(&(), 0, message, &signing_key)?;
+  SingleKes::<Ed25519>::verify_kes(&(), &verification_key, 0, message, &signature)?;
+
+  // Attempting to sign beyond the single allowed period fails.
+  assert!(matches!(
+    SingleKes::<Ed25519>::sign_kes(&(), 1, message, &signing_key),
+    Err(KesMError::Kes(KesError::PeriodOutOfRange { .. }))
+  ));
+
+  SingleKes::<Ed25519>::forget_signing_key_kes(signing_key);
+  Ok(())
+}
+
+demo_single_kes().expect("single KES lifecycle");
+```
+
+> **Tip**: Enable the `serde` feature to access JSON vector helpers and fixtures
+> shared with `cardano-test-vectors` when performing cross-language parity
+> checks.
