@@ -1,14 +1,178 @@
 use cardano_crypto_class::dsign::ed25519::Ed25519;
 use cardano_crypto_class::kes::hash::KesHashAlgorithm;
 use cardano_crypto_class::kes::{
-    CompactSingleKes, CompactSum2Kes, CompactSum3Kes, KesAlgorithm, KesError, KesMError, SingleKes,
-    Sum3Kes, hash::Blake2b256,
+    CompactSingleKes, CompactSum0Kes, CompactSum1Kes, CompactSum2Kes, CompactSum3Kes, KesAlgorithm,
+    KesError, KesMError, SingleKes, Sum3Kes, hash::Blake2b256,
 };
 
 fn message(label: &[u8], period: u64) -> Vec<u8> {
     let mut payload = label.to_vec();
     payload.extend_from_slice(&period.to_be_bytes());
     payload
+}
+
+#[derive(Debug)]
+struct ExpectedCompactNode {
+    vk_bytes: Vec<u8>,
+    children: Option<(Box<ExpectedCompactNode>, Box<ExpectedCompactNode>)>,
+}
+
+fn build_expected_compact_tree(level: usize, seed: &[u8]) -> ExpectedCompactNode {
+    if level == 0 {
+        let signing_key = CompactSum0Kes::gen_key_kes_from_seed_bytes(seed)
+            .expect("compact sum leaf signing key");
+        let verification_key = CompactSum0Kes::derive_verification_key(&signing_key)
+            .expect("compact sum leaf verification key");
+        let vk_bytes = CompactSum0Kes::raw_serialize_verification_key_kes(&verification_key);
+        CompactSum0Kes::forget_signing_key_kes(signing_key);
+        ExpectedCompactNode {
+            vk_bytes,
+            children: None,
+        }
+    } else {
+        let (left_seed, right_seed) = Blake2b256::expand_seed(seed);
+        let left_node = build_expected_compact_tree(level - 1, &left_seed);
+        let right_node = build_expected_compact_tree(level - 1, &right_seed);
+        let combined = Blake2b256::hash_concat(&left_node.vk_bytes, &right_node.vk_bytes);
+        ExpectedCompactNode {
+            vk_bytes: combined,
+            children: Some((Box::new(left_node), Box::new(right_node))),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+enum Direction {
+    Left,
+    Right,
+}
+
+fn signature_size_for_level(level: usize) -> usize {
+    match level {
+        0 => CompactSum0Kes::SIGNATURE_SIZE,
+        1 => CompactSum1Kes::SIGNATURE_SIZE,
+        2 => CompactSum2Kes::SIGNATURE_SIZE,
+        3 => CompactSum3Kes::SIGNATURE_SIZE,
+        _ => panic!("unsupported compact sum level {level}"),
+    }
+}
+
+fn verification_key_size_for_level(level: usize) -> usize {
+    match level {
+        0 => CompactSum0Kes::VERIFICATION_KEY_SIZE,
+        1 => CompactSum1Kes::VERIFICATION_KEY_SIZE,
+        2 => CompactSum2Kes::VERIFICATION_KEY_SIZE,
+        3 => CompactSum3Kes::VERIFICATION_KEY_SIZE,
+        _ => panic!("unsupported compact sum level {level}"),
+    }
+}
+
+fn compute_period_path(mut period: u64, levels: usize) -> Vec<Direction> {
+    let mut path = Vec::with_capacity(levels);
+    for level in (0..levels).rev() {
+        let half = 1u64 << level;
+        if period < half {
+            path.push(Direction::Left);
+        } else {
+            path.push(Direction::Right);
+            period -= half;
+        }
+    }
+    path
+}
+
+fn inspect_compact_sum_signature(
+    level: usize,
+    signature_bytes: &[u8],
+    node: &ExpectedCompactNode,
+    path: &[Direction],
+) -> Vec<u8> {
+    assert_eq!(
+        signature_bytes.len(),
+        signature_size_for_level(level),
+        "unexpected signature size at level {level}"
+    );
+
+    if level == 0 {
+        assert!(
+            path.is_empty(),
+            "leaf level should not have remaining path entries"
+        );
+        let vk_size = verification_key_size_for_level(0);
+        let signature_len = signature_bytes.len();
+        let (_, vk_bytes) = signature_bytes.split_at(signature_len - vk_size);
+        assert_eq!(
+            vk_bytes,
+            node.vk_bytes.as_slice(),
+            "leaf verification key bytes must match expected compact sum structure",
+        );
+        return vk_bytes.to_vec();
+    }
+
+    assert_eq!(
+        path.len(),
+        level,
+        "direction path should have exactly {level} entries for level {level}",
+    );
+    let (direction, rest_path) = path
+        .split_first()
+        .expect("non-leaf level should have remaining path entries");
+
+    let (left_node, right_node) = node
+        .children
+        .as_ref()
+        .map(|(left, right)| (&**left, &**right))
+        .expect("non-leaf node should provide children");
+
+    let child_signature_size = signature_size_for_level(level - 1);
+    let child_vk_size = verification_key_size_for_level(level - 1);
+    let (child_signature_bytes, vk_other_bytes) = signature_bytes.split_at(child_signature_size);
+    assert_eq!(
+        vk_other_bytes.len(),
+        child_vk_size,
+        "embedded verification key length mismatch at level {level}",
+    );
+
+    match direction {
+        Direction::Left => {
+            assert_eq!(
+                vk_other_bytes,
+                right_node.vk_bytes.as_slice(),
+                "right subtree verification key must be embedded when traversing left at level {level}",
+            );
+            let active_bytes = inspect_compact_sum_signature(
+                level - 1,
+                child_signature_bytes,
+                left_node,
+                rest_path,
+            );
+            let recomputed = Blake2b256::hash_concat(&active_bytes, vk_other_bytes);
+            assert_eq!(
+                recomputed, node.vk_bytes,
+                "reconstructed verification key must match expected node at level {level}",
+            );
+            recomputed
+        },
+        Direction::Right => {
+            assert_eq!(
+                vk_other_bytes,
+                left_node.vk_bytes.as_slice(),
+                "left subtree verification key must be embedded when traversing right at level {level}",
+            );
+            let active_bytes = inspect_compact_sum_signature(
+                level - 1,
+                child_signature_bytes,
+                right_node,
+                rest_path,
+            );
+            let recomputed = Blake2b256::hash_concat(vk_other_bytes, &active_bytes);
+            assert_eq!(
+                recomputed, node.vk_bytes,
+                "reconstructed verification key must match expected node at level {level}",
+            );
+            recomputed
+        },
+    }
 }
 
 #[test]
@@ -466,80 +630,63 @@ fn compact_sum3_kes_end_to_end_workflow_and_errors() {
 #[test]
 fn compact_sum3_kes_signature_components() {
     type Kes = CompactSum3Kes;
-    type Child = CompactSum2Kes;
+    const LEVELS: usize = 3;
 
     let seed = vec![0x5F; Kes::SEED_SIZE];
-    let (left_seed, right_seed) = Blake2b256::expand_seed(&seed);
+    let expected_tree = build_expected_compact_tree(LEVELS, &seed);
 
-    let left_signing_key =
-        Child::gen_key_kes_from_seed_bytes(&left_seed).expect("left subtree signing key");
-    let left_verification_key =
-        Child::derive_verification_key(&left_signing_key).expect("left subtree verification key");
-    Child::forget_signing_key_kes(left_signing_key);
-
-    let right_signing_key =
-        Child::gen_key_kes_from_seed_bytes(&right_seed).expect("right subtree signing key");
-    let right_verification_key =
-        Child::derive_verification_key(&right_signing_key).expect("right subtree verification key");
-    Child::forget_signing_key_kes(right_signing_key);
-
-    let mut signing_key = Kes::gen_key_kes_from_seed_bytes(&seed).expect("compact sum signing key");
-
-    let payload_left = message(b"phase-05-compact-sum-structure", 0);
-    let signature_left = Kes::sign_kes(&(), 0, &payload_left, &signing_key)
-        .expect("compact sum signing at period 0");
-
-    let raw_signature_left = Kes::raw_serialize_signature_kes(&signature_left);
-    let (left_sigma_bytes, left_other_bytes) = raw_signature_left.split_at(Child::SIGNATURE_SIZE);
-    let extracted_left_signature =
-        Child::raw_deserialize_signature_kes(left_sigma_bytes).expect("left subtree signature");
-    let extracted_left_vk_other = Child::raw_deserialize_verification_key_kes(left_other_bytes)
-        .expect("right subtree verification key in left signature");
-
-    Child::verify_kes(
-        &(),
-        &left_verification_key,
-        0,
-        &payload_left,
-        &extracted_left_signature,
-    )
-    .expect("embedded compact sum signature must verify with left subtree key");
+    let signing_key_initial =
+        Kes::gen_key_kes_from_seed_bytes(&seed).expect("compact sum signing key");
+    let verification_key = Kes::derive_verification_key(&signing_key_initial)
+        .expect("compact sum verification key derivation");
+    let expected_root_bytes = expected_tree.vk_bytes.clone();
     assert_eq!(
-        extracted_left_vk_other, right_verification_key,
-        "left period must carry right subtree verification key"
+        Kes::raw_serialize_verification_key_kes(&verification_key),
+        expected_root_bytes,
+        "derived verification key must match expected compact sum structure",
     );
 
-    let t_half = Kes::total_periods() / 2;
-    for period in 0..t_half {
-        signing_key = Kes::update_kes(&(), signing_key, period)
-            .expect("compact sum update succeeds")
-            .expect("key must remain valid before final period");
+    let total_periods = Kes::total_periods();
+    let expected_signature_len = signature_size_for_level(LEVELS);
+    let mut signing_key = Some(signing_key_initial);
+
+    for period in 0..total_periods {
+        let payload = message(b"phase-05-compact-sum-structure", period);
+        let current_key = signing_key
+            .take()
+            .expect("compact sum signing key should be available for this period");
+        let signature =
+            Kes::sign_kes(&(), period, &payload, &current_key).expect("compact sum signing");
+        Kes::verify_kes(&(), &verification_key, period, &payload, &signature)
+            .expect("compact sum verification");
+
+        let raw_signature = Kes::raw_serialize_signature_kes(&signature);
+        assert_eq!(
+            raw_signature.len(),
+            expected_signature_len,
+            "raw signature length must match CompactSum3 size",
+        );
+
+        let path = compute_period_path(period, LEVELS);
+        let derived_vk_bytes =
+            inspect_compact_sum_signature(LEVELS, &raw_signature, &expected_tree, &path);
+        assert_eq!(
+            derived_vk_bytes, expected_root_bytes,
+            "root verification key bytes mismatch for period {period}"
+        );
+
+        let update_result =
+            Kes::update_kes(&(), current_key, period).expect("final update result should be ok");
+        if period + 1 == total_periods {
+            assert!(
+                update_result.is_none(),
+                "CompactSumKES key must expire after final period"
+            );
+            break;
+        }
+
+        let next_key =
+            update_result.expect("compact sum key should remain valid before final period");
+        signing_key = Some(next_key);
     }
-
-    let payload_right = message(b"phase-05-compact-sum-structure", t_half);
-    let signature_right = Kes::sign_kes(&(), t_half, &payload_right, &signing_key)
-        .expect("compact sum signing at right subtree period");
-
-    let raw_signature_right = Kes::raw_serialize_signature_kes(&signature_right);
-    let (right_sigma_bytes, right_other_bytes) =
-        raw_signature_right.split_at(Child::SIGNATURE_SIZE);
-    let extracted_right_signature =
-        Child::raw_deserialize_signature_kes(right_sigma_bytes).expect("right subtree signature");
-    let extracted_right_vk_other = Child::raw_deserialize_verification_key_kes(right_other_bytes)
-        .expect("left subtree verification key in right signature");
-
-    Child::verify_kes(
-        &(),
-        &right_verification_key,
-        0,
-        &payload_right,
-        &extracted_right_signature,
-    )
-    .expect("embedded compact sum signature must verify with right subtree key");
-    assert_eq!(
-        extracted_right_vk_other, left_verification_key,
-        "right period must carry left subtree verification key"
-    );
-
-    Kes::forget_signing_key_kes(signing_key);
 }

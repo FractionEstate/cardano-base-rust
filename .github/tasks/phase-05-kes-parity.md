@@ -142,15 +142,15 @@ Validate and achieve 100% functional parity between the Rust KES (Key Evolving S
 
 ### 6. CompactSumKES Parity
 
-- [ ] Optimized VK storage
+- [x] Optimized VK storage
   - Only one VK per branch node (not two)
   - "Off-side" VK in signature, "on-side" reconstructed
 
-- [ ] Signature structure
+- [x] Signature structure
   - Nested signatures with embedded VKs
   - Smaller total size than SumKES
 
-- [ ] Key evolution
+- [x] Key evolution
   - Same period boundaries as SumKES
   - Efficient subtree switching
 
@@ -330,6 +330,7 @@ Validate and achieve 100% functional parity between the Rust KES (Key Evolving S
   - **2025-10-07**: Extended `tests/kes_integration.rs` to reject truncated or extended serialized signatures and verification keys for SingleKES and SumKES, checking the serialization error-path item off the integration checklist. Next: roll the coverage pattern into cross-language spot checks.
   - **2025-10-07**: Added CompactSingleKES and CompactSumKES integration regressions validating embedded verification keys, tamper handling, and serialization failure modes, then reran `cargo test -p cardano-crypto-class`. Next: expand compact parity vectors and cross-language validation.
   - **2025-10-15**: Added a `compact_sum3_kes_signature_components` regression to prove embedded verification keys align with the opposite subtrees, and reran `cargo test -p cardano-crypto-class` to confirm the new coverage.
+  - **2025-10-15**: Extended the regression to iterate across every period, recursively validating each CompactSum signature layer, ticking the CompactSum parity checklist items, and reran `cargo test -p cardano-crypto-class`.
 
 ---
 
