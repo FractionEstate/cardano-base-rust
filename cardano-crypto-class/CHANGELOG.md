@@ -34,6 +34,16 @@
   evolution sweeps, mirroring `Test.Crypto.KES` by re-verifying historical
   signatures, rejecting stale-period signing after each update, and asserting
   explicit rewind attempts fail with the expected errors.
+* Added `tests/kes_integration.rs` to exercise end-to-end SingleKES and SumKES
+  workflows, covering deterministic signing/verification across every period,
+  key expiry, verification-key mismatches, and period-out-of-range failures.
+* Extended the KES integration regression to reject truncated or extended
+  serialized signatures and verification keys, locking down the remaining
+  serialization error-path checklist items.
+* Expanded the integration suite with CompactSingleKES and CompactSumKES
+  workflows, validating embedded verification key behaviour, tamper
+  detection, and serialization failure handling alongside the standard
+  SumKES coverage.
 
 ## 2.2.3.2
 

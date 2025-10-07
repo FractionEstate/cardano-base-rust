@@ -82,27 +82,27 @@ Validate and achieve 100% functional parity between the Rust KES (Key Evolving S
 
 ### 3. SingleKES Parity
 
-- [ ] Verify key generation from seeds
-  - Deterministic key derivation
-  - Verification key derivation from signing key
+- [x] Verify key generation from seeds
+  - [x] Deterministic key derivation
+  - [x] Verification key derivation from signing key
 
-- [ ] Validate signing operations
-  - Period 0 signing
-  - Message signing with DSIGN backend
+- [x] Validate signing operations
+  - [x] Period 0 signing
+  - [x] Message signing with DSIGN backend
 
-- [ ] Confirm verification logic
-  - Signature validation
-  - Period checking
-  - Error cases (wrong period, expired key)
+- [x] Confirm verification logic
+  - [x] Signature validation
+  - [x] Period checking
+  - [x] Error cases (wrong period, expired key)
 
-- [ ] Test serialization
-  - Signing key serialization (mlocked)
-  - Verification key serialization
-  - Signature serialization
+- [x] Test serialization
+  - [x] Signing key serialization (mlocked)
+  - [x] Verification key serialization
+  - [x] Signature serialization
 
 ### 4. CompactSingleKES Parity
 
-- [ ] Embedded verification key in signature
+- [x] Embedded verification key in signature
   - Signature includes VK for Merkle tree reconstruction
   - OptimizedKesSignature trait implementation
 
@@ -189,18 +189,18 @@ Validate and achieve 100% functional parity between the Rust KES (Key Evolving S
 
 ### 9. Integration Tests
 
-- [ ] End-to-end KES workflow
+- [x] End-to-end KES workflow
   - Generate → Sign → Evolve → Sign → Verify all
 
 - [x] Cross-level compatibility
   - [x] Sum compositions work correctly
   - [x] CompactSum matches Sum verification
 
-- [ ] Error handling
-  - Period out of range
-  - Key expired
-  - Invalid signatures
-  - Serialization errors
+- [x] Error handling
+  - [x] Period out of range
+  - [x] Key expired
+  - [x] Invalid signatures
+  - [x] Serialization errors
 
 ### 10. Performance Benchmarks
 
@@ -326,6 +326,9 @@ Validate and achieve 100% functional parity between the Rust KES (Key Evolving S
   - **2025-10-07**: Enabled the Ed25519 cross-compatibility regression to run by default, pruned nightly-only `rustfmt` options to silence formatter warnings, and reran `cargo fmt` plus `cargo test -p cardano-crypto-class --features serde` to confirm the integration.
   - **2025-10-14**: Ran `cargo test -p cardano-test-vectors` to validate the regenerated Sum/CompactSum evolution fixtures and confirmed all embedded datasets stay byte-for-byte with the Haskell generators. Next: expand cross-language spot checks (Ed25519/KES) and queue the remaining negative-path regressions.
   - **2025-10-07**: Added tampered-message regressions across Single/CompactSingle/Sum/CompactSum KES fixtures in `cardano-test-vectors/tests/kes_vectors.rs`, proving verification rejects mutated payloads and reran `cargo test -p cardano-test-vectors`. Next: script Haskell parity spot-checks for the new failure paths and extend tamper coverage to deeper period slices.
+  - **2025-10-07**: Landed `cardano-crypto-class/tests/kes_integration.rs` to exercise end-to-end SingleKES and SumKES workflows, covering evolution across all periods, verification-key mismatches, and out-of-range/expiry error paths. Reran `cargo test -p cardano-crypto-class`. Next: tackle the remaining serialization error-path checklist item and expand cross-language checks.
+  - **2025-10-07**: Extended `tests/kes_integration.rs` to reject truncated or extended serialized signatures and verification keys for SingleKES and SumKES, checking the serialization error-path item off the integration checklist. Next: roll the coverage pattern into cross-language spot checks.
+  - **2025-10-07**: Added CompactSingleKES and CompactSumKES integration regressions validating embedded verification keys, tamper handling, and serialization failure modes, then reran `cargo test -p cardano-crypto-class`. Next: expand compact parity vectors and cross-language validation.
 
 ---
 
