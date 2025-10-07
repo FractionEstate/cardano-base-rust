@@ -44,6 +44,9 @@
   workflows, validating embedded verification key behaviour, tamper
   detection, and serialization failure handling alongside the standard
   SumKES coverage.
+* Added `compact_sum3_kes_signature_components` regression to assert the
+  embedded subtree verification keys stored in compact signatures match the
+  derived CompactSum structure from `Cardano.Crypto.KES.CompactSum`.
 
 ## 2.2.3.2
 

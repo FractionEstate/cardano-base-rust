@@ -329,6 +329,7 @@ Validate and achieve 100% functional parity between the Rust KES (Key Evolving S
   - **2025-10-07**: Landed `cardano-crypto-class/tests/kes_integration.rs` to exercise end-to-end SingleKES and SumKES workflows, covering evolution across all periods, verification-key mismatches, and out-of-range/expiry error paths. Reran `cargo test -p cardano-crypto-class`. Next: tackle the remaining serialization error-path checklist item and expand cross-language checks.
   - **2025-10-07**: Extended `tests/kes_integration.rs` to reject truncated or extended serialized signatures and verification keys for SingleKES and SumKES, checking the serialization error-path item off the integration checklist. Next: roll the coverage pattern into cross-language spot checks.
   - **2025-10-07**: Added CompactSingleKES and CompactSumKES integration regressions validating embedded verification keys, tamper handling, and serialization failure modes, then reran `cargo test -p cardano-crypto-class`. Next: expand compact parity vectors and cross-language validation.
+  - **2025-10-15**: Added a `compact_sum3_kes_signature_components` regression to prove embedded verification keys align with the opposite subtrees, and reran `cargo test -p cardano-crypto-class` to confirm the new coverage.
 
 ---
 
