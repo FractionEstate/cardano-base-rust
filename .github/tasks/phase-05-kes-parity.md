@@ -331,6 +331,12 @@ Validate and achieve 100% functional parity between the Rust KES (Key Evolving S
   - **2025-10-07**: Added CompactSingleKES and CompactSumKES integration regressions validating embedded verification keys, tamper handling, and serialization failure modes, then reran `cargo test -p cardano-crypto-class`. Next: expand compact parity vectors and cross-language validation.
   - **2025-10-15**: Added a `compact_sum3_kes_signature_components` regression to prove embedded verification keys align with the opposite subtrees, and reran `cargo test -p cardano-crypto-class` to confirm the new coverage.
   - **2025-10-15**: Extended the regression to iterate across every period, recursively validating each CompactSum signature layer, ticking the CompactSum parity checklist items, and reran `cargo test -p cardano-crypto-class`.
+  - **2025-10-16**: Added `sum3_kes_signature_components` with recursive signature inspection helpers to validate SumKES child verification keys and branch hashes across all periods, and reran `cargo test -p cardano-crypto-class`.
+  - **2025-10-16**: Scaled the SumKES structural regression to level 7 (`sum7_kes_signature_components`), covering all 128 periods and confirming the full tree of verification keys matches the Blake2b256 root hash used by Haskell.
+  - **2025-10-16**: Introduced `sum_kes_signature_components_levels` to sweep Sum0–Sum6, locking down intermediate tree layers, enforcing total-period and constant-size invariants, and verifying signature sizing plus verification-key embeddings across every period before the Sum7 check.
+  - **2025-10-17**: Strengthened the Sum0 regression by asserting the single-period invariant and deterministic seed dispatch within the shared helper, then reran `cargo test -p cardano-crypto-class sum_kes_signature_components_levels` to confirm coverage. Next: expand SumKES structural checks toward vector-driven verification.
+  - **2025-10-17**: Added `sum0_kes_matches_singlekes_base_case` to lock Sum0’s aliasing to `SingleKES`, confirming seeds, verification keys, signatures, and expiry align byte-for-byte and updating the changelog. Next: pursue fixture-driven structural assertions for deeper Sum levels.
+  - **2025-10-17**: Centralised the Sum/CompactSum structural helpers in `tests/sum_kes_structure.rs` and reused them from the integration and `sum_kes_test_vectors` suites, decomposing every tracked JSON signature to confirm the verification-key paths still match `Cardano.Crypto.KES.Sum`. Next: expand shared helpers to CompactSum fixtures.
 
 ---
 

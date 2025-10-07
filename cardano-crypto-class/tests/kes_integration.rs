@@ -1,8 +1,16 @@
 use cardano_crypto_class::dsign::ed25519::Ed25519;
-use cardano_crypto_class::kes::hash::KesHashAlgorithm;
 use cardano_crypto_class::kes::{
-    CompactSingleKes, CompactSum0Kes, CompactSum1Kes, CompactSum2Kes, CompactSum3Kes, KesAlgorithm,
-    KesError, KesMError, SingleKes, Sum3Kes, hash::Blake2b256,
+    CompactSingleKes, CompactSum3Kes, KesAlgorithm, KesError, KesMError, SingleKes, Sum0Kes,
+    Sum1Kes, Sum2Kes, Sum3Kes, Sum4Kes, Sum5Kes, Sum6Kes, Sum7Kes,
+};
+
+#[path = "sum_kes_structure.rs"]
+mod sum_kes_structure;
+
+use sum_kes_structure::{
+    build_expected_compact_tree, build_expected_sum_tree, compute_period_path,
+    inspect_compact_sum_signature, inspect_sum_signature, signature_size_for_level,
+    sum_signature_size_for_level, sum_verification_key_size_for_level,
 };
 
 fn message(label: &[u8], period: u64) -> Vec<u8> {
@@ -11,170 +19,106 @@ fn message(label: &[u8], period: u64) -> Vec<u8> {
     payload
 }
 
-#[derive(Debug)]
-struct ExpectedCompactNode {
-    vk_bytes: Vec<u8>,
-    children: Option<(Box<ExpectedCompactNode>, Box<ExpectedCompactNode>)>,
-}
-
-fn build_expected_compact_tree(level: usize, seed: &[u8]) -> ExpectedCompactNode {
-    if level == 0 {
-        let signing_key = CompactSum0Kes::gen_key_kes_from_seed_bytes(seed)
-            .expect("compact sum leaf signing key");
-        let verification_key = CompactSum0Kes::derive_verification_key(&signing_key)
-            .expect("compact sum leaf verification key");
-        let vk_bytes = CompactSum0Kes::raw_serialize_verification_key_kes(&verification_key);
-        CompactSum0Kes::forget_signing_key_kes(signing_key);
-        ExpectedCompactNode {
-            vk_bytes,
-            children: None,
-        }
-    } else {
-        let (left_seed, right_seed) = Blake2b256::expand_seed(seed);
-        let left_node = build_expected_compact_tree(level - 1, &left_seed);
-        let right_node = build_expected_compact_tree(level - 1, &right_seed);
-        let combined = Blake2b256::hash_concat(&left_node.vk_bytes, &right_node.vk_bytes);
-        ExpectedCompactNode {
-            vk_bytes: combined,
-            children: Some((Box::new(left_node), Box::new(right_node))),
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-enum Direction {
-    Left,
-    Right,
-}
-
-fn signature_size_for_level(level: usize) -> usize {
-    match level {
-        0 => CompactSum0Kes::SIGNATURE_SIZE,
-        1 => CompactSum1Kes::SIGNATURE_SIZE,
-        2 => CompactSum2Kes::SIGNATURE_SIZE,
-        3 => CompactSum3Kes::SIGNATURE_SIZE,
-        _ => panic!("unsupported compact sum level {level}"),
-    }
-}
-
-fn verification_key_size_for_level(level: usize) -> usize {
-    match level {
-        0 => CompactSum0Kes::VERIFICATION_KEY_SIZE,
-        1 => CompactSum1Kes::VERIFICATION_KEY_SIZE,
-        2 => CompactSum2Kes::VERIFICATION_KEY_SIZE,
-        3 => CompactSum3Kes::VERIFICATION_KEY_SIZE,
-        _ => panic!("unsupported compact sum level {level}"),
-    }
-}
-
-fn compute_period_path(mut period: u64, levels: usize) -> Vec<Direction> {
-    let mut path = Vec::with_capacity(levels);
-    for level in (0..levels).rev() {
-        let half = 1u64 << level;
-        if period < half {
-            path.push(Direction::Left);
-        } else {
-            path.push(Direction::Right);
-            period -= half;
-        }
-    }
-    path
-}
-
-fn inspect_compact_sum_signature(
-    level: usize,
-    signature_bytes: &[u8],
-    node: &ExpectedCompactNode,
-    path: &[Direction],
-) -> Vec<u8> {
-    assert_eq!(
-        signature_bytes.len(),
-        signature_size_for_level(level),
-        "unexpected signature size at level {level}"
+fn assert_sum_signature_components<Kes>(levels: usize, seed_byte: u8, label: &[u8])
+where
+    Kes: KesAlgorithm<Context = ()>,
+{
+    assert!(
+        (0..=7).contains(&levels),
+        "SumKES structural helper only supports levels 0 through 7",
     );
 
-    if level == 0 {
-        assert!(
-            path.is_empty(),
-            "leaf level should not have remaining path entries"
-        );
-        let vk_size = verification_key_size_for_level(0);
-        let signature_len = signature_bytes.len();
-        let (_, vk_bytes) = signature_bytes.split_at(signature_len - vk_size);
+    let expected_periods = 1u64 << levels;
+    assert_eq!(
+        Kes::total_periods(),
+        expected_periods,
+        "SumKES total periods mismatch for level {levels}",
+    );
+
+    let expected_signature_len = sum_signature_size_for_level(levels);
+    assert_eq!(
+        Kes::SIGNATURE_SIZE,
+        expected_signature_len,
+        "SumKES signature size constant mismatch for level {levels}",
+    );
+
+    let expected_verification_key_len = sum_verification_key_size_for_level(levels);
+    assert_eq!(
+        Kes::VERIFICATION_KEY_SIZE,
+        expected_verification_key_len,
+        "SumKES verification key size constant mismatch for level {levels}",
+    );
+
+    let seed = vec![seed_byte; Kes::SEED_SIZE];
+    let expected_tree = build_expected_sum_tree(levels, &seed);
+
+    let signing_key_initial = Kes::gen_key_kes_from_seed_bytes(&seed).expect("sum signing key");
+    let verification_key = Kes::derive_verification_key(&signing_key_initial)
+        .expect("sum verification key derivation");
+    let expected_root_bytes = expected_tree.vk_bytes.clone();
+    assert_eq!(
+        Kes::raw_serialize_verification_key_kes(&verification_key),
+        expected_root_bytes,
+        "derived verification key must match expected sum structure",
+    );
+
+    let total_periods = Kes::total_periods();
+    let mut signing_key = Some(signing_key_initial);
+
+    for period in 0..total_periods {
+        let payload = message(label, period);
+        let current_key = signing_key
+            .take()
+            .expect("sum signing key should be available for this period");
+        let signature = Kes::sign_kes(&(), period, &payload, &current_key).expect("sum signing");
+        Kes::verify_kes(&(), &verification_key, period, &payload, &signature)
+            .expect("sum verification");
+
+        let raw_signature = Kes::raw_serialize_signature_kes(&signature);
         assert_eq!(
-            vk_bytes,
-            node.vk_bytes.as_slice(),
-            "leaf verification key bytes must match expected compact sum structure",
+            raw_signature.len(),
+            expected_signature_len,
+            "raw signature length must match SumKES size for level {levels}",
         );
-        return vk_bytes.to_vec();
-    }
 
-    assert_eq!(
-        path.len(),
-        level,
-        "direction path should have exactly {level} entries for level {level}",
-    );
-    let (direction, rest_path) = path
-        .split_first()
-        .expect("non-leaf level should have remaining path entries");
+        let path = compute_period_path(period, levels);
+        inspect_sum_signature(levels, &raw_signature, &expected_tree, &path);
 
-    let (left_node, right_node) = node
-        .children
-        .as_ref()
-        .map(|(left, right)| (&**left, &**right))
-        .expect("non-leaf node should provide children");
+        let update_result =
+            Kes::update_kes(&(), current_key, period).expect("sum update result should be ok");
+        if period + 1 == total_periods {
+            assert!(
+                update_result.is_none(),
+                "SumKES key must expire after final period",
+            );
+            break;
+        }
 
-    let child_signature_size = signature_size_for_level(level - 1);
-    let child_vk_size = verification_key_size_for_level(level - 1);
-    let (child_signature_bytes, vk_other_bytes) = signature_bytes.split_at(child_signature_size);
-    assert_eq!(
-        vk_other_bytes.len(),
-        child_vk_size,
-        "embedded verification key length mismatch at level {level}",
-    );
-
-    match direction {
-        Direction::Left => {
-            assert_eq!(
-                vk_other_bytes,
-                right_node.vk_bytes.as_slice(),
-                "right subtree verification key must be embedded when traversing left at level {level}",
-            );
-            let active_bytes = inspect_compact_sum_signature(
-                level - 1,
-                child_signature_bytes,
-                left_node,
-                rest_path,
-            );
-            let recomputed = Blake2b256::hash_concat(&active_bytes, vk_other_bytes);
-            assert_eq!(
-                recomputed, node.vk_bytes,
-                "reconstructed verification key must match expected node at level {level}",
-            );
-            recomputed
-        },
-        Direction::Right => {
-            assert_eq!(
-                vk_other_bytes,
-                left_node.vk_bytes.as_slice(),
-                "left subtree verification key must be embedded when traversing right at level {level}",
-            );
-            let active_bytes = inspect_compact_sum_signature(
-                level - 1,
-                child_signature_bytes,
-                right_node,
-                rest_path,
-            );
-            let recomputed = Blake2b256::hash_concat(vk_other_bytes, &active_bytes);
-            assert_eq!(
-                recomputed, node.vk_bytes,
-                "reconstructed verification key must match expected node at level {level}",
-            );
-            recomputed
-        },
+        let next_key = update_result.expect("sum key should remain valid before final period");
+        signing_key = Some(next_key);
     }
 }
 
+fn run_sum_signature_components(level: usize, seed_byte: u8, label: &[u8]) {
+    match level {
+        0 => {
+            assert_eq!(Sum0Kes::total_periods(), 1, "Sum0 total periods must be 1");
+            assert!(
+                seed_byte == 0,
+                "Sum0 seed byte should be 0 for deterministic single period coverage",
+            );
+            assert_sum_signature_components::<Sum0Kes>(level, seed_byte, label);
+        },
+        1 => assert_sum_signature_components::<Sum1Kes>(level, seed_byte, label),
+        2 => assert_sum_signature_components::<Sum2Kes>(level, seed_byte, label),
+        3 => assert_sum_signature_components::<Sum3Kes>(level, seed_byte, label),
+        4 => assert_sum_signature_components::<Sum4Kes>(level, seed_byte, label),
+        5 => assert_sum_signature_components::<Sum5Kes>(level, seed_byte, label),
+        6 => assert_sum_signature_components::<Sum6Kes>(level, seed_byte, label),
+        7 => assert_sum_signature_components::<Sum7Kes>(level, seed_byte, label),
+        other => panic!("unsupported sum level {other}"),
+    }
+}
 #[test]
 fn single_kes_end_to_end_workflow_and_errors() {
     type Kes = SingleKes<Ed25519>;
@@ -376,6 +320,107 @@ fn sum3_kes_end_to_end_workflow_and_errors() {
     );
 
     Kes::forget_signing_key_kes(fresh_key);
+}
+
+#[test]
+fn sum3_kes_signature_components() {
+    run_sum_signature_components(3, 0x3C, b"phase-05-sum-structure");
+}
+
+#[test]
+fn sum7_kes_signature_components() {
+    run_sum_signature_components(7, 0x7A, b"phase-05-sum7-structure");
+}
+
+#[test]
+fn sum_kes_signature_components_levels() {
+    let scenarios = [
+        (0usize, 0x00u8, b"phase-05-sum0-structure".as_slice()),
+        (1, 0x11, b"phase-05-sum1-structure".as_slice()),
+        (2, 0x22, b"phase-05-sum2-structure".as_slice()),
+        (4, 0x44, b"phase-05-sum4-structure".as_slice()),
+        (5, 0x55, b"phase-05-sum5-structure".as_slice()),
+        (6, 0x66, b"phase-05-sum6-structure".as_slice()),
+    ];
+
+    for (level, seed_byte, label) in scenarios {
+        run_sum_signature_components(level, seed_byte, label);
+    }
+}
+
+#[test]
+fn sum0_kes_matches_singlekes_base_case() {
+    type Sum0 = Sum0Kes;
+    type Single = SingleKes<Ed25519>;
+
+    assert_eq!(
+        Sum0::SEED_SIZE,
+        Single::SEED_SIZE,
+        "Sum0 seed length must equal SingleKES"
+    );
+    assert_eq!(
+        Sum0::VERIFICATION_KEY_SIZE,
+        Single::VERIFICATION_KEY_SIZE,
+        "Sum0 verification key size must equal SingleKES",
+    );
+    assert_eq!(
+        Sum0::SIGNATURE_SIZE,
+        Single::SIGNATURE_SIZE,
+        "Sum0 signature size must equal SingleKES",
+    );
+    assert_eq!(
+        Sum0::total_periods(),
+        Single::total_periods(),
+        "Sum0 total periods must match SingleKES",
+    );
+
+    let seed = vec![0x5Au8; Sum0::SEED_SIZE];
+    let sum_signing = Sum0::gen_key_kes_from_seed_bytes(&seed).expect("Sum0 signing key");
+    let single_signing = Single::gen_key_kes_from_seed_bytes(&seed).expect("SingleKES signing key");
+
+    let sum_vk =
+        Sum0::derive_verification_key(&sum_signing).expect("Sum0 verification key derivation");
+    let single_vk = Single::derive_verification_key(&single_signing)
+        .expect("SingleKES verification key derivation");
+
+    let sum_vk_bytes = Sum0::raw_serialize_verification_key_kes(&sum_vk);
+    let single_vk_bytes = Single::raw_serialize_verification_key_kes(&single_vk);
+    assert_eq!(
+        sum_vk_bytes, single_vk_bytes,
+        "Sum0 verification key bytes must match SingleKES base case",
+    );
+
+    let message = b"phase-05-sum0-single-parity";
+    let sum_signature = Sum0::sign_kes(&(), 0, message, &sum_signing).expect("Sum0 signing");
+    let single_signature =
+        Single::sign_kes(&(), 0, message, &single_signing).expect("SingleKES signing");
+
+    let sum_raw_signature = Sum0::raw_serialize_signature_kes(&sum_signature);
+    let single_raw_signature = Single::raw_serialize_signature_kes(&single_signature);
+    assert_eq!(
+        sum_raw_signature, single_raw_signature,
+        "Sum0 signature bytes must align with SingleKES",
+    );
+
+    let single_from_sum = Single::raw_deserialize_signature_kes(&sum_raw_signature)
+        .expect("Sum0 signature should decode via SingleKES");
+    Single::verify_kes(&(), &single_vk, 0, message, &single_from_sum)
+        .expect("SingleKES verification of Sum0 signature");
+
+    let sum_from_single = Sum0::raw_deserialize_signature_kes(&single_raw_signature)
+        .expect("SingleKES signature should decode via Sum0");
+    Sum0::verify_kes(&(), &sum_vk, 0, message, &sum_from_single)
+        .expect("Sum0 verification of SingleKES signature");
+
+    let sum_expired = Sum0::update_kes(&(), sum_signing, 0).expect("Sum0 update succeeds");
+    assert!(sum_expired.is_none(), "Sum0 must expire after period 0");
+
+    let single_expired =
+        Single::update_kes(&(), single_signing, 0).expect("SingleKES update succeeds");
+    assert!(
+        single_expired.is_none(),
+        "SingleKES must expire after period 0",
+    );
 }
 
 #[test]

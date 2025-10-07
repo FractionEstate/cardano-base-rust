@@ -48,6 +48,30 @@
   period, recursively decoding compact signatures to prove each embedded
   subtree verification key matches the reconstructed CompactSum tree from
   `Cardano.Crypto.KES.CompactSum`.
+* Added `sum3_kes_signature_components` regression validating SumKES signature
+  layering against the reconstructed binary tree from
+  `Cardano.Crypto.KES.Sum`, ensuring both child verification keys and recomputed
+  branch hashes align for every period.
+* Extended the SumKES structural regression to level 7 via
+  `sum7_kes_signature_components`, exercising all 128 periods and proving every
+  nested signature embeds the correct branch verification keys and produces the
+  expected Blake2b256 root.
+* Added `sum_kes_signature_components_levels`, sweeping Sum0–Sum6 to ensure
+  every intermediate tree level mirrors the expected verification-key wiring
+  and signature sizing described in `Cardano.Crypto.KES.Sum`, while the shared
+  helper now asserts total-period and constant-size invariants for each level.
+* Hardened the Sum0 path by asserting the single-period invariant and locking
+  the deterministic seed selection before dispatching into the shared SumKES
+  structural helper, keeping the regression aligned with the Haskell base
+  case in `Cardano.Crypto.KES.Sum`.
+* Added `sum0_kes_matches_singlekes_base_case` to prove the Sum0 alias stays
+  byte-for-byte with `SingleKES` for key derivation, signatures, and expiry,
+  preventing accidental divergence from the Haskell reference base case.
+* Extracted the Sum/CompactSum structural helpers into `tests/sum_kes_structure.rs`
+  for reuse across integration and fixture suites, and extended the
+  `sum_kes_test_vectors` regression to decompose signatures with the shared
+  helper so every tracked JSON vector now revalidates its verification-key
+  path against `Cardano.Crypto.KES.Sum`.
 
 ## 2.2.3.2
 

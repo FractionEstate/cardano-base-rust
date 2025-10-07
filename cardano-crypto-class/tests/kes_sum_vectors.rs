@@ -7,6 +7,14 @@ use cardano_test_vectors::kes;
 use hex::encode_upper;
 use serde::Deserialize;
 
+#[path = "sum_kes_structure.rs"]
+mod sum_kes_structure;
+
+use sum_kes_structure::{
+    build_expected_sum_tree, compute_period_path, inspect_sum_signature,
+    sum_signature_size_for_level,
+};
+
 #[derive(Deserialize)]
 struct SumKesVectors {
     levels: Vec<SumKesLevel>,
@@ -58,14 +66,26 @@ fn exercise_sum_level<K>(level: &SumKesLevel)
 where
     K: KesAlgorithm<Context = ()>,
 {
+    let depth = usize::from(level.level);
+    let expected_signature_len = sum_signature_size_for_level(depth);
+
     assert_eq!(
         level.total_periods,
         K::total_periods(),
         "total periods mismatch"
     );
 
+    assert_eq!(
+        K::SIGNATURE_SIZE,
+        expected_signature_len,
+        "signature size constant mismatch for level {}",
+        level.level
+    );
+
     for vector in &level.vectors {
         let seed_bytes = decode_seed(&vector.seed, K::SEED_SIZE);
+        let expected_tree = build_expected_sum_tree(depth, &seed_bytes);
+
         let mut signing_key =
             K::gen_key_kes_from_seed_bytes(&seed_bytes).expect("sum signing key generation");
         let verification_key =
@@ -74,8 +94,14 @@ where
         let vk_bytes = K::raw_serialize_verification_key_kes(&verification_key);
         assert_eq!(
             vector.verification_key,
-            encode_upper(vk_bytes),
+            encode_upper(&vk_bytes),
             "verification key mismatch for {}",
+            vector.test_name
+        );
+        assert_eq!(
+            expected_tree.vk_bytes.as_slice(),
+            vk_bytes.as_slice(),
+            "verification key root mismatch for {}",
             vector.test_name
         );
 
@@ -108,6 +134,16 @@ where
                         .expect("sum signature deserialise");
                     K::verify_kes(&(), &verification_key, period, &message, &deserialised)
                         .expect("sum verification");
+
+                    assert_eq!(
+                        raw_signature.len(),
+                        expected_signature_len,
+                        "raw signature length mismatch at period {period} for {}",
+                        vector.test_name
+                    );
+
+                    let path = compute_period_path(period, depth);
+                    inspect_sum_signature(depth, &raw_signature, &expected_tree, &path);
 
                     tracked.next();
                 }
