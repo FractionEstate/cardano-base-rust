@@ -169,6 +169,14 @@ pub mod kes {
             name: "compact_sum_kes_test_vectors.json",
             contents: include_str!("../test_vectors/compact_sum_kes_test_vectors.json"),
         },
+        TestVector {
+            name: "sum_kes_period_evolution_vectors.json",
+            contents: include_str!("../test_vectors/sum_kes_period_evolution_vectors.json"),
+        },
+        TestVector {
+            name: "compact_sum_kes_period_evolution_vectors.json",
+            contents: include_str!("../test_vectors/compact_sum_kes_period_evolution_vectors.json"),
+        },
     ];
 
     /// Look up a KES test vector by its file name.

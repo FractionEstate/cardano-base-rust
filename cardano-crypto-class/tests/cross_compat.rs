@@ -9,16 +9,8 @@ mod cross_compat {
     use cardano_crypto_class::Ed25519;
     use cardano_crypto_class::dsign::DsignAlgorithm;
     use cardano_crypto_class::seed::mk_seed_from_bytes;
-    use serde::{Deserialize, Serialize};
+    use serde::Deserialize;
     use std::fs;
-
-    /// CBOR specification for a crypto type
-    #[derive(Debug, Deserialize)]
-    struct CborSpec {
-        cbor_type: String,
-        length: usize,
-        total_encoded: usize,
-    }
 
     /// Test vector for cross-compatibility testing
     #[derive(Debug, Deserialize)]
@@ -26,18 +18,22 @@ mod cross_compat {
         name: String,
         seed: String,
         message: String,
-        description: String,
+        #[serde(rename = "description")]
+        _description: String,
         expected_vk_cbor: Option<String>,
         expected_sig_cbor: Option<String>,
-        notes: String,
+        #[serde(rename = "notes")]
+        _notes: String,
     }
 
     /// Test vector file structure
     #[derive(Debug, Deserialize)]
     struct TestVectorFile {
-        description: String,
+        #[serde(rename = "description")]
+        _description: String,
         algorithm: String,
-        cbor_spec: serde_json::Value,
+        #[serde(rename = "cbor_spec")]
+        _cbor_spec: serde_json::Value,
         vectors: Vec<TestVector>,
     }
 
@@ -125,7 +121,6 @@ mod cross_compat {
     }
 
     #[test]
-    #[ignore] // Validated with Rust implementation - enable when comparing with Haskell cardano-base
     fn test_ed25519_cross_compat_with_haskell() {
         let vectors = load_test_vectors("ed25519_vectors.json");
         assert_eq!(vectors.algorithm, "Ed25519");
@@ -190,10 +185,12 @@ mod cross_compat {
             }
         }
 
-        println!("\nCross-Compatibility Test Results:");
-        println!("  Passed:  {}", passed);
-        println!("  Skipped: {} (no expected values)", skipped);
-        println!("  Failed:  {}", failed.len());
+        if skipped > 0 || !failed.is_empty() {
+            println!("\nCross-Compatibility Test Results:");
+            println!("  Passed:  {}", passed);
+            println!("  Skipped: {} (no expected values)", skipped);
+            println!("  Failed:  {}", failed.len());
+        }
 
         if !failed.is_empty() {
             println!("\nFailures:");

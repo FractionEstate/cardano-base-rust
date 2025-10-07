@@ -169,9 +169,20 @@ pub trait KesAlgorithm {
     /// * `H` - The hash algorithm to use (must implement `KesHashAlgorithm`)
     ///
     /// # Example
-    /// ```ignore
-    /// use cardano_crypto_class::{Blake2b256, Sum1Kes, KesAlgorithm};
-    /// let vk_hash = Sum1Kes::hash_verification_key_kes::<Blake2b256>(&vk);
+    /// ```rust
+    /// use cardano_crypto_class::kes::{hash::Blake2b256, KesAlgorithm, Sum1Kes};
+    /// use cardano_crypto_class::seed::Seed;
+    ///
+    /// // Generate a deterministic signing key and derive its verification key.
+    /// let seed_bytes = vec![0u8; Sum1Kes::SEED_SIZE];
+    /// let seed = Seed::from_bytes(seed_bytes);
+    /// let signing_key = Sum1Kes::gen_key_kes(&seed).expect("signing key generation");
+    /// let verification_key =
+    ///     Sum1Kes::derive_verification_key(&signing_key).expect("verification key derivation");
+    ///
+    /// // Hash the verification key using Blake2b256.
+    /// let digest = Sum1Kes::hash_verification_key_kes::<Blake2b256>(&verification_key);
+    /// assert_eq!(digest.len(), 32);
     /// ```
     fn hash_verification_key_kes<H: hash::KesHashAlgorithm>(
         verification_key: &Self::VerificationKey,

@@ -104,12 +104,36 @@ struct SumKesVectorEntry {
     tracked_periods: Vec<PeriodVectorEntry>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 struct PeriodVectorEntry {
     period: u64,
     message: String,
     signature: String,
     raw_signature: String,
+}
+
+#[derive(Serialize)]
+struct PeriodEvolutionVectors {
+    description: &'static str,
+    algorithm: &'static str,
+    source: &'static str,
+    levels: Vec<PeriodEvolutionLevel>,
+}
+
+#[derive(Serialize)]
+struct PeriodEvolutionLevel {
+    level: u8,
+    total_periods: u64,
+    vectors: Vec<PeriodEvolutionEntry>,
+}
+
+#[derive(Serialize)]
+struct PeriodEvolutionEntry {
+    test_name: String,
+    seed: String,
+    description: String,
+    verification_key: String,
+    periods: Vec<PeriodVectorEntry>,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -119,6 +143,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let compact_vectors = build_compact_single_kes_vectors(&definitions)?;
     let sum_vectors = build_sum_kes_vectors(&definitions)?;
     let compact_sum_vectors = build_compact_sum_kes_vectors(&definitions)?;
+    let sum_period_evolution_vectors = build_sum_kes_period_evolution_vectors(&definitions)?;
+    let compact_sum_period_evolution_vectors =
+        build_compact_sum_kes_period_evolution_vectors(&definitions)?;
 
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let output_dir = manifest_dir.join("test_vectors");
@@ -129,18 +156,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let compact_single_path = output_dir.join("compact_single_kes_test_vectors.json");
     let sum_path = output_dir.join("sum_kes_test_vectors.json");
     let compact_sum_path = output_dir.join("compact_sum_kes_test_vectors.json");
+    let sum_period_path = output_dir.join("sum_kes_period_evolution_vectors.json");
+    let compact_sum_period_path = output_dir.join("compact_sum_kes_period_evolution_vectors.json");
 
     write_json(&single_path, &single_vectors)?;
     write_json(&compact_single_path, &compact_vectors)?;
     write_json(&sum_path, &sum_vectors)?;
     write_json(&compact_sum_path, &compact_sum_vectors)?;
+    write_json(&sum_period_path, &sum_period_evolution_vectors)?;
+    write_json(
+        &compact_sum_period_path,
+        &compact_sum_period_evolution_vectors,
+    )?;
 
     println!(
-        "Generated {}, {}, {}, and {}",
+        "Generated {}, {}, {}, {}, {}, and {}",
         single_path.display(),
         compact_single_path.display(),
         sum_path.display(),
-        compact_sum_path.display()
+        compact_sum_path.display(),
+        sum_period_path.display(),
+        compact_sum_period_path.display()
     );
 
     Ok(())
@@ -361,52 +397,11 @@ where
     let mut vectors = Vec::with_capacity(definitions.len());
 
     for (index, def) in definitions.iter().enumerate() {
-        let seed_bytes = decode_seed(def.seed_hex)?;
-        let base_message = decode_hex(def.message_hex)?;
-
-        let signing_key = K::gen_key_kes_from_seed_bytes(&seed_bytes)?;
-        let verification_key = K::derive_verification_key(&signing_key)?;
-        let vk_bytes = K::raw_serialize_verification_key_kes(&verification_key);
-
-        let mut tracked = Vec::new();
-        let mut period = 0u64;
-        let mut current_key = signing_key;
-
-        loop {
-            if tracked_set.contains(&period) {
-                let message_bytes = message_for_period(&base_message, period);
-                let signature = K::sign_kes(&(), period, &message_bytes, &current_key)?;
-                let raw_signature = K::raw_serialize_signature_kes(&signature);
-
-                K::verify_kes(&(), &verification_key, period, &message_bytes, &signature)?;
-
-                let deserialised =
-                    K::raw_deserialize_signature_kes(&raw_signature).expect("signature decode");
-                K::verify_kes(
-                    &(),
-                    &verification_key,
-                    period,
-                    &message_bytes,
-                    &deserialised,
-                )?;
-
-                tracked.push(PeriodVectorEntry {
-                    period,
-                    message: encode_upper(&message_bytes),
-                    signature: encode_upper(&raw_signature),
-                    raw_signature: encode_upper(&raw_signature),
-                });
-            }
-
-            if period + 1 == total_periods {
-                K::forget_signing_key_kes(current_key);
-                break;
-            }
-
-            current_key = K::update_kes(&(), current_key, period)?
-                .ok_or_else(|| format!("unexpected key expiry at period {period}"))?;
-            period += 1;
-        }
+        let (verification_key, all_periods) = generate_period_entries::<K>(def)?;
+        let tracked = all_periods
+            .into_iter()
+            .filter(|entry| tracked_set.contains(&entry.period))
+            .collect();
 
         vectors.push(SumKesVectorEntry {
             test_name: format!("level{}_kes_vector_{}", level, index + 1),
@@ -415,7 +410,7 @@ where
                 "{} – tracked periods {:?}",
                 def.description, &tracked_periods
             ),
-            verification_key: encode_upper(&vk_bytes),
+            verification_key,
             tracked_periods: tracked,
         });
     }
@@ -425,6 +420,175 @@ where
         total_periods,
         vectors,
     })
+}
+
+fn build_sum_kes_period_evolution_vectors(
+    definitions: &[VectorDefinition],
+) -> Result<PeriodEvolutionVectors, Box<dyn std::error::Error>> {
+    let hierarchical_defs: Vec<_> = definitions.iter().take(2).cloned().collect();
+    let mut levels = Vec::new();
+
+    levels.push(build_period_evolution_level::<Sum1Kes>(
+        1,
+        &hierarchical_defs,
+    )?);
+    levels.push(build_period_evolution_level::<Sum2Kes>(
+        2,
+        &hierarchical_defs,
+    )?);
+    levels.push(build_period_evolution_level::<Sum3Kes>(
+        3,
+        &hierarchical_defs,
+    )?);
+    levels.push(build_period_evolution_level::<Sum4Kes>(
+        4,
+        &hierarchical_defs,
+    )?);
+    levels.push(build_period_evolution_level::<Sum5Kes>(
+        5,
+        &hierarchical_defs,
+    )?);
+    levels.push(build_period_evolution_level::<Sum6Kes>(
+        6,
+        &hierarchical_defs,
+    )?);
+    levels.push(build_period_evolution_level::<Sum7Kes>(
+        7,
+        &hierarchical_defs,
+    )?);
+
+    Ok(PeriodEvolutionVectors {
+        description: "SumKES full period evolution sequences",
+        algorithm: "SumKES-Ed25519",
+        source: "Generated by cardano-test-vectors/src/bin/generate_kes_vectors.rs",
+        levels,
+    })
+}
+
+fn build_compact_sum_kes_period_evolution_vectors(
+    definitions: &[VectorDefinition],
+) -> Result<PeriodEvolutionVectors, Box<dyn std::error::Error>> {
+    let hierarchical_defs: Vec<_> = definitions.iter().take(2).cloned().collect();
+    let mut levels = Vec::new();
+
+    levels.push(build_period_evolution_level::<CompactSum1Kes>(
+        1,
+        &hierarchical_defs,
+    )?);
+    levels.push(build_period_evolution_level::<CompactSum2Kes>(
+        2,
+        &hierarchical_defs,
+    )?);
+    levels.push(build_period_evolution_level::<CompactSum3Kes>(
+        3,
+        &hierarchical_defs,
+    )?);
+    levels.push(build_period_evolution_level::<CompactSum4Kes>(
+        4,
+        &hierarchical_defs,
+    )?);
+    levels.push(build_period_evolution_level::<CompactSum5Kes>(
+        5,
+        &hierarchical_defs,
+    )?);
+    levels.push(build_period_evolution_level::<CompactSum6Kes>(
+        6,
+        &hierarchical_defs,
+    )?);
+    levels.push(build_period_evolution_level::<CompactSum7Kes>(
+        7,
+        &hierarchical_defs,
+    )?);
+
+    Ok(PeriodEvolutionVectors {
+        description: "CompactSumKES full period evolution sequences",
+        algorithm: "CompactSumKES-Ed25519",
+        source: "Generated by cardano-test-vectors/src/bin/generate_kes_vectors.rs",
+        levels,
+    })
+}
+
+fn build_period_evolution_level<K>(
+    level: u8,
+    definitions: &[VectorDefinition],
+) -> Result<PeriodEvolutionLevel, Box<dyn std::error::Error>>
+where
+    K: KesAlgorithm<Context = ()>,
+{
+    let total_periods = K::total_periods();
+    let mut vectors = Vec::with_capacity(definitions.len());
+
+    for (index, def) in definitions.iter().enumerate() {
+        let (verification_key, periods) = generate_period_entries::<K>(def)?;
+        vectors.push(PeriodEvolutionEntry {
+            test_name: format!("level{}_kes_vector_{}", level, index + 1),
+            seed: def.seed_hex.to_owned(),
+            description: format!(
+                "{} – full period coverage 0..{}",
+                def.description,
+                total_periods.saturating_sub(1)
+            ),
+            verification_key,
+            periods,
+        });
+    }
+
+    Ok(PeriodEvolutionLevel {
+        level,
+        total_periods,
+        vectors,
+    })
+}
+
+fn generate_period_entries<K>(
+    def: &VectorDefinition,
+) -> Result<(String, Vec<PeriodVectorEntry>), Box<dyn std::error::Error>>
+where
+    K: KesAlgorithm<Context = ()>,
+{
+    let seed_bytes = decode_seed(def.seed_hex)?;
+    let base_message = decode_hex(def.message_hex)?;
+
+    let mut signing_key = K::gen_key_kes_from_seed_bytes(&seed_bytes)?;
+    let verification_key = K::derive_verification_key(&signing_key)?;
+    let vk_bytes = K::raw_serialize_verification_key_kes(&verification_key);
+    let total_periods = K::total_periods();
+
+    let mut periods = Vec::with_capacity(total_periods as usize);
+
+    for period in 0..total_periods {
+        let message_bytes = message_for_period(&base_message, period);
+        let signature = K::sign_kes(&(), period, &message_bytes, &signing_key)?;
+        let raw_signature = K::raw_serialize_signature_kes(&signature);
+
+        K::verify_kes(&(), &verification_key, period, &message_bytes, &signature)?;
+
+        let deserialised =
+            K::raw_deserialize_signature_kes(&raw_signature).expect("signature decode");
+        K::verify_kes(
+            &(),
+            &verification_key,
+            period,
+            &message_bytes,
+            &deserialised,
+        )?;
+
+        periods.push(PeriodVectorEntry {
+            period,
+            message: encode_upper(&message_bytes),
+            signature: encode_upper(&raw_signature),
+            raw_signature: encode_upper(&raw_signature),
+        });
+
+        if period + 1 != total_periods {
+            signing_key = K::update_kes(&(), signing_key, period)?
+                .ok_or_else(|| format!("unexpected key expiry at period {period}"))?;
+        }
+    }
+
+    K::forget_signing_key_kes(signing_key);
+
+    Ok((encode_upper(&vk_bytes), periods))
 }
 
 fn select_periods(total_periods: u64) -> Vec<u64> {

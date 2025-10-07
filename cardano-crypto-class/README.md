@@ -35,11 +35,11 @@ Cardano-specific Key Evolving Signatures (KES).
 
 | Algorithm | Status | Notes |
 |-----------|--------|-------|
-| **SingleKes** | ✅ Boundary-tested | Expiry enforced via `tests/kes_boundary.rs`; out-of-range signing returns `KesError::PeriodOutOfRange`. Cross-language vectors are still to be captured. |
-| **CompactSingleKes** | ✅ Boundary-tested | Verification keys embedded in signatures are checked against derived keys and expiry logic matches Haskell. |
-| **Sum{0-7}Kes** | 🟡 Targeted tests | Exercised indirectly through CompactSum vectors; dedicated Sum harnesses remain a TODO. |
+| **SingleKes** | ✅ Vector + boundary | `tests/kes_single_vectors.rs` consumes JSON fixtures (serde-gated) while `tests/kes_boundary.rs` enforces expiry and out-of-range errors. Cross-language vectors are still to be captured. |
+| **CompactSingleKes** | ✅ Vector + boundary | `tests/kes_compact_single_vectors.rs` validates embedded verification keys alongside boundary checks. |
+| **Sum{0-7}Kes** | ✅ Vector harness | `tests/kes_sum_vectors.rs` walks Rust-generated fixtures to verify signing, verification, and evolution across all tracked periods. |
 | **CompactSum{1-7}Kes** | ✅ Vector parity | Serde-gated fixtures in `tests/compact_sum_kes_vectors.rs` assert byte-for-byte signatures for levels 1–7, including evolution and tamper checks. |
-| **Forward security** | 🟡 Planned | Boundary suite verifies tamper rejection; multi-level forward-security regression is scheduled in Phase 05 follow-up work. |
+| **Forward security** | ✅ Regression in place | `tests/kes_forward_security.rs` now walks every period for `Sum4Kes` and `CompactSum4Kes`, re-verifies historic signatures, rejects stale-period signing after each evolution, and asserts that rewind attempts fail with the expected errors. |
 
 Key takeaways from the latest DSIGN audit:
 
@@ -69,11 +69,12 @@ The Ed25519 harness (`tests/dsign_ed25519_vectors.rs`) exercises:
 Additional DSIGN harnesses for ECDSA and Schnorr will live alongside the
 Ed25519 suite as Phase 04 progresses.
 
-The feature-gated test `tests/compact_sum_kes_vectors.rs` consumes the shared
-CompactSumKES vectors to ensure levels 1–7 remain byte-for-byte compatible with
-the hash reconstruction logic. Enable the `serde` feature to run it:
+Serde-gated vector harnesses consume the shared JSON fixtures:
 
 ```bash
+cargo test -p cardano-crypto-class --features serde --test kes_single_vectors
+cargo test -p cardano-crypto-class --features serde --test kes_compact_single_vectors
+cargo test -p cardano-crypto-class --features serde --test kes_sum_vectors
 cargo test -p cardano-crypto-class --features serde --test compact_sum_kes_vectors
 ```
 
@@ -84,6 +85,12 @@ suite:
 
 ```bash
 cargo test -p cardano-crypto-class --test kes_boundary
+```
+
+Forward-security behaviour is covered by:
+
+```bash
+cargo test -p cardano-crypto-class --test kes_forward_security
 ```
 
 ## Usage

@@ -83,6 +83,26 @@ struct SumKesPeriodEntry {
     raw_signature: String,
 }
 
+#[derive(Deserialize)]
+struct PeriodEvolutionVectors {
+    levels: Vec<PeriodEvolutionLevel>,
+}
+
+#[derive(Deserialize)]
+struct PeriodEvolutionLevel {
+    level: u8,
+    total_periods: u64,
+    vectors: Vec<PeriodEvolutionVectorEntry>,
+}
+
+#[derive(Deserialize)]
+struct PeriodEvolutionVectorEntry {
+    test_name: String,
+    seed: String,
+    verification_key: String,
+    periods: Vec<SumKesPeriodEntry>,
+}
+
 #[test]
 fn single_kes_vectors_match_generated_data() {
     let fixture = kes::get("single_kes_test_vectors.json").expect("single KES vectors present");
@@ -249,6 +269,48 @@ fn compact_sum_kes_vectors_cover_all_levels() {
     }
 }
 
+#[test]
+fn sum_kes_period_evolution_vectors_cover_full_sequences() {
+    let fixture = kes::get("sum_kes_period_evolution_vectors.json")
+        .expect("sum KES period evolution vectors present");
+    let parsed: PeriodEvolutionVectors =
+        serde_json::from_str(fixture).expect("valid sum KES period evolution JSON");
+
+    for level in &parsed.levels {
+        match level.level {
+            1 => exercise_period_evolution_level::<Sum1Kes>(level),
+            2 => exercise_period_evolution_level::<Sum2Kes>(level),
+            3 => exercise_period_evolution_level::<Sum3Kes>(level),
+            4 => exercise_period_evolution_level::<Sum4Kes>(level),
+            5 => exercise_period_evolution_level::<Sum5Kes>(level),
+            6 => exercise_period_evolution_level::<Sum6Kes>(level),
+            7 => exercise_period_evolution_level::<Sum7Kes>(level),
+            other => panic!("unexpected SumKES evolution level {other}"),
+        }
+    }
+}
+
+#[test]
+fn compact_sum_kes_period_evolution_vectors_cover_full_sequences() {
+    let fixture = kes::get("compact_sum_kes_period_evolution_vectors.json")
+        .expect("compact sum KES period evolution vectors present");
+    let parsed: PeriodEvolutionVectors =
+        serde_json::from_str(fixture).expect("valid compact sum KES period evolution JSON");
+
+    for level in &parsed.levels {
+        match level.level {
+            1 => exercise_period_evolution_level::<CompactSum1Kes>(level),
+            2 => exercise_period_evolution_level::<CompactSum2Kes>(level),
+            3 => exercise_period_evolution_level::<CompactSum3Kes>(level),
+            4 => exercise_period_evolution_level::<CompactSum4Kes>(level),
+            5 => exercise_period_evolution_level::<CompactSum5Kes>(level),
+            6 => exercise_period_evolution_level::<CompactSum6Kes>(level),
+            7 => exercise_period_evolution_level::<CompactSum7Kes>(level),
+            other => panic!("unexpected CompactSumKES evolution level {other}"),
+        }
+    }
+}
+
 fn exercise_sum_level<K>(level: &SumKesLevel)
 where
     K: KesAlgorithm<Context = ()>,
@@ -314,6 +376,84 @@ where
         }
 
         assert!(period_entries.next().is_none(), "unused period entries");
+    }
+}
+
+fn exercise_period_evolution_level<K>(level: &PeriodEvolutionLevel)
+where
+    K: KesAlgorithm<Context = ()>,
+{
+    assert_eq!(level.total_periods, K::total_periods());
+
+    for vector in &level.vectors {
+        assert_eq!(
+            vector.periods.len(),
+            level.total_periods as usize,
+            "expected {} periods for level {} vector {}",
+            level.total_periods,
+            level.level,
+            vector.test_name
+        );
+
+        let seed_bytes = decode_hex(&vector.seed);
+        let mut signing_key =
+            K::gen_key_kes_from_seed_bytes(&seed_bytes).expect("period evolution signing key");
+        let verification_key =
+            K::derive_verification_key(&signing_key).expect("period evolution verification key");
+
+        let vk_bytes = K::raw_serialize_verification_key_kes(&verification_key);
+        assert_eq!(
+            vector.verification_key,
+            encode_upper(vk_bytes),
+            "verification key mismatch for level {} vector {}",
+            level.level,
+            vector.test_name
+        );
+
+        for (index, expected) in vector.periods.iter().enumerate() {
+            assert_eq!(
+                expected.period, index as u64,
+                "period ordering mismatch for level {} vector {}",
+                level.level, vector.test_name
+            );
+
+            let message = decode_hex(&expected.message);
+            assert_eq!(
+                expected.signature, expected.raw_signature,
+                "signature/raw mismatch at level {} period {} vector {}",
+                level.level, expected.period, vector.test_name
+            );
+            let expected_signature = decode_hex(&expected.raw_signature);
+
+            let signature = K::sign_kes(&(), expected.period, &message, &signing_key)
+                .expect("period evolution signing");
+            let raw_signature = K::raw_serialize_signature_kes(&signature);
+
+            assert_eq!(
+                expected_signature, raw_signature,
+                "signature mismatch at level {} period {} vector {}",
+                level.level, expected.period, vector.test_name
+            );
+
+            let deserialised = K::raw_deserialize_signature_kes(&raw_signature)
+                .expect("period evolution signature deserialise");
+            K::verify_kes(
+                &(),
+                &verification_key,
+                expected.period,
+                &message,
+                &deserialised,
+            )
+            .expect("period evolution verification");
+
+            if index + 1 != level.total_periods as usize {
+                signing_key = K::update_kes(&(), signing_key, expected.period)
+                    .expect("period evolution key update")
+                    .expect("period evolution key remains valid");
+            }
+        }
+
+        K::forget_signing_key_kes(signing_key);
     }
 }
 

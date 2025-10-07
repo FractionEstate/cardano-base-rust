@@ -179,7 +179,7 @@ mod vrf_cbor_tests {
 
     #[test]
     fn test_simple_vrf_verification_key_cbor_roundtrip() {
-        use cardano_crypto_class::seed::{Seed, mk_seed_from_bytes};
+        use cardano_crypto_class::seed::Seed;
         use cardano_crypto_class::vrf::VRFAlgorithm;
         use cardano_crypto_class::vrf::simple::{SimpleVRF, gen_keypair};
 
@@ -202,7 +202,7 @@ mod vrf_cbor_tests {
 
     #[test]
     fn test_simple_vrf_proof_cbor_roundtrip() {
-        use cardano_crypto_class::seed::{Seed, mk_seed_from_bytes};
+        use cardano_crypto_class::seed::Seed;
         use cardano_crypto_class::vrf::VRFAlgorithm;
         use cardano_crypto_class::vrf::simple::{SimpleVRF, gen_keypair};
 

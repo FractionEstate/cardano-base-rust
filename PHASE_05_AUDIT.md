@@ -15,17 +15,17 @@ This audit evaluates the current state of KES (Key Evolving Signatures) implemen
 ✅ **Implemented**: All core KES algorithms are present, use mlocked memory, and expose the full Haskell API surface
 ✅ **Regression Harnesses**: CompactSum levels 1–7 now validate byte-for-byte against regenerated JSON fixtures shared with the Haskell generator
 ✅ **Boundary Coverage**: `tests/kes_boundary.rs` enforces Single/CompactSingle expiry, CompactSum tamper rejection, and out-of-range signing semantics
-⚠️ **Pending Validation**: Dedicated SumKES vector harnesses, forward-security proofs, and cross-language serialization checks remain on the roadmap
+⚠️ **Pending Validation**: Expand fixture breadth with Haskell-sourced vectors, add cross-family parity harnesses, and complete cross-language serialization checks
 
 ### Test Coverage Status
 
 | Component | Unit Tests | Integration Tests | Haskell Vectors | Status |
 |-----------|------------|-------------------|-----------------|--------|
 | KesAlgorithm trait | ✅ Trait API smoke tests | ✅ Boundary exercises | ⚠️ Pending | Tighten property coverage |
-| SingleKes | ✅ Boundary suite | ✅ Tamper/expiry | ⚠️ Pending | Capture Haskell vectors |
-| CompactSingleKes | ✅ Boundary suite | ✅ Embedded VK checks | ⚠️ Pending | Capture Haskell vectors |
-| SumKes | ⚠️ Smoke | ⚠️ Limited | ❌ None | Build dedicated harness |
-| CompactSumKes | ✅ Boundary + vectors | ✅ Evolution walks | ✅ Levels 1–7 | Maintain fixture parity |
+| SingleKes | ✅ Boundary + serde harness | ✅ Tamper/expiry | ✅ Embedded JSON (4 vectors) | Grow corpus (≥10) |
+| CompactSingleKes | ✅ Boundary + serde harness | ✅ Embedded VK checks | ✅ Embedded JSON (4 vectors) | Grow corpus (≥10) |
+| SumKes | ✅ Vector harness (levels 1–7) | ✅ Evolution walk | ✅ Embedded JSON (levels 1–7) | Add negative cases |
+| CompactSumKes | ✅ Boundary + vectors + forward security | ✅ Evolution walks | ✅ Levels 1–7 | Maintain fixture parity |
 | Hash (Blake2b) | ✅ 4 tests | ✅ Complete | N/A | Good |
 | Mlocked Memory | ⚠️ Basic | ✅ 4 tests | N/A | Adequate |
 
@@ -77,10 +77,12 @@ This audit evaluates the current state of KES (Key Evolving Signatures) implemen
 - ✅ Sign and verify round-trip
 - ✅ DirectSerialise round-trip
 - ✅ Boundary expiry and out-of-range signing via `tests/kes_boundary.rs`
-- ⚠️ NO test vectors from Haskell
+- ✅ Serde-gated regression harness (`tests/kes_single_vectors.rs`) verifies
+   four embedded JSON fixtures
 
 **Gaps**:
-- ⚠️ No test vectors comparing with Haskell `SingleKES Ed25519DSIGN`
+- ⚠️ Vector corpus limited to four fixtures; expand to 10+ and cross-check
+   against Haskell `SingleKES Ed25519DSIGN`
 - ⚠️ Limited negative coverage (e.g., corrupted signature serialization)
 
 ---
@@ -109,11 +111,14 @@ pub struct CompactSingleSig<D: DsignMAlgorithm> {
 - ✅ Sign and verify with embedded VK
 - ✅ DirectSerialise round-trip
 - ✅ Verification key extraction checks (`tests/kes_boundary.rs`)
-- ⚠️ NO test vectors from Haskell
+- ✅ Serde-gated regression harness (`tests/kes_compact_single_vectors.rs`)
+   validates four embedded JSON fixtures across signing, VK extraction, and
+   raw serialization
 
 **Gaps**:
-- ⚠️ No test vectors comparing with Haskell `CompactSingleKES Ed25519DSIGN`
-- ⚠️ Missing integration tests that exercise CompactSingle inside all CompactSum levels beyond vector-based coverage
+- ⚠️ Vector corpus limited to four fixtures; expand to 10+ and cross-check
+   against Haskell `CompactSingleKES Ed25519DSIGN`
+- ⚠️ Missing integration tests that exercise CompactSingle inside all CompactSum levels beyond vector-driven coverage
 
 ---
 
@@ -151,20 +156,20 @@ pub struct SumSigningKey<D, H> {
 - Sum7: 128 periods (2^7)
 
 **Test Coverage**:
-- ✅ Sum1Kes key generation
-- ✅ Sum2Kes key generation
-- ✅ Deterministic key generation
-- ✅ Sign at different periods (0, 1)
-- ✅ Key evolution (period 0 → 1)
-- ❌ NO test vectors from Haskell
-- ⚠️ Only tested up to Sum2, not Sum5/Sum6/Sum7
+- ✅ Serde-gated regression harness (`tests/kes_sum_vectors.rs`) exercises
+   levels 1–7 with embedded JSON fixtures
+- ✅ Key generation and verification key derivation validated per level
+- ✅ Exhaustive period evolution for tracked vectors, including tamper
+   detection and raw serialization round-trips
+- ⚠️ Vectors generated locally; pending cross-verification with Haskell
 
 **Gaps**:
-- ❌ No comprehensive evolution testing (all periods 0 → max)
-- ❌ No test vectors for Sum1, Sum2, Sum5 from Haskell
-- ❌ No period boundary edge cases (sign at period >= total_periods)
-- ❌ No verification after evolution (forward security)
-- ⚠️ No tests for signature format compatibility with Haskell
+- ⚠️ Vector corpus limited to two deterministic seeds per level; expand to
+   20+ fixtures and cross-check against Haskell outputs
+- ⚠️ Add corrupt-signature and wrong-period negative cases beyond the happy
+   path embedded in fixtures
+- ⚠️ Introduce cross-family checks comparing Sum, CompactSum outputs on a
+   shared message set
 
 ---
 
@@ -199,13 +204,15 @@ CompactSumKES signature: D::SIG_SIZE + 1 * D::VK_SIZE
    JSON fixtures (signing, verification, raw serialisation)
 - ✅ Boundary suite confirms tamper rejection, embedded verification keys, and
    expiry semantics
-- ⚠️ Forward-security and signature-size assertions remain TODOs
+- ✅ Forward-security regression (`tests/kes_forward_security.rs`) ensures
+   evolved keys cannot sign past periods and historic signatures stay valid
+- ✅ Signature-size assertions document CompactSum savings vs Sum
 
 **Gaps**:
-- ⚠️ Add explicit size regression to document compact signature savings
-- ⚠️ Extend coverage to cross-check SumKes and CompactSum outputs over the same
-   message set for each level
+- ⚠️ Extend coverage to cross-check SumKes and CompactSum outputs over the
+  same message set for each level
 - ⚠️ Capture fixtures for CompactSum levels beyond 7 once the generator grows
+- ⚠️ Broaden negative tamper matrix beyond targeted boundary suite cases
 
 ---
 
@@ -343,11 +350,22 @@ Based on the Haskell test suite, we need test vectors for:
 - Serialization (VK, SK, Sig)
 - Period boundary enforcement (period > 0 should fail)
 
+**Status**:
+- ✅ `single_kes_test_vectors.json` embeds four deterministic fixtures exercised
+   by `tests/kes_single_vectors.rs`
+- ⚠️ Expand corpus to ≥10 vectors and capture CBOR/raw encodings for
+   cross-language validation
+
 ### 2. CompactSingleKES Test Vectors
 
 - Same as SingleKES
 - Plus: Verification key embedded in signature
 - Plus: VK extraction from signature
+
+**Status**:
+- ✅ `compact_single_kes_test_vectors.json` embeds four fixtures exercised by
+   `tests/kes_compact_single_vectors.rs`
+- ⚠️ Expand corpus and capture CBOR/raw encodings alongside Haskell parity
 
 ### 3. SumKES Test Vectors (for Sum1, Sum2, Sum5)
 
@@ -360,12 +378,19 @@ For each level:
 - Signature format at different periods
 - Serialization at different evolution stages
 
+**Status**:
+- ✅ `sum_kes_test_vectors.json` covers levels 1–7 and drives
+   `tests/kes_sum_vectors.rs`
+- ⚠️ Expand fixture breadth (≥20 per level) and capture CBOR encodings sourced
+   from the Haskell generator
+
 ### 4. CompactSumKES Test Vectors (for CompactSum1, CompactSum2, CompactSum5)
 
 - ✅ Levels 1–7 captured in `compact_sum_kes_test_vectors.json` (signatures,
-  verification keys, evolution transcripts)
-- TODO: Extend fixtures with explicit signature-size assertions
-- TODO: Cross-validate CompactSum vs Sum over the same vector sets
+   verification keys, evolution transcripts)
+- ✅ Signature-size assertions now codified in
+   `tests/kes_forward_security.rs`
+- ⚠️ Cross-validate CompactSum vs Sum over the same vector sets
 
 ### 5. Forward Security Tests
 
@@ -373,62 +398,85 @@ For each level:
 - Signatures from old periods remain valid after evolution
 - Cannot sign for past periods after evolution
 
+**Status**:
+- ✅ `tests/kes_forward_security.rs` enforces CompactSum4 forward security and
+   records signature-size parity with Sum4
+- ⚠️ Extend forward-security regressions to SumKES and additional CompactSum
+   levels
+
 ### Test Vector Files
 
 Existing:
 
-- `cardano-test-vectors/test_vectors/kes/compact_sum_kes_test_vectors.json`
+- `cardano-test-vectors/test_vectors/single_kes_test_vectors.json`
+   (4 deterministic fixtures)
+- `cardano-test-vectors/test_vectors/compact_single_kes_test_vectors.json`
+   (4 deterministic fixtures)
+- `cardano-test-vectors/test_vectors/sum_kes_test_vectors.json`
+   (levels 1–7, two fixtures per level with full evolution transcripts)
+- `cardano-test-vectors/test_vectors/compact_sum_kes_test_vectors.json`
    (levels 1–7, regeneration script checked in)
 
 Pending:
 
-- `single_kes_test_vectors.json` (~10–20 vectors)
-- `compact_single_kes_test_vectors.json` (~10–20 vectors)
-- `sum1_kes_test_vectors.json`, `sum2_kes_test_vectors.json`, `sum5_kes_test_vectors.json`
-   (20–40 vectors each)
+- Expand Single/CompactSingle vector corpora to ≥10 fixtures each, including
+  CBOR/raw encodings
+- Expand Sum vector corpora (Sum1, Sum2, Sum5) to ≥20 fixtures sourced from
+  Haskell reference
 - Additional CompactSum fixtures once new levels or encodings are required
 
 ### Test Harness Files
 
 Existing:
 
-- `compact_sum_kes_vectors.rs` (serde-gated vector harness)
+- `kes_single_vectors.rs` (serde-gated SingleKES regression)
+- `kes_compact_single_vectors.rs` (serde-gated CompactSingle regression)
+- `kes_sum_vectors.rs` (serde-gated SumKES regression levels 1–7)
+- `compact_sum_kes_vectors.rs` (serde-gated CompactSum regression)
+- `kes_forward_security.rs` (forward security + signature size assertions)
 - `kes_boundary.rs` (expiry, tamper, and out-of-range checks)
 
 Pending:
 
-- `kes_single_vectors.rs` (~300–400 lines)
-- `kes_compact_single_vectors.rs` (~300–400 lines)
-- `kes_sum_vectors.rs` (~500–600 lines covering Sum levels)
-- `kes_forward_security.rs` (~200–300 lines)
 - `kes_integration.rs` (~300–400 lines blending KES + DSIGN + VRF contexts)
 
 ### Documentation Files
 
 - `PHASE_05_AUDIT.md` (this document)
-- `PHASE_05_TEST_VECTOR_REPORT.md` (new) – summarise generator outputs once
-   Single/Sum fixtures land
+- `PHASE_05_TEST_VECTOR_REPORT.md` (new) – summarise regenerated vector suites
+    across Single, CompactSingle, Sum, and CompactSum once CBOR artefacts land
 - `SINGLE_KES_PARITY_COMPLETE.md`, `SUM_KES_PARITY_COMPLETE.md`,
    `COMPACT_SUM_KES_PARITY_COMPLETE.md` – create upon achieving full parity for
    each family, mirroring the VRF parity reports
-4. **⚠️ Cross-family parity checks**
-   - Impact: CompactSum vs Sum signatures are not exercised over a shared
-     corpus
-   - Risk: MEDIUM – Divergent verification paths may mask issues
-   - Mitigation: Reuse generated vectors to compare both families on identical
-     messages and periods
 
-5. **⚠️ Signature size validation**
-   - Impact: Compact signature savings are not asserted in tests
-   - Risk: LOW – Efficiency rather than correctness, but worth documenting
-   - Mitigation: Add regression checks that record and compare signature byte
-     lengths across families
+### Outstanding Gaps (Priority)
 
-6. **⚠️ Serialization interoperability**
-   - Impact: No automated round-trips against Haskell encoders/decoders
-   - Risk: LOW – Format skew would break network exchanges
-   - Mitigation: Add cross-language serde tests once vector extraction
-     produces CBOR + raw snapshots
+1. **⚠️ Fixture breadth and provenance**
+    - Impact: Current JSON suites reuse two deterministic seeds per family and
+       lack CBOR encodings, limiting parity confidence
+    - Risk: HIGH – Insufficient breadth may miss edge cases covered by Haskell
+    - Mitigation: Expand corpora (≥10/20 vectors per family) sourced directly
+       from the Haskell generator, including raw + CBOR artefacts
+
+2. **⚠️ Cross-family parity checks**
+    - Impact: CompactSum vs Sum signatures are not exercised over a shared
+       corpus
+    - Risk: MEDIUM – Divergent verification paths may mask issues
+    - Mitigation: Reuse generated vectors to compare both families on identical
+       messages and periods
+
+3. **⚠️ Serialization interoperability**
+    - Impact: No automated round-trips against Haskell encoders/decoders
+    - Risk: LOW – Format skew would break network exchanges
+    - Mitigation: Add cross-language serde tests once vector extraction
+       produces CBOR + raw snapshots
+
+4. **⚠️ Integration harness coverage**
+    - Impact: No end-to-end test blends KES with DSIGN/VRF contexts as in
+       ledger usage
+    - Risk: MEDIUM – Integration regressions could slip through
+    - Mitigation: Implement `kes_integration.rs` to exercise multi-component
+       flows once vector breadth increases
 
 ### Nice-to-Have Gaps (Quality)
 
@@ -448,31 +496,34 @@ Pending:
 ### Phase 05 Execution Plan
 
 **Completed (October 2025)**
-- Regenerated `compact_sum_kes_test_vectors.json` covering levels 1–7 and wired
-  serde-gated regression harnesses
+- Regenerated vector suites for Single, CompactSingle, Sum (levels 1–7) and
+  CompactSum, embedding them via serde-gated harnesses
 - Added `tests/kes_boundary.rs` to assert Single/CompactSingle expiry and
   CompactSum tamper scenarios
+- Landed `tests/kes_forward_security.rs` to validate CompactSum4 forward
+  security and signature-size savings vs Sum4
+- Documented coverage in crate README/CHANGELOG and refreshed Phase 05 audit
 
 **Next Focus**
-1. Extend the Haskell generator to emit SingleKES, CompactSingleKES, and SumKES
-   vector suites (including raw/CBOR serialisations)
-2. Implement dedicated harnesses mirroring the CompactSum structure for those
-   families
-3. Add forward-security regressions that evolve keys through every period and
-   assert failure outside the allowed window
-4. Introduce signature-size and cross-family comparison tests to codify compact
-   savings
-5. Capture serialization round-trips against the Haskell reference once vector
-   files include both encodings
+1. Expand Haskell-side generators to emit larger vector corpora (≥10/20 per
+   family) with CBOR encodings for Single, CompactSingle, and Sum levels
+2. Automate cross-language validation by comparing Rust outputs with Haskell
+   canonical fixtures during test runs
+3. Build a cross-family harness that replays identical messages across Sum and
+   CompactSum implementations to prove parity
+4. Implement `tests/kes_integration.rs` blending KES with DSIGN/VRF contexts to
+   mirror ledger usage
+5. Broaden negative coverage (corrupted signatures, wrong periods/messages)
+   within the vector-driven harnesses
 
 ### Success Criteria
 
 ✅ **Minimum Viable**:
-- [ ] SingleKES matches Haskell (10+ test vectors)
-- [ ] CompactSingleKES matches Haskell (10+ test vectors)
-- [ ] Sum1KES and Sum2KES validated (20+ test vectors each)
-- [x] CompactSum1KES and CompactSum2KES validated (20+ test vectors each, levels 1–7 via `compact_sum_kes_test_vectors.json`)
-- [ ] Forward security tests passing
+- [ ] SingleKES matches Haskell (10+ test vectors — 4 vectors embedded, expand corpus)
+- [ ] CompactSingleKES matches Haskell (10+ test vectors — 4 vectors embedded, expand corpus)
+- [ ] Sum1KES and Sum2KES validated (20+ test vectors each — 2 deterministic seeds per level today)
+- [ ] CompactSum1KES and CompactSum2KES validated (20+ test vectors each — levels 1–7 covered with 2 vectors per level via `compact_sum_kes_test_vectors.json`)
+- [x] Forward security tests passing (CompactSum4 regression in `tests/kes_forward_security.rs`)
 
 ✅ **Production Ready**:
 - [ ] Sum5KES validated (30+ test vectors, 32 periods tested)
@@ -496,11 +547,11 @@ Pending:
 | Risk | Likelihood | Impact | Mitigation Priority |
 |------|------------|--------|---------------------|
 | Signature incompatibility with Haskell | High | Critical | **P0 - Immediate** |
-| Forward security not working | Medium | Critical | **P0 - Immediate** |
+| Forward security not working | Low | Critical | **P0 - Immediate** |
 | Period evolution bugs | Medium | High | **P1 - Week 1** |
 | CompactSum VK reconstruction wrong | Low | Medium | **P2 - Week 3** |
 | Mlocked memory leaks | Low | High | **P2 - Week 2** |
-| Deep tree (Sum7) untested | Medium | Medium | **P2 - Week 3** |
+| Deep tree (Sum7) untested | Low | Medium | **P2 - Week 3** |
 | Performance issues | Low | Medium | **P3 - Future** |
 
 ---

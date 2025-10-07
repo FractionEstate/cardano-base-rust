@@ -8,6 +8,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+- Period evolution JSON fixtures for SumKES and CompactSumKES
+  (`sum_kes_period_evolution_vectors.json`,
+  `compact_sum_kes_period_evolution_vectors.json`) plus regression tests that
+  assert every signature across the full hierarchy.
 - SumKES JSON fixtures (`sum_kes_test_vectors.json`) mirrored from the Haskell
   reference generator (`Cardano.Crypto.KES.Sum`).
 - CompactSumKES level-1 JSON fixtures (`compact_sum_kes_test_vectors.json`)
@@ -25,6 +29,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `cardano_test_vectors::bls12_381`.
 
 ### Changed
+- Refactored the KES vector generator to reuse shared period-signing logic and
+  emit both tracked-period and full-evolution datasets in one pass.
 - `generate_kes_vectors.rs` now emits SumKES vectors alongside existing Single
   and CompactSingle outputs, mirroring the logic from
   `Cardano.Crypto.KES.Sum`.

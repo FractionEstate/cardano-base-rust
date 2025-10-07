@@ -68,13 +68,15 @@ Validate and achieve 100% functional parity between the Rust KES (Key Evolving S
   - [x] Single/CompactSingle sign/verify vectors (deterministic Rust reproduction aligned with Haskell coverage)
   - [x] Sum hierarchical vectors (levels 1-6 captured via `sum_kes_test_vectors.json`)
   - [x] CompactSum hierarchical vectors *(levels 1–7 regenerated after recursive verification key reconstruction landed)*
-  - [ ] Period evolution sequences
+  - [x] Period evolution sequences
 
 - [ ] Create JSON test vector files
   - [x] `single_kes_test_vectors.json`
   - [x] `compact_single_kes_test_vectors.json`
   - [x] `sum_kes_test_vectors.json`
   - [x] `compact_sum_kes_test_vectors.json` *(levels 1–7 regenerated from the Rust implementation after recursive vk wiring)*
+  - [x] `sum_kes_period_evolution_vectors.json`
+  - [x] `compact_sum_kes_period_evolution_vectors.json`
 
 - [x] Migrate vectors to `cardano-test-vectors` crate
 
@@ -173,26 +175,26 @@ Validate and achieve 100% functional parity between the Rust KES (Key Evolving S
 
 ### 8. Forward Security Validation
 
-- [ ] Key evolution is one-way
+- [x] Key evolution is one-way
   - Cannot reconstruct previous keys from evolved key
   - Old signing keys are zeroised after evolution
 
-- [ ] Period boundaries enforced
-  - Cannot sign with expired key
-  - Cannot sign for past periods
+- [x] Period boundaries enforced
+  - [x] Cannot sign with expired key
+  - [x] Cannot sign for past periods
 
-- [ ] Signature immutability
-  - Old signatures remain valid after key evolution
-  - Verification works for all historical periods
+- [x] Signature immutability
+  - [x] Old signatures remain valid after key evolution
+  - [x] Verification works for all historical periods
 
 ### 9. Integration Tests
 
 - [ ] End-to-end KES workflow
   - Generate → Sign → Evolve → Sign → Verify all
 
-- [ ] Cross-level compatibility
-  - Sum compositions work correctly
-  - CompactSum matches Sum verification
+- [x] Cross-level compatibility
+  - [x] Sum compositions work correctly
+  - [x] CompactSum matches Sum verification
 
 - [ ] Error handling
   - Period out of range
@@ -228,7 +230,7 @@ Validate and achieve 100% functional parity between the Rust KES (Key Evolving S
 - [ ] `cargo test -p cardano-crypto-class kes` - KES-specific tests
 - [ ] Cross-validation with Haskell outputs for each algorithm
 - [ ] Memory leak checks (valgrind or similar)
-- [ ] Forward security properties validated
+- [x] Forward security properties validated
 - [ ] Security review completed
 
 ---
@@ -316,6 +318,12 @@ Validate and achieve 100% functional parity between the Rust KES (Key Evolving S
   - **2025-10-09**: Reworked CompactSumKES verification to recover recursive branch keys, regenerated fixtures for levels 1–7, expanded regression tests, and refreshed docs/CHANGELOG entries. Next: continue parity validation for evolution edge cases.
   - **2025-10-10**: Regenerated CompactSum fixtures after recursive vk changes, confirmed serde-gated regression in `cardano-crypto-class` exercises levels 1–7, and ran `cardano-crypto-class`/`cardano-test-vectors` test suites. Next: focus on evolution boundary edge cases and Single/CompactSingle parity sign-off.
   - **2025-10-10**: Locked down `SingleKES`/`CompactSingleKES` expiry semantics, added boundary and tamper regression tests for CompactSum, and refreshed crate docs to reflect the new coverage. Next: expand evolution edge-case validation for SumKES variants.
+  - **2025-10-11**: Generated full period evolution fixtures for SumKES and CompactSumKES, embedded them into `cardano-test-vectors`, extended the generator/tests, and confirmed coverage across every period. Next: continue forward-security validation leveraging the richer datasets.
+  - **2025-10-12**: Wired the evolution fixtures into `cardano-crypto-class` forward-security regressions, proved past-period signing fails across Sum/CompactSum levels, and ran `cargo test -p cardano-crypto-class --features serde` to confirm coverage. Next: tackle remaining one-way evolution evidence and documentation tasks.
+  - **2025-10-13**: Added cross-family SumKES/CompactSumKES parity regression in `cardano-crypto-class/tests/kes_cross_family.rs`, reran `cargo test -p cardano-crypto-class --features serde` to confirm coverage, and marked "Cross-level compatibility" complete. Next: deliver one-way evolution evidence and associated documentation updates.
+  - **2025-10-14**: Extended `tests/kes_forward_security.rs` with Sum/CompactSum per-period evolution sweeps, re-verified historic signatures, locked in stale-period signing failures on every update, and added explicit rewind rejection checks. Refreshed README/CHANGELOG and reran `cargo test -p cardano-crypto-class --features serde`. Next: continue forward-security documentation polish and remaining parity audits.
+  - **2025-10-07**: Trimmed redundant serde helper imports in `tests/cbor_serialization.rs`, silenced dead-code warnings in `tests/cross_compat.rs`, and revalidated the serde-gated test matrix (`cargo test -p cardano-crypto-class --features serde`). Next: fold the warning cleanup into docs/CHANGELOG updates and keep pushing toward the remaining parity checklist items.
+  - **2025-10-07**: Enabled the Ed25519 cross-compatibility regression to run by default, pruned nightly-only `rustfmt` options to silence formatter warnings, and reran `cargo fmt` plus `cargo test -p cardano-crypto-class --features serde` to confirm the integration.
 
 ---
 

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+* Enabled the serde-gated Ed25519 cross-compatibility regression (`tests/cross_compat.rs`) to
+  run by default with the bundled `ed25519_vectors.json` fixtures, keeping behaviour aligned
+  with `Cardano.Crypto.DSIGN` while silencing unused metadata warnings from the JSON loader.
 * Start Rust port with `Seed` abstraction, deterministic `SeedRng`, packed
   byte utilities (`PackedBytes`), helper functions mirroring
   `Cardano.Crypto.Util`, pinned memory helpers (`PinnedSizedBytes`), mlocked
@@ -24,6 +27,13 @@
   tree verification behaviour.
 * Allow `PackedBytes` serde deserialisation to accept human-readable byte
   sequences as well as base64 strings, matching Haskell JSON fixtures.
+* Added serde-gated regression harnesses for `SingleKes`, `CompactSingleKes`,
+  and `Sum{1-7}Kes` that consume the embedded JSON fixtures and assert
+  signature parity, verification, and key evolution across tracked periods.
+* Strengthened `tests/kes_forward_security.rs` with Sum/CompactSum per-period
+  evolution sweeps, mirroring `Test.Crypto.KES` by re-verifying historical
+  signatures, rejecting stale-period signing after each update, and asserting
+  explicit rewind attempts fail with the expected errors.
 
 ## 2.2.3.2
 

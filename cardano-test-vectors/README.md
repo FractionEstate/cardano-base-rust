@@ -16,6 +16,8 @@ cardano-test-vectors/
 │   ├── ecdsa_secp256k1_test_vectors.json
 │   ├── schnorr_secp256k1_test_vectors.json
 │   ├── compact_sum_kes_test_vectors.json (CompactSumKES levels 1–7)
+│   ├── sum_kes_period_evolution_vectors.json (SumKES full evolution sequences)
+│   ├── compact_sum_kes_period_evolution_vectors.json (CompactSumKES full evolution sequences)
 │   ├── vrf_ver03_standard_10 … vrf_ver03_standard_12
 │   ├── vrf_ver13_* and generated_* series
 │   └── bls12-381/
@@ -70,6 +72,10 @@ The Ed25519 vectors are also used for the RFC 8032 parity checks in
 - `compact_sum_kes_test_vectors.json` – CompactSumKES levels 1–7, using the
     new recursive verification-key reconstruction to keep compact trees in
     lockstep with their SumKES counterparts
+- `sum_kes_period_evolution_vectors.json` – SumKES evolution traces with every
+    period recorded for deterministic regression checks
+- `compact_sum_kes_period_evolution_vectors.json` – CompactSumKES counterpart
+    to the evolution traces, guaranteeing compact verification parity
 
 The top-level test `tests/kes_vectors.rs` consumes these files to assert
 signature stability and to cross-check the period boundaries for every level.
