@@ -8,25 +8,27 @@ Cardano ecosystem.
 
 ## Highlights
 
-- **Cryptography**: Ed25519, Ed25519 (mlocked), ECDSA secp256k1, Schnorr secp256k1, and
-  Praos VRF implementations in [`cardano-crypto-class`](cardano-crypto-class/src).
+- **Cryptography**: Ed25519 (standard and mlocked), ECDSA secp256k1, Schnorr secp256k1,
+  and Praos VRF implementations in [`cardano-crypto-class`](cardano-crypto-class/README.md).
 - **Key Evolving Signatures**: `SingleKes`, `Sum{0-7}Kes`, and compact variants with
-  Blake2b hashing, serde-gated regression vectors for CompactSum levels 1–7, and
-  boundary tests that enforce expiry and tamper resistance in
+  Blake2b hashing, shared structural inspectors, serde-gated regression vectors for
+  CompactSum levels 1–7, and boundary tests that enforce expiry and tamper resistance in
   [`cardano-crypto-class`](cardano-crypto-class/tests).
 - **VRF reference implementation** ✅: Draft-03 and Draft-13 VRFs over Curve25519 in
-  [`cardano-vrf-pure`](cardano-vrf-pure/src) with **byte-for-byte parity** to Cardano
+  [`cardano-vrf-pure`](cardano-vrf-pure/README.md) with **byte-for-byte parity** to Cardano
   libsodium. See [`VRF_PARITY_COMPLETE.md`](cardano-vrf-pure/VRF_PARITY_COMPLETE.md).
 - **CBOR tooling**: Strict CBOR serialisation with tag-24 helpers in
-  [`cardano-binary`](cardano-binary/src).
+  [`cardano-binary`](cardano-binary/README.md).
 - **Slotting primitives**: Epoch and time arithmetic in
-  [`cardano-slotting`](cardano-slotting/src).
+  [`cardano-slotting`](cardano-slotting/README.md).
 - **Strictness utilities**: Strict containers, `NoThunks`, `NFData`, and deriving helpers
-  for predictable evaluation.
+  for predictable evaluation across the [`cardano-strict-containers`](cardano-strict-containers/README.md),
+  [`base-deriving-via`](base-deriving-via), and [`orphans-deriving-via`](orphans-deriving-via)
+  crates.
 
 ## Build and test
 
-Prerequisites: Rust 1.70 or newer with `cargo`, installed via
+Prerequisites: Rust 1.85 or newer with `cargo`, installed via
 [rustup](https://rustup.rs/).
 
 ```bash
@@ -37,20 +39,14 @@ cargo clippy --workspace --all-targets -- -D warnings
 ```
 
 The full test suite includes VRF and KES golden tests that depend on vectors in
-[`test_vectors/`](test_vectors).
+[`cardano-test-vectors/test_vectors`](cardano-test-vectors/test_vectors).
 
-### Dev Container (VS Code)
+### Tooling
 
-The repository ships with `.devcontainer/devcontainer.json`, preloading the
-`mcr.microsoft.com/devcontainers/base:bookworm` image and the official Rust feature.
-To (re)build the environment in VS Code:
-
-1. Install the **Dev Containers** extension.
-2. Open the command palette and choose `Dev Containers: Rebuild and Reopen in Container`.
-3. Wait for the Rust toolchain to install automatically (no manual `rustup` steps required).
-
-The container bundles the same tool versions used in CI, ensuring repeatable
-`cargo` builds and tests.
+Refer to [docs/development/testing.md](docs/development/testing.md) for a curated list of
+recommended commands, feature flags, and editor integrations. The repository’s dev
+container configuration lives in the workspace-level `.devcontainer/` folder when required
+for CI parity; if the folder is absent, follow the documented local setup instead.
 
 ## Documentation
 
@@ -69,21 +65,23 @@ Progress across parity phases is captured in the repository root:
 - [Phase 04 completion notes](PHASE_04_COMPLETION_REPORT.md)
 - [Phase 05 – KES audit](PHASE_05_AUDIT.md)
 
-Security and conduct policies remain at the repository root:
-[`SECURITY.md`](SECURITY.md) and [`CODE-OF-CONDUCT.md`](CODE-OF-CONDUCT.md).
+Security reports should follow the process described in the Cardano engineering handbook
+linked from [`CONTRIBUTING.md`](CONTRIBUTING.md); conduct expectations live in
+[`CODE-OF-CONDUCT.md`](CODE-OF-CONDUCT.md).
 
 ## Workspace crates
 
 | Crate | Description |
 |-------|-------------|
-| [`cardano-crypto-class`](cardano-crypto-class/src) | Cryptographic primitives, secure memory, hashing |
-| [`cardano-vrf-pure`](cardano-vrf-pure/src) | Curve25519 VRF implementations |
-| [`cardano-binary`](cardano-binary/src) | CBOR serialisation helpers |
-| [`cardano-slotting`](cardano-slotting/src) | Epoch and slot arithmetic |
-| [`cardano-base`](cardano-base/src) | Feature-flag wiring |
-| [`cardano-strict-containers`](cardano-strict-containers/src) | Strict container types |
+| [`cardano-crypto-class`](cardano-crypto-class) | Cryptographic primitives, secure memory, hashing |
+| [`cardano-vrf-pure`](cardano-vrf-pure) | Curve25519 VRF implementations |
+| [`cardano-binary`](cardano-binary) | CBOR serialisation helpers |
+| [`cardano-slotting`](cardano-slotting) | Epoch and slot arithmetic |
+| [`cardano-base`](cardano-base) | Feature-flag wiring |
+| [`cardano-test-vectors`](cardano-test-vectors) | Golden data consumed by crypto tests |
+| [`cardano-strict-containers`](cardano-strict-containers) | Strict container types |
 | [`deepseq`](deepseq/src/lib.rs), [`nothunks`](nothunks/src/lib.rs) | Evaluation traits |
-| [`measures`](measures/src/measure.rs), [`heapwords`](heapwords/src/lib.rs) | Measurement helpers |
+| [`measures`](measures/src), [`heapwords`](heapwords/src) | Measurement helpers |
 | [`base-deriving-via`](base-deriving-via/src/lib.rs), [`orphans-deriving-via`](orphans-deriving-via/src/lib.rs) | Deriving utilities |
 | [`cardano-git-rev`](cardano-git-rev/src/lib.rs) | Embeds build git revision |
 
@@ -99,7 +97,8 @@ should:
 - Pass `cargo fmt`, `cargo clippy`, and the full test suite shown above.
 - Include new tests or vectors when introducing cryptographic behaviour changes.
 
-Security-sensitive reports should follow [`SECURITY.md`](SECURITY.md).
+Security-sensitive reports should follow the Cardano engineering handbook guidance linked
+from [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## License
 
