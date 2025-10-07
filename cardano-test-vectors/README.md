@@ -157,5 +157,12 @@ The crate ships with lightweight regression tests:
 - `performance.rs` – measures signing/verification throughput (200 iterations)
 - `dsign_ed25519_vectors.rs` – referenced by `cardano-crypto-class` for
   RFC 8032 parity checks
+- `kes_vectors.rs` – consumes every Sum/CompactSum evolution fixture to ensure
+    signature stability across levels and periods
+
+**Latest validation:** `cargo test -p cardano-test-vectors` completed on
+2025-10-14 after regenerating the KES evolution fixtures, confirming that the
+embedded datasets remain in sync with the Haskell reference generators cited
+throughout this README.
 
 All suites pass under the default workspace toolchain.

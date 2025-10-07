@@ -27,6 +27,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `h2c_large_dst`, `pairing_test_vectors`, `serde_test_vectors`) embedded from
   `cardano-crypto-tests/bls12-381-test-vectors` with lookup helpers in
   `cardano_test_vectors::bls12_381`.
+- Negative-path regression tests that mutate fixture messages and confirm the
+  SingleKES, CompactSingleKES, SumKES, and CompactSumKES signatures reject the
+  tampered payloads.
 
 ### Changed
 - Refactored the KES vector generator to reuse shared period-signing logic and
@@ -41,3 +44,6 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   new feature flag is enabled.
 - Library module exports extended to expose the sum KES fixtures at compile
   time.
+- Revalidated the full regression suite (`cargo test -p cardano-test-vectors`)
+  on 2025-10-14 after regenerating evolution fixtures, confirming parity with
+  the Haskell generators without requiring further code changes.
