@@ -1,7 +1,40 @@
 # Phase 00 – Workspace Porting Roadmap
 
 **Status:** ☐ Not started / ☑ In progress / ☐ Blocked / ☐ Completed  \
-**Primary owners:** _Unassigned_ (add yourself here)  \
+**Primary owners:** _Unassigned_ (### cardano-vrf-pure
+- [x] Coordinated with [Phase 03]
+### orphans-deriving-via
+**Phase Document:** [Phase 11 – Deriving-Via Crates Parity](phase-11-deriving-via-parity.md)  
+**Status:** ☐ Not started
+
+- [ ] Collect all orphan instances provided in Haskell and port them explicitly,
+      documenting any differences required by Rust's coherence rules.
+- [ ] Ensure exporting strategy doesn't introduce conflicting implementations in
+      downstream crates.
+- [ ] Add compile-time tests/examples verifying the instances resolve as
+      expected.
+
+---vrf-parity.md); ensure every low-level
+      primitive has matching tests and documentation. ✅ **COMPLETED**
+- [x] Add micro-benchmarks to spot regressions versus libsodium where practical.
+- [x] Verify `no_std` compatibility if required by downstream components.
+
+### deepseq, heapwords, measures, nothunks
+**Phase Document:** [Phase 10 – Helper Crates Parity](phase-10-helper-crates-parity.md)  
+**Status:** ☐ Not started
+
+#### deepseq
+- [ ] Mirror Haskell's `Control.DeepSeq` behaviour, including custom `NFData`
+      derivations for Cardano-specific types.
+- [ ] Confirm blanket implementations don't introduce borrow-checker hazards or
+      performance cliffs.
+- [ ] Add doc examples showing how consumers ensure deep evaluation.
+
+#### heapwords
+- [ ] Port the heap word counting utilities and ensure they integrate with Rust
+      profiling/measurement tools as expected.
+- [ ] Write regression tests using representative Cardano data structures.
+- [ ] Document how to run heap measurement reports in the Rust toolchain.  \
 **Scope:** Entire Rust workspace (`base-deriving-via`, `cardano-*`, `deepseq`, `heapwords`, `measures`, `nothunks`, `orphans-deriving-via`)
 
 ---
@@ -43,6 +76,9 @@ and ensures no crate is left without an explicit plan or acceptance criteria.
 ## Crate-by-crate checklist
 
 ### base-deriving-via
+**Phase Document:** [Phase 11 – Deriving-Via Crates Parity](phase-11-deriving-via-parity.md)  
+**Status:** ☐ Not started
+
 - [ ] Audit Haskell `Cardano.Base.DerivingVia` modules to confirm all deriving
       helpers are present.
 - [ ] Port any Template Haskell-based instances to macro-free Rust equivalents
@@ -52,6 +88,9 @@ and ensures no crate is left without an explicit plan or acceptance criteria.
 - [ ] Cross-reference usage sites in dependent crates to confirm API coverage.
 
 ### cardano-base
+**Phase Document:** [Phase 12 – Cardano Base Crate Parity](phase-12-cardano-base-parity.md)  
+**Status:** ☐ Not started (blocks on Phase 08-11 completion)
+
 - [ ] Catalogue all exported modules from Haskell `Cardano.Base.*` and map them
       to existing Rust modules.
 - [ ] Implement missing primitives (e.g. canonical JSON, text utilities) with
@@ -94,6 +133,30 @@ and ensures no crate is left without an explicit plan or acceptance criteria.
 - [x] Add integration tests that simulate build-time stamping under various
       repository states (dirty tree, detached HEAD).
 - [x] Document usage expectations for downstream crates/binaries.
+
+### cardano-slotting
+**Phase Document:** [Phase 08 – Cardano Slotting Parity](phase-08-slotting-parity.md)  
+**Status:** ☐ Not started
+
+- [ ] Port slotting arithmetic (slot length, epochs, `SlottingData`) with unit
+      tests derived from Haskell's property suite.
+- [ ] Implement time calculations and conversions (slots ↔ POSIX time) ensuring
+      rounding/overflow semantics match.
+- [ ] Validate interaction with `cardano-base` types such as `SlotNo`,
+      `EpochNo`, `EpochSize`.
+- [ ] Add clock-skew and boundary condition tests mirroring Haskell cases.
+
+### cardano-strict-containers
+**Phase Document:** [Phase 09 – Cardano Strict Containers Parity](phase-09-strict-containers-parity.md)  
+**Status:** ☐ Not started
+
+- [ ] Port strict maps, sequences, and helper combinators ensuring structural
+      sharing semantics match.
+- [ ] Benchmark against Haskell behaviour for large datasets (memory usage,
+      laziness vs strictness guarantees).
+- [ ] Confirm integration with `nothunks` (no unexpected thunks in stored
+      structures).
+- [ ] Expand doc comments with usage guidance for downstream crates.
 
 ### cardano-slotting
 - [ ] Port slotting arithmetic (slot length, epochs, `SlottingData`) with unit
@@ -210,6 +273,13 @@ and ensures no crate is left without an explicit plan or acceptance criteria.
       Enhanced README with canonical encoding rules (RFC 8949 §4.2), map key ordering examples, and
       verification strategy. All CBOR types, error handling, and deterministic encoding validated
       byte-for-byte against Haskell reference.
+- 08-10-2025-time-05:30: Created comprehensive phase documents for remaining crates:
+      - Phase 08 (cardano-slotting): Slot/epoch arithmetic, time conversions, clock skew
+      - Phase 09 (cardano-strict-containers): StrictSeq/Map/Maybe, nothunks integration
+      - Phase 10 (helper crates): deepseq, heapwords, measures, nothunks
+      - Phase 11 (deriving-via): Semigroup/Monoid derivation, InstantiatedAt pattern, orphan instances
+      - Phase 12 (cardano-base): Unified re-exports, prelude, examples, integration tests
+      Updated Phase 00 roadmap with phase document links and status indicators for all remaining crates.
 
 ---
 
