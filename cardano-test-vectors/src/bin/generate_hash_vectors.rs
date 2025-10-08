@@ -15,8 +15,8 @@ use std::fs;
 use std::path::PathBuf;
 
 use cardano_crypto_class::hash::{
-    hash160, keccak256, ripemd160, sha256, sha256d, sha3_256, sha3_512, sha512, Blake2b256,
-    Blake2b512,
+    Blake2b256, Blake2b512, blake2b224, hash160, keccak256, ripemd160, sha3_256, sha3_512, sha256,
+    sha256d, sha512,
 };
 use cardano_crypto_class::kes::hash::KesHashAlgorithm;
 use serde::Serialize;
@@ -50,6 +50,7 @@ struct HashVector {
     keccak256: String,
     ripemd160: String,
     hash160: String,
+    blake2b224: String,
     blake2b256: String,
     blake2b512: String,
 }
@@ -68,8 +69,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let output = Output {
         metadata: Metadata {
             description: "Baseline hash test vectors (boundary + composite coverage)",
-            version: 3,
-            note: "Extend with future cross-language confirmations and streaming edge cases",
+            version: 4,
+            note: "Extend with future cross-language confirmations, streaming edge cases, and address-key hashing",
             generator: "cargo run -p cardano-test-vectors --bin generate_hash_vectors",
         },
         vectors,
@@ -193,6 +194,7 @@ fn to_hash_vector(case: Case) -> HashVector {
     let keccak256 = hex::encode(keccak256(&case.bytes));
     let ripemd160 = hex::encode(ripemd160(&case.bytes));
     let hash160 = hex::encode(hash160(&case.bytes));
+    let blake2b224 = hex::encode(blake2b224(&case.bytes));
 
     let blake2b256 = hex::encode(Blake2b256::hash(&case.bytes));
     let blake2b512 = hex::encode(Blake2b512::hash(&case.bytes));
@@ -209,6 +211,7 @@ fn to_hash_vector(case: Case) -> HashVector {
         keccak256,
         ripemd160,
         hash160,
+        blake2b224,
         blake2b256,
         blake2b512,
     }

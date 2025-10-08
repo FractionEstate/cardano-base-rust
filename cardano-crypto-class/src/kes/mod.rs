@@ -96,7 +96,7 @@ pub mod sum;
 pub mod verify_hash;
 
 // Re-export hash algorithms for convenience
-pub use hash::{Blake2b256, Blake2b512, KesHashAlgorithm};
+pub use hash::{Blake2b224, Blake2b256, Blake2b512, KesHashAlgorithm};
 
 // Re-export SingleKes types
 pub use single::SingleKes;

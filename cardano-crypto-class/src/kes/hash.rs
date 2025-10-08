@@ -42,6 +42,26 @@ pub trait KesHashAlgorithm: Clone + Send + Sync + 'static {
     }
 }
 
+/// Blake2b-224 hash algorithm (28-byte output).
+/// Mirrors the shorter digest variant used for verification key hashing in
+/// address derivation paths.
+#[derive(Clone, Debug)]
+pub struct Blake2b224;
+
+impl KesHashAlgorithm for Blake2b224 {
+    const OUTPUT_SIZE: usize = 28;
+    const ALGORITHM_NAME: &'static str = "blake2b_224";
+
+    fn hash(data: &[u8]) -> Vec<u8> {
+        use blake2::digest::consts::U28;
+        use blake2::{Blake2b, Digest};
+
+        let mut hasher = Blake2b::<U28>::new();
+        hasher.update(data);
+        hasher.finalize().to_vec()
+    }
+}
+
 /// Blake2b-256 hash algorithm (32-byte output).
 /// This is the hash algorithm used in Haskell's cardano-base for Sum types.
 #[derive(Clone, Debug)]
@@ -82,6 +102,13 @@ impl KesHashAlgorithm for Blake2b512 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_blake2b224_output_size() {
+        let data = b"test data";
+        let hash = Blake2b224::hash(data);
+        assert_eq!(hash.len(), 28, "Blake2b-224 should output 28 bytes");
+    }
 
     #[test]
     fn test_blake2b256_output_size() {

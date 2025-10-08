@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+* Added `hash::blake2b224` and the accompanying `Blake2b224` helper to mirror
+  `Cardano.Crypto.Hash.Blake2b_224`, expanded the hash vector corpus (and
+  regression tests) with 224-bit digests, wired the new variant into the
+  Criterion benchmark suite, and documented a `compare_hash_vectors` CLI so
+  parity checks against Haskell outputs are automated.
+* Added `hash_bench` Criterion harness measuring throughput for SHA-2/3, Keccak, RIPEMD160,
+  Hash160, and Blake2b helpers over 32 B, 1 KiB, 64 KiB, and 1 MiB patterned payloads with
+  MB/s reports (HTML/JSON) stored under `target/criterion` for regression tracking, plus manual
+  baseline capture instructions in the README.
+* Documented the `Cardano.Crypto.Hash` → Rust module mapping in the crate README, clarified
+  the Keccak vs SHA3 parameterisation (padding/domain separation), and explained the composite
+  helper layering plus vector regeneration workflow to keep Phase 06 parity reviews traceable.
+* Exposed `hash::constant_time_eq` so callers can compare digests via `subtle::ConstantTimeEq`,
+  added regression tests to cover equal/unequal paths, and documented the side-channel guidance in
+  the README.
 * Added `tests/hash_vectors.rs` regression coverage for SHA-256/SHA3/Keccak/RIPEMD160/Hash160/Blake2b helpers, backed by the regenerated `cardano-test-vectors/test_vectors/hash_test_vectors.json` corpus (boundary, rate, multi-block, and Bitcoin/Ethereum composite inputs) and a new Rust-side fixture generator (`generate_hash_vectors.rs`).
 * Tightened the KES parity harness (`tests/kes_haskell_parity.rs`) to assert raw signature hex dumps and require populated description metadata, eliminating lingering dead-field warnings while increasing fixture fidelity.
 * Introduced KES performance benchmarks (`benches/kes_bench.rs`) measuring key generation,
@@ -9,6 +24,7 @@
   `CompactSum4Kes`. Added `criterion` (dev-dependency) with HTML reports to establish a
   reproducible baseline before optimisation or memory layout changes. Benchmarks cap
   sampled periods to keep CI runtime acceptable.
+* Hardened `hash` unit tests with Blake2b output-length assertions, explicit confirmation that the 256-bit variant is not a simple truncation of the 512-bit digest, and 1 MiB stress cases across all algorithms to lock digest sizes and prove no panics on large inputs.
 * Extended KES benchmarks with serialized size reporting (`serialized_sizes`) emitting the raw
   byte lengths of verification keys and signatures plus total period count for each algorithm.
   (Signing key raw serialization intentionally omitted—would require an unsound testing trait

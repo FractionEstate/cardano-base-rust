@@ -79,7 +79,7 @@ The Ed25519 vectors are also used for the RFC 8032 parity checks in
     official go-ethereum documentation.
 
 Each vector stores SHA-256, double SHA-256, SHA-512, SHA3-256, SHA3-512,
-Keccak-256, RIPEMD-160, Hash160, Blake2b-256, and Blake2b-512 outputs. The
+Keccak-256, RIPEMD-160, Hash160, Blake2b-224, Blake2b-256, and Blake2b-512 outputs. The
 fixture is regenerated with:
 
 ```bash
@@ -89,6 +89,18 @@ cargo run -p cardano-test-vectors --bin generate_hash_vectors
 The generator derives all digests via the Rust implementations to guarantee the
 JSON stays in sync with `cardano-crypto-class`. Future work will append
 Haskell-confirmed digests and streaming edge cases.
+
+To cross-check a Haskell-produced corpus (e.g. generated with
+`scripts/HashVectors.hs` from `cardano-base`), run the comparator:
+
+```bash
+cargo run -p cardano-test-vectors --bin compare_hash_vectors \
+    /path/to/hash_vectors_haskell.json
+```
+
+The optional second argument points to an alternate Rust JSON file; by default
+the tool compares the reference file against the committed
+`test_vectors/hash_test_vectors.json`.
 
 ### KES vectors
 

@@ -13,14 +13,18 @@
 //! - **SHA3-512**: Keccak-based, longer digest
 //! - **Keccak-256**: Original Keccak, used in Ethereum 1.0
 //! - **RIPEMD-160**: Used in Bitcoin addresses
+//! - **Blake2b-224/256/512**: Used across Cardano for verification-key and tree hashing
 
+use blake2::Blake2b;
+use blake2::digest::consts::U28;
 use digest::Digest;
 use ripemd::Ripemd160;
 use sha2::{Sha256, Sha512};
 use sha3::{Keccak256, Sha3_256, Sha3_512};
+use subtle::ConstantTimeEq;
 
 // Re-export KES Blake2b implementations for unified hashing API surface.
-pub use crate::kes::hash::{Blake2b256, Blake2b512};
+pub use crate::kes::hash::{Blake2b224, Blake2b256, Blake2b512};
 
 /// SHA-256 hash (32 bytes output).
 ///
@@ -93,10 +97,48 @@ pub fn hash160(data: &[u8]) -> [u8; 20] {
     ripemd160(&sha256(data))
 }
 
+/// Blake2b-224 hash (28 bytes output).
+///
+/// Cardano uses this digest size when hashing verification keys during address
+/// construction. The variant matches `Cardano.Crypto.Hash.Blake2b_224` by
+/// fixing the output length to 224 bits without truncating a longer digest.
+pub fn blake2b224(data: &[u8]) -> [u8; 28] {
+    let mut hasher = Blake2b::<U28>::new();
+    hasher.update(data);
+    hasher.finalize().into()
+}
+
+/// Constant-time equality over raw hash byte slices.
+///
+/// Returns `false` if the inputs differ in length. When lengths match, the
+/// comparison is performed in constant time using `subtle::ConstantTimeEq` to
+/// avoid data-dependent early exits.
+pub fn constant_time_eq(lhs: &[u8], rhs: &[u8]) -> bool {
+    if lhs.len() != rhs.len() {
+        return false;
+    }
+
+    bool::from(lhs.ct_eq(rhs))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::kes::hash::KesHashAlgorithm; // bring trait providing ::hash into scope
+
+    #[test]
+    fn test_blake2b224_empty() {
+        let expected = "836cc68931c2e4e3e838602eca1902591d216837bafddfe6f0c8cb07"; // Blake2b-224("")
+        let out = blake2b224(b"");
+        assert_eq!(hex::encode(out), expected);
+    }
+
+    #[test]
+    fn test_blake2b224_hello_world() {
+        let expected = "42d1854b7d69e3b57c64fcc7b4f64171b47dff43fba6ac0499ff437f"; // Blake2b-224("hello world")
+        let out = blake2b224(b"hello world");
+        assert_eq!(hex::encode(out), expected);
+    }
 
     #[test]
     fn test_blake2b256_empty() {
@@ -228,6 +270,28 @@ mod tests {
     }
 
     #[test]
+    fn test_constant_time_eq_success() {
+        let a = sha256(b"ct-eq");
+        let b = sha256(b"ct-eq");
+        assert!(constant_time_eq(&a, &b));
+    }
+
+    #[test]
+    fn test_constant_time_eq_detects_difference() {
+        let a = sha256(b"left");
+        let mut b = a;
+        b[0] ^= 0xff;
+        assert!(!constant_time_eq(&a, &b));
+    }
+
+    #[test]
+    fn test_constant_time_eq_length_mismatch() {
+        let a = sha256(b"short");
+        let b = hash160(b"short");
+        assert!(!constant_time_eq(&a, &b));
+    }
+
+    #[test]
     fn test_all_hash_lengths() {
         let data = b"test data";
 
@@ -239,6 +303,70 @@ mod tests {
         assert_eq!(keccak256(data).len(), 32);
         assert_eq!(ripemd160(data).len(), 20);
         assert_eq!(hash160(data).len(), 20);
+        assert_eq!(blake2b224(data).len(), 28);
+    }
+
+    #[test]
+    fn test_blake2b_output_lengths() {
+        let inputs = [b"".as_ref(), b"cardano".as_ref(), b"hash-length".as_ref()];
+
+        for input in inputs {
+            assert_eq!(Blake2b224::hash(input).len(), 28);
+            assert_eq!(Blake2b256::hash(input).len(), 32);
+            assert_eq!(Blake2b512::hash(input).len(), 64);
+        }
+    }
+
+    #[test]
+    fn test_large_input_hashing_stability() {
+        let mut data = vec![0u8; 1 << 20]; // 1 MiB repeating pattern
+        for (i, byte) in data.iter_mut().enumerate() {
+            *byte = (i & 0xff) as u8;
+        }
+
+        let sha256_once = sha256(&data);
+        assert_eq!(sha256_once.len(), 32);
+        assert_eq!(sha256_once, sha256(&data));
+
+        let sha256d_once = sha256d(&data);
+        assert_eq!(sha256d_once.len(), 32);
+        assert_eq!(sha256d_once, sha256d(&data));
+
+        let sha512_once = sha512(&data);
+        assert_eq!(sha512_once.len(), 64);
+        assert_eq!(sha512_once, sha512(&data));
+
+        let sha3_256_once = sha3_256(&data);
+        assert_eq!(sha3_256_once.len(), 32);
+        assert_eq!(sha3_256_once, sha3_256(&data));
+
+        let sha3_512_once = sha3_512(&data);
+        assert_eq!(sha3_512_once.len(), 64);
+        assert_eq!(sha3_512_once, sha3_512(&data));
+
+        let keccak_once = keccak256(&data);
+        assert_eq!(keccak_once.len(), 32);
+        assert_eq!(keccak_once, keccak256(&data));
+
+        let ripemd_once = ripemd160(&data);
+        assert_eq!(ripemd_once.len(), 20);
+        assert_eq!(ripemd_once, ripemd160(&data));
+
+        let hash160_once = hash160(&data);
+        assert_eq!(hash160_once.len(), 20);
+        assert_eq!(hash160_once, hash160(&data));
+
+        let blake2b224_once = blake2b224(&data);
+        assert_eq!(blake2b224_once.len(), 28);
+        assert_eq!(blake2b224_once, blake2b224(&data));
+
+        let blake2b256_once = Blake2b256::hash(&data);
+        assert_eq!(blake2b256_once.len(), 32);
+        assert_eq!(blake2b256_once, Blake2b256::hash(&data));
+
+        let blake2b512_once = Blake2b512::hash(&data);
+        assert_eq!(blake2b512_once.len(), 64);
+        assert_eq!(blake2b512_once, Blake2b512::hash(&data));
     }
 
     #[test]
@@ -250,5 +378,39 @@ mod tests {
         assert_eq!(sha512(data), sha512(data));
         assert_eq!(keccak256(data), keccak256(data));
         assert_eq!(ripemd160(data), ripemd160(data));
+        assert_eq!(blake2b224(data), blake2b224(data));
+    }
+
+    #[test]
+    fn test_blake2b256_not_simple_truncation() {
+        let cases = [
+            b"".as_ref(),
+            b"cardano".as_ref(),
+            b"longer-message-for-blake2b-compat".as_ref(),
+        ];
+
+        for input in cases {
+            let blake512 = Blake2b512::hash(input);
+            let blake256 = Blake2b256::hash(input);
+            assert_ne!(&blake512[..32], &blake256[..]);
+        }
+    }
+
+    #[test]
+    fn test_blake2b224_not_truncation() {
+        let cases = [
+            b"".as_ref(),
+            b"address-key".as_ref(),
+            b"longer-message-for-blake2b-224".as_ref(),
+        ];
+
+        for input in cases {
+            let blake512 = Blake2b512::hash(input);
+            let blake224 = blake2b224(input);
+            assert_ne!(&blake512[..28], blake224.as_ref());
+
+            let blake256 = Blake2b256::hash(input);
+            assert_ne!(&blake256[..28], blake224.as_ref());
+        }
     }
 }

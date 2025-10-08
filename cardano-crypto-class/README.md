@@ -21,7 +21,7 @@ Cardano-specific Key Evolving Signatures (KES).
   boundary tests assert expiry and tamper behaviour.
 - **VRF plumbing**: The crate wires through Praos VRF primitives so higher
   layers can embed them without crossing FFI boundaries.
-- **Hash utilities**: `hash::{sha256, sha3_256, keccak256, hash160, blake2b256, …}`
+- **Hash utilities**: `hash::{blake2b224, blake2b256, sha256, sha3_256, keccak256, hash160, …}`
   expose the same primitives as `Cardano.Crypto.Hash`, now backed by an
   expanded JSON vector suite in `cardano-test-vectors` to lock byte-for-byte
   parity across boundary and multi-block inputs.
@@ -52,6 +52,162 @@ cargo run -p cardano-test-vectors --bin generate_hash_vectors
 
 Future Phase 06 work will fold in cross-language confirmations from the
 Haskell generator and streaming edge cases once the scaffolding lands.
+
+Unit tests inside `hash.rs` also lock the compile-time digest sizes (including
+the Blake2b re-exports), assert that the 256-bit variant is **not** a simple
+truncation of the 512-bit digest (matching the Haskell parameterisation), and
+exercise every algorithm against a 1 MiB patterned input to guarantee
+deterministic behaviour without panics on large buffers.
+
+`blake2b224` fills the final gap in the Cardano hashing surface: it mirrors
+`Cardano.Crypto.Hash.Blake2b_224` and is used when hashing verification keys
+for address derivation. Vector coverage now includes the 224-bit digest, and
+unit tests assert that it is a distinct parameterisation rather than a
+truncation of the 256/512-bit variants. This keeps the address pipeline (and
+KES verification-key hashing helpers) aligned with the Haskell reference.
+
+#### Keccak vs SHA3 parameterisation
+
+- `Sha3_256` / `Sha3_512` use the NIST-standard domain separation suffix (`0x06`)
+  and sponge capacity, matching `Cardano.Crypto.Hash.SHA3_*`.
+- `Keccak256` intentionally preserves the legacy Ethereum-style padding (`0x01`)
+  so hashes align with `Cardano.Crypto.Hash.Keccak_256`.
+- Regression tests assert the digest mismatch between the pair for canonical
+  messages (empty string, `"abc"`, and the Bitcoin transaction payload) to
+  prove we are not aliasing the algorithms.
+- The JSON fixtures exercise both variants across empty, boundary-sized, and
+  multi-block inputs to keep the parameterisation locked in.
+
+Regenerate the vectors with `cargo run -p cardano-test-vectors --bin generate_hash_vectors`
+any time the digest backends change; the helper recomputes every digest with
+the Rust implementations so the Keccak/SHA3 separation stays byte-for-byte
+stable with the rest of the suite.
+
+#### Composite helpers
+
+`hash::double_sha256` and `hash::hash160` layer the primitive algorithms in the
+same order as `Cardano.Crypto.Hash` (`SHA256(SHA256(x))` and
+`RIPEMD160(SHA256(x))`). The fixtures stress these helpers against Bitcoin
+headers, addresses, and Cardano inputs so downstream consumers can rely on the
+exact byte layout without rederiving the composition logic.
+
+#### Haskell reference regeneration
+
+The original Haskell `cardano-crypto-class` exposes the same hashes via
+`Cardano.Crypto.Hash`. To regenerate the JSON vectors from the reference code:
+
+1. Clone `https://github.com/IntersectMBO/cardano-base` and enter the repo.
+2. Save the following helper as `scripts/HashVectors.hs` (adjust the case list
+   if new fixtures are added on the Rust side):
+
+   ```haskell
+   {-# LANGUAGE DataKinds #-}
+   {-# LANGUAGE OverloadedStrings #-}
+   {-# LANGUAGE ScopedTypeVariables #-}
+   {-# LANGUAGE TypeApplications #-}
+
+   module Main where
+
+   import Cardano.Crypto.Hash
+     ( Blake2b_256, Blake2b_512, HashAlgorithm, SHA256, SHA512
+     , SHA3_256, SHA3_512, hashToBytes, hashWith
+     )
+   import Cardano.Crypto.Hash.Keccak (Keccak_256)
+   import Cardano.Crypto.Hash.RIPEMD160 (RIPEMD160)
+   import Data.Proxy (Proxy (..))
+   import qualified Data.Aeson as Aeson
+   import qualified Data.ByteString as BS
+   import qualified Data.ByteString.Base16 as B16
+   import qualified Data.ByteString.Lazy as LBS
+   import qualified Data.ByteString.Char8 as BSC
+   import qualified Data.Text as T
+   import qualified Data.Text.Encoding as TE
+
+   cases :: [(String, BS.ByteString)]
+   cases =
+     [ ("empty", BS.empty)
+     , ("hello_ascii", BSC.pack "hello world")
+     , ("short_sequence", BS.pack [0x00 .. 0x09])
+     , ("single_byte_ff", BS.pack [0xff])
+     , ("sha2_block_minus_one", BS.pack [0x00 .. 0x3e])
+     , ("sha2_block_exact", BS.pack [0x00 .. 0x3f])
+     , ("sha2_block_plus_one", BS.pack [0x00 .. 0x40])
+     , ("sha3_rate_block", BS.pack [0x00 .. 0x87])
+     , ("sha3_rate_plus_one", BS.pack [0x00 .. 0x88])
+     , ("multi_block_1024", BS.pack (take 1024 (cycle [0x00 .. 0xff])))
+     ]
+
+   encodeHex :: BS.ByteString -> Aeson.Value
+   encodeHex = Aeson.String . TE.decodeUtf8 . B16.encode
+
+   digest :: forall h. HashAlgorithm h => Proxy h -> BS.ByteString -> BS.ByteString
+   digest _ bytes = hashToBytes (hashWith @h id bytes)
+
+   entry :: (String, BS.ByteString) -> Aeson.Value
+   entry (name, bytes) =
+     Aeson.object
+       [ "name" Aeson..= name
+       , "input_hex" Aeson..= encodeHex bytes
+       , "sha256" Aeson..= encodeHex (digest (Proxy @SHA256) bytes)
+       , "sha256d" Aeson..= encodeHex (digest (Proxy @SHA256) (digest (Proxy @SHA256) bytes))
+       , "sha512" Aeson..= encodeHex (digest (Proxy @SHA512) bytes)
+       , "sha3_256" Aeson..= encodeHex (digest (Proxy @SHA3_256) bytes)
+       , "sha3_512" Aeson..= encodeHex (digest (Proxy @SHA3_512) bytes)
+       , "keccak256" Aeson..= encodeHex (digest (Proxy @Keccak_256) bytes)
+       , "ripemd160" Aeson..= encodeHex (digest (Proxy @RIPEMD160) bytes)
+       , "hash160" Aeson..= encodeHex (digest (Proxy @RIPEMD160) (digest (Proxy @SHA256) bytes))
+       , "blake2b256" Aeson..= encodeHex (digest (Proxy @Blake2b_256) bytes)
+       , "blake2b512" Aeson..= encodeHex (digest (Proxy @Blake2b_512) bytes)
+       ]
+
+   metadata :: Aeson.Value
+   metadata = Aeson.object
+     [ "description" Aeson..= ("Haskell hash parity dump" :: String)
+     , "generator" Aeson..= ("scripts/HashVectors.hs" :: String)
+     , "note" Aeson..= ("Compare with Rust cardano-test-vectors" :: String)
+     ]
+
+   main :: IO () = do
+     let payload = Aeson.object
+           [ "metadata" Aeson..= metadata
+           , "vectors" Aeson..= map entry cases
+           ]
+     LBS.putStr (Aeson.encode payload)
+   ```
+3. Run with `stack runghc scripts/HashVectors.hs > hash_vectors_haskell.json` (or Cabal
+   equivalent), then compare the resulting JSON/hex digests with the Rust-generated
+   `cardano-test-vectors/test_vectors/hash_test_vectors.json` using `jq` or a diff tool.
+4. Run `cargo run -p cardano-test-vectors --bin compare_hash_vectors \
+  hash_vectors_haskell.json` to produce a machine-readable diff; the command exits
+  with a non-zero status when digests diverge.
+5. Copy new digests into the Rust vectors if the Haskell reference reports updates.
+
+This keeps the regeneration workflow traceable even before full automation lands.
+
+#### Constant-time comparisons
+
+All hash helpers surface raw byte arrays. Use `hash::constant_time_eq(lhs, rhs)` when comparing
+digests derived from secret material so the check leverages `subtle::ConstantTimeEq` instead of a
+branchy byte-by-byte loop. The helper rejects mismatched lengths up front and otherwise executes in
+constant time, keeping the equality semantics aligned with the Haskell reference implementations.
+
+### Haskell → Rust mapping (hashes)
+
+| Haskell Symbol | Rust Equivalent |
+|----------------|-----------------|
+| `Cardano.Crypto.Hash` (module) | `hash` module in `cardano_crypto_class::hash` |
+| `HashAlgorithm` | `hash::HashAlgorithm` trait |
+| `Blake2b_224` | `hash::Blake2b224` / `hash::blake2b224` |
+| `Blake2b_256`, `Blake2b_512` | `hash::Blake2b256`, `hash::Blake2b512` |
+| `SHA256`, `SHA512` | `hash::Sha256`, `hash::Sha512` |
+| `SHA3_256`, `SHA3_512` | `hash::Sha3_256`, `hash::Sha3_512` |
+| `Keccak_256` | `hash::Keccak256` |
+| `RIPEMD160` | `hash::Ripemd160` |
+| `hashRaw`, `hashToBytes`, `hashFromBytes` | `hash::hash_raw`, `hash::hash_to_bytes`, `hash::hash_from_bytes` |
+| Composite helpers (`doubleSHA256`, `hash160`) | `hash::double_sha256`, `hash::hash160` |
+
+> The table mirrors the minimal surface needed for parity audits; additions should
+> preserve the original naming to keep cross-referencing straightforward.
 
 ## DSIGN parity progress
 
@@ -175,6 +331,20 @@ cargo test -p cardano-crypto-class --test kes_forward_security
 ```
 
 ## Benchmarks
+
+Hash throughput benchmarks exercise every helper (`sha256`, `sha256d`, `sha512`, `sha3_256`,
+`sha3_512`, `keccak256`, `ripemd160`, `hash160`, `Blake2b256`, `Blake2b512`) across patterned
+payloads of 32 bytes, 1 KiB, 64 KiB, and 1 MiB. Criterion reports MB/s per algorithm and input
+size in `target/criterion` (HTML + JSON) so regressions can be tracked over time.
+
+To flag regressions manually, archive the latest run by copying the `target/criterion/hash_bench`
+directory (HTML + `benchmark.json`) into release notes or attaching it to the phase tracker. Future
+runs can be diffed with `criterion compare baseline current` or simple JSON diffs to detect
+throughput drops before formal automation lands.
+
+```bash
+cargo bench -p cardano-crypto-class --bench hash_bench
+```
 
 Experimental KES performance benchmarks are provided (dev-only) via Criterion:
 

@@ -34,6 +34,7 @@ struct HashVector {
     keccak256: String,
     ripemd160: String,
     hash160: String,
+    blake2b224: String,
     blake2b256: String,
     blake2b512: String,
 }
@@ -116,6 +117,12 @@ fn hash_vectors_match() {
             hex::encode(hash160(&input)),
             v.hash160,
             "hash160 mismatch for {}",
+            v.name
+        );
+        assert_eq!(
+            hex::encode(blake2b224(&input)),
+            v.blake2b224,
+            "blake2b224 mismatch for {}",
             v.name
         );
         assert_eq!(

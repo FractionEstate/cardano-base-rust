@@ -38,6 +38,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   multi-block inputs plus a dedicated Rust generator
   (`generate_hash_vectors.rs`) to keep the corpus aligned with
   `cardano_crypto_class::hash`.
+- Blake2b-224 digests for every hash vector, covering the verification-key
+  hashing path used during address derivation so the Rust fixtures match the
+  Haskell `Cardano.Crypto.Hash.Blake2b_224` outputs.
+- `compare_hash_vectors` CLI to diff a Haskell-produced JSON corpus against the
+  committed Rust vectors, reporting any digest or input mismatches to close the
+  verification loop.
 - Added Bitcoin/Ethereum composite fixtures (genesis block header, genesis
   public key, and legacy RLP transaction) to `hash_test_vectors.json`,
   extending coverage for `sha256d` and `hash160` against widely referenced

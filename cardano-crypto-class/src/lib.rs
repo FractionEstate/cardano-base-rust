@@ -70,6 +70,7 @@ pub use dsign::ed25519_mlocked::Ed25519MLockedSigningKey;
 
 pub use kes::{
     // Hash algorithms
+    Blake2b224,
     Blake2b256,
     Blake2b512,
     // CompactSingle KES
