@@ -15,9 +15,9 @@ cardano-test-vectors/
 │   ├── ed25519_test_vectors.json
 │   ├── ecdsa_secp256k1_test_vectors.json
 │   ├── schnorr_secp256k1_test_vectors.json
-│   ├── compact_sum_kes_test_vectors.json (CompactSumKES levels 1–7)
-│   ├── sum_kes_period_evolution_vectors.json (SumKES full evolution sequences)
-│   ├── compact_sum_kes_period_evolution_vectors.json (CompactSumKES full evolution sequences)
+│   ├── compact_sum_kes_test_vectors.json (CompactSumKES levels 1–7, 32 deterministic seeds)
+│   ├── sum_kes_period_evolution_vectors.json (SumKES full evolution sequences, 6 representative seeds)
+│   ├── compact_sum_kes_period_evolution_vectors.json (CompactSumKES full evolution sequences, 6 representative seeds)
 │   ├── vrf_ver03_standard_10 … vrf_ver03_standard_12
 │   ├── vrf_ver13_* and generated_* series
 │   └── bls12-381/
@@ -66,16 +66,21 @@ The Ed25519 vectors are also used for the RFC 8032 parity checks in
 `generate_kes_vectors.rs` mirrors the hierarchy from
 `Cardano.Crypto.KES.Sum`, emitting deterministic fixtures for:
 
-- `single_kes_test_vectors.json` – SingleKES level 0 cases
-- `compact_single_kes_test_vectors.json` – CompactSingleKES (embedded vk parity)
-- `sum_kes_test_vectors.json` – SumKES levels 1–7
+- `single_kes_test_vectors.json` – 12 SingleKES level 0 vectors spanning
+    canonical seeds, reversed-byte fixtures, and deterministically generated
+    parity coverage
+- `compact_single_kes_test_vectors.json` – 12 CompactSingleKES vectors with
+    embedded verification-key parity matching the SingleKES corpus
+- `sum_kes_test_vectors.json` – SumKES levels 1–7, 32 deterministic seeds per
+    level with tracked period subsets for regression coverage
 - `compact_sum_kes_test_vectors.json` – CompactSumKES levels 1–7, using the
     new recursive verification-key reconstruction to keep compact trees in
     lockstep with their SumKES counterparts
 - `sum_kes_period_evolution_vectors.json` – SumKES evolution traces with every
-    period recorded for deterministic regression checks
+    period recorded for six representative seeds across the hierarchy
 - `compact_sum_kes_period_evolution_vectors.json` – CompactSumKES counterpart
-    to the evolution traces, guaranteeing compact verification parity
+    to the evolution traces, guaranteeing compact verification parity for the
+    same seed subset
 
 The top-level test `tests/kes_vectors.rs` consumes these files to assert
 signature stability and to cross-check the period boundaries for every level.
@@ -134,7 +139,7 @@ modules share the same tooling.
 
 ## Generating new vectors
 
-Regenerate the JSON files from the Haskell reference implementation with:
+Regenerate the DSIGN JSON files from the Haskell reference implementation with:
 
 ```bash
 ./.github/scripts/generate_dsign_test_vectors.sh
@@ -143,6 +148,15 @@ Regenerate the JSON files from the Haskell reference implementation with:
 The script documents every step required to pull fixtures from
 `cardano-crypto-tests` and writes them directly into
 `cardano-test-vectors/test_vectors/`.
+
+KES fixtures are regenerated entirely within this crate:
+
+```bash
+cargo run -p cardano-test-vectors --bin generate_kes_vectors
+```
+
+The command emits updated Single/CompactSingle/Sum/CompactSum corpora with the
+deterministic seed/message expansion described above.
 
 ## Tests
 
@@ -161,8 +175,11 @@ The crate ships with lightweight regression tests:
     signature stability across levels and periods
 
 **Latest validation:** `cargo test -p cardano-test-vectors` completed on
-2025-10-14 after regenerating the KES evolution fixtures, confirming that the
-embedded datasets remain in sync with the Haskell reference generators cited
-throughout this README.
+2025-10-07 confirming that all embedded VRF, DSIGN (Ed25519 / ECDSA / Schnorr),
+and KES fixture suites load and pass their associated regressions. KES evolution
+fixtures and tracked-period corpora were regenerated prior to this run; vector
+counts are enforced by the tests to guard against accidental shrinkage. Cross-
+language spot checks for newly added KES structural invariants are queued in a
+follow‑up task.
 
 All suites pass under the default workspace toolchain.

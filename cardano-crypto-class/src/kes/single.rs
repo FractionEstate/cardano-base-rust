@@ -1,7 +1,9 @@
 use std::marker::PhantomData;
 
 use crate::dsign::{DsignMAlgorithm, UnsoundDsignMAlgorithm};
-use crate::kes::{KesAlgorithm, KesError, KesMError, Period};
+#[cfg(feature = "kes-metrics")]
+use crate::kes::metrics;
+use crate::kes::{KesAlgorithm, KesError, KesMError, Period}; // instrumentation (no-op when feature disabled)
 
 /// SingleKES wraps a DSIGNM algorithm to provide a 1-period KES.
 ///
@@ -46,8 +48,11 @@ where
                 max_period: 1,
             }));
         }
-        D::sign_bytes_m(context, message, signing_key)
-            .map_err(|e| KesMError::Dsign(format!("{:?}", e)))
+        let sig = D::sign_bytes_m(context, message, signing_key)
+            .map_err(|e| KesMError::Dsign(format!("{:?}", e)))?;
+        #[cfg(feature = "kes-metrics")]
+        metrics::record_signature(Self::SIGNATURE_SIZE);
+        Ok(sig)
     }
 
     fn verify_kes(
@@ -79,6 +84,8 @@ where
             D::forget_signing_key_m(signing_key);
             Ok(None)
         } else {
+            #[cfg(feature = "kes-metrics")]
+            metrics::record_update();
             Ok(Some(signing_key))
         }
     }
@@ -88,7 +95,11 @@ where
         // This constructs an MLocked signing key directly from seed bytes
         // Note: This is marked "Unsound" because it exposes key material serialization,
         // but it's the correct way to construct keys from seed bytes
-        D::raw_deserialize_signing_key_m(seed).map_err(|e| KesMError::Dsign(format!("{:?}", e)))
+        let sk = D::raw_deserialize_signing_key_m(seed)
+            .map_err(|e| KesMError::Dsign(format!("{:?}", e)))?;
+        #[cfg(feature = "kes-metrics")]
+        metrics::record_signing_key(Self::SIGNING_KEY_SIZE);
+        Ok(sk)
     }
 
     fn raw_serialize_verification_key_kes(key: &Self::VerificationKey) -> Vec<u8> {

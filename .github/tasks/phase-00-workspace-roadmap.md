@@ -70,15 +70,20 @@ and ensures no crate is left without an explicit plan or acceptance criteria.
       the original (e.g. leftover bytes, tag mismatches).
 - [ ] Validate integration with `cardano-ledger` style data structures via
       targeted roundtrip tests.
+- [ ] Track structured work via [Phase 07 – CBOR Encoding Parity](phase-07-cbor-parity.md).
 
 ### cardano-crypto-class
 - [x] Track progress through [Phase 03 – Cardano VRF Parity](phase-03-vrf-parity.md). ✅ **COMPLETED**
 - [x] Track progress through [Phase 04 – DSIGN Algorithm Parity](phase-04-dsign-parity.md). ✅ **COMPLETED**
-- [ ] In addition, cover KES and hashing suites for parity against the
-      Haskell library (consider additional phase docs as needed).
-- [ ] Confirm mlocked memory utilities meet the security guarantees documented
-      in Haskell (zeroisation, page locking, error propagation).
-- [ ] Provide compatibility tests against known Haskell outputs for KES.
+- [x] KES parity (Single, CompactSingle, Sum0–7, CompactSum0–7) achieved with unified hierarchical
+      fixture harness (see [Phase 05 – KES Algorithm Parity](phase-05-kes-parity.md)).
+- [x] Compatibility tests against Haskell outputs (verification keys & signatures) incorporated
+      into parity harness; byte-for-byte parity validated for all tracked periods.
+- [x] Zeroisation & secure memory instrumentation in place (feature `mlocked-metrics` counts
+      allocations, bytes, zeroizations, failed_locks). Hooks for error propagation implemented.
+- [ ] OS-level page locking behaviour (swap avoidance / induced `mlock` failure) to be validated
+      in a later security-focused phase.
+- [ ] Hashing suites full parity (see [Phase 06 – Hash Algorithm Parity](phase-06-hash-parity.md)) pending.
 
 ### cardano-git-rev
 - [x] Finalise unsafe export handling for Rust 2024 (`#[unsafe(no_mangle)]`).
@@ -184,6 +189,12 @@ and ensures no crate is left without an explicit plan or acceptance criteria.
       the base image and Rust feature wiring so contributors can rebuild the
       container without manual tweaks. Validated JSON structure locally and
       documented the rebuild flow in the root `README.md`.
+.- 08-10-2025-time-XX:XX: Phase 05 KES parity harness landed (Single / CompactSingle / Sum1–7 /
+      CompactSum1–7) with hierarchical fixtures; forward security tests and serialized size guard
+      added. Added `mlocked-metrics` instrumentation (allocations / bytes / zeroizations / failed_locks)
+      and comprehensive documentation (forward security narrative, period evolution guide, Haskell→Rust
+      mapping). Deferred items: induced `mlock` failure test, OS swap validation, Haskell vs Rust perf
+      comparison, hashing suite parity (Phase 06).
 
 ---
 

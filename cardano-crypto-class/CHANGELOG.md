@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+* Introduced KES performance benchmarks (`benches/kes_bench.rs`) measuring key generation,
+  signing, verification, and bounded evolution cycles for `SingleKes`, `Sum4Kes`, and
+  `CompactSum4Kes`. Added `criterion` (dev-dependency) with HTML reports to establish a
+  reproducible baseline before optimisation or memory layout changes. Benchmarks cap
+  sampled periods to keep CI runtime acceptable.
+* Extended KES benchmarks with serialized size reporting (`serialized_sizes`) emitting the raw
+  byte lengths of verification keys and signatures plus total period count for each algorithm.
+  (Signing key raw serialization intentionally omitted—would require an unsound testing trait
+  not implemented for production benchmarking.) Forms the initial memory footprint baseline
+  (no OS-level RSS sampling yet).
+* Added ECDSA secp256k1 DSIGN vector harness (`tests/dsign_ecdsa_secp256k1_vectors.rs`) exercising key generation from seeds, deterministic RFC6979 signing, low-s normalisation, verify-only cases, and error-path vectors (malformed keys / signatures / negative-s rejection).
+* Added Schnorr secp256k1 DSIGN vector harness (`tests/dsign_schnorr_secp256k1_vectors.rs`) covering deterministic signing, verification, and negative-path scenarios (invalid R/S encodings, altered messages, malformed public keys).
 * Enabled the serde-gated Ed25519 cross-compatibility regression (`tests/cross_compat.rs`) to
   run by default with the bundled `ed25519_vectors.json` fixtures, keeping behaviour aligned
   with `Cardano.Crypto.DSIGN` while silencing unused metadata warnings from the JSON loader.
@@ -72,6 +84,20 @@
   `sum_kes_test_vectors` regression to decompose signatures with the shared
   helper so every tracked JSON vector now revalidates its verification-key
   path against `Cardano.Crypto.KES.Sum`.
+* Added consolidated `tests/kes_haskell_parity.rs` harness which consumes the
+  embedded JSON fixtures for Single, CompactSingle, Sum (levels 1–7) and
+  CompactSum (levels 1–7) to assert byte-for-byte verification key and signature
+  parity while exercising deterministic period evolution. This replaces the
+  earlier (unused) flat-array prototype and aligns the Rust port with the
+  hierarchical fixture structure used by the Haskell reference generator.
+* Introduced feature-gated `mlocked-metrics` instrumentation (`src/mlocked_metrics.rs`) with
+  relaxed atomic counters for allocations, allocation_bytes, zeroizations, and failed_locks.
+  Instrumented `MLockedRegion` allocate/drop paths and added unit tests (including alignment
+  rounding and zero-sized edge cases). Provides visibility into secure memory lifecycle without
+  exposing secret contents; disabled by default for production parity builds.
+* Added forward security & period evolution narrative to `kes/mod.rs` and README, including a
+  concise Haskell→Rust module mapping table to aid audit/parity reviews. Documentation checklist
+  in phase task file updated to reflect completion; no functional changes.
 
 ## 2.2.3.2
 

@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::BTreeSet;
 use std::convert::TryInto;
 use std::fs;
@@ -15,10 +16,129 @@ use serde::Serialize;
 
 #[derive(Debug, Clone)]
 struct VectorDefinition {
-    test_name: &'static str,
-    seed_hex: &'static str,
-    message_hex: &'static str,
-    description: &'static str,
+    test_name: Cow<'static, str>,
+    seed_hex: Cow<'static, str>,
+    message_hex: Cow<'static, str>,
+    description: Cow<'static, str>,
+}
+
+fn generate_seed_hex(base_offset: u8, index: usize) -> String {
+    let mut seed = [0u8; 32];
+    let start = base_offset.wrapping_add((index as u8).wrapping_mul(17));
+    for (i, byte) in seed.iter_mut().enumerate() {
+        *byte = start.wrapping_add(i as u8);
+    }
+    encode_upper(seed)
+}
+
+fn generate_message_hex(base_offset: u8, index: usize, length: usize) -> String {
+    let mut message = Vec::with_capacity(length);
+    let start = base_offset.wrapping_add((index as u8).wrapping_mul(29));
+    for offset in 0..length {
+        message.push(start.wrapping_add(offset as u8));
+    }
+    encode_upper(message)
+}
+
+fn single_vector_definitions() -> Vec<VectorDefinition> {
+    let mut definitions = vec![
+        VectorDefinition {
+            test_name: Cow::Borrowed("single_kes_vector_1"),
+            seed_hex: Cow::Borrowed(
+                "000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F",
+            ),
+            message_hex: Cow::Borrowed(""),
+            description: Cow::Borrowed("Zero-message signing with sequential seed bytes"),
+        },
+        VectorDefinition {
+            test_name: Cow::Borrowed("single_kes_vector_2"),
+            seed_hex: Cow::Borrowed(
+                "1F1E1D1C1B1A191817161514131211100F0E0D0C0B0A09080706050403020100",
+            ),
+            message_hex: Cow::Borrowed("4B45532053696E676C6520506572696F64"),
+            description: Cow::Borrowed("ASCII message 'KES Single Period' with reversed seed"),
+        },
+        VectorDefinition {
+            test_name: Cow::Borrowed("single_kes_vector_3"),
+            seed_hex: Cow::Borrowed(
+                "B7E151628AED2A6ABF7158809CF4F3C762E7160F38B4DA56A784D9045190CFEF",
+            ),
+            message_hex: Cow::Borrowed(
+                "243F6A8885A308D313198A2E03707344A4093822299F31D0082EFA98EC4E6C89",
+            ),
+            description: Cow::Borrowed("Cardano property-test seed with ChaCha-inspired message"),
+        },
+        VectorDefinition {
+            test_name: Cow::Borrowed("single_kes_vector_4"),
+            seed_hex: Cow::Borrowed(
+                "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+            ),
+            message_hex: Cow::Borrowed(
+                "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+            ),
+            description: Cow::Borrowed("All-0xFF seed and message for upper-bound coverage"),
+        },
+    ];
+
+    let target = 12;
+    for index in definitions.len()..target {
+        let seed = generate_seed_hex(0x20, index);
+        let message = generate_message_hex(0x40, index, 24);
+        definitions.push(VectorDefinition {
+            test_name: Cow::Owned(format!("single_kes_vector_{}", index + 1)),
+            seed_hex: Cow::Owned(seed),
+            message_hex: Cow::Owned(message),
+            description: Cow::Owned(format!(
+                "Generated deterministic vector {} for broader parity coverage",
+                index + 1
+            )),
+        });
+    }
+
+    definitions
+}
+
+fn hierarchical_vector_definitions() -> Vec<VectorDefinition> {
+    let mut definitions = vec![
+        VectorDefinition {
+            test_name: Cow::Borrowed("hierarchical_vector_1"),
+            seed_hex: Cow::Borrowed(
+                "000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F",
+            ),
+            message_hex: Cow::Borrowed(""),
+            description: Cow::Borrowed("Zero-message signing with sequential seed bytes"),
+        },
+        VectorDefinition {
+            test_name: Cow::Borrowed("hierarchical_vector_2"),
+            seed_hex: Cow::Borrowed(
+                "1F1E1D1C1B1A191817161514131211100F0E0D0C0B0A09080706050403020100",
+            ),
+            message_hex: Cow::Borrowed("4B45532053696E676C6520506572696F64"),
+            description: Cow::Borrowed("ASCII message 'KES Single Period' with reversed seed"),
+        },
+    ];
+
+    let target = 32;
+    for index in definitions.len()..target {
+        let seed = generate_seed_hex(0x80, index);
+        let message = generate_message_hex(0xA0, index, 32);
+        definitions.push(VectorDefinition {
+            test_name: Cow::Owned(format!("hierarchical_vector_{}", index + 1)),
+            seed_hex: Cow::Owned(seed),
+            message_hex: Cow::Owned(message),
+            description: Cow::Owned(format!(
+                "Generated hierarchical vector {} for extended coverage",
+                index + 1
+            )),
+        });
+    }
+
+    definitions
+}
+
+fn period_evolution_subset(definitions: &[VectorDefinition]) -> Vec<VectorDefinition> {
+    let take = definitions.len().min(6);
+    definitions.iter().take(take).cloned().collect()
 }
 
 #[derive(Serialize)]
@@ -137,15 +257,17 @@ struct PeriodEvolutionEntry {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let definitions = vector_definitions();
+    let single_definitions = single_vector_definitions();
+    let hierarchical_definitions = hierarchical_vector_definitions();
+    let period_defs = period_evolution_subset(&hierarchical_definitions);
 
-    let single_vectors = build_single_kes_vectors(&definitions)?;
-    let compact_vectors = build_compact_single_kes_vectors(&definitions)?;
-    let sum_vectors = build_sum_kes_vectors(&definitions)?;
-    let compact_sum_vectors = build_compact_sum_kes_vectors(&definitions)?;
-    let sum_period_evolution_vectors = build_sum_kes_period_evolution_vectors(&definitions)?;
+    let single_vectors = build_single_kes_vectors(&single_definitions)?;
+    let compact_vectors = build_compact_single_kes_vectors(&single_definitions)?;
+    let sum_vectors = build_sum_kes_vectors(&hierarchical_definitions)?;
+    let compact_sum_vectors = build_compact_sum_kes_vectors(&hierarchical_definitions)?;
+    let sum_period_evolution_vectors = build_sum_kes_period_evolution_vectors(&period_defs)?;
     let compact_sum_period_evolution_vectors =
-        build_compact_sum_kes_period_evolution_vectors(&definitions)?;
+        build_compact_sum_kes_period_evolution_vectors(&period_defs)?;
 
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let output_dir = manifest_dir.join("test_vectors");
@@ -182,43 +304,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn vector_definitions() -> Vec<VectorDefinition> {
-    vec![
-        VectorDefinition {
-            test_name: "single_kes_vector_1",
-            seed_hex: "000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F",
-            message_hex: "",
-            description: "Zero-message signing with sequential seed bytes",
-        },
-        VectorDefinition {
-            test_name: "single_kes_vector_2",
-            seed_hex: "1F1E1D1C1B1A191817161514131211100F0E0D0C0B0A09080706050403020100",
-            message_hex: "4B45532053696E676C6520506572696F64",
-            description: "ASCII message 'KES Single Period' with reversed seed",
-        },
-        VectorDefinition {
-            test_name: "single_kes_vector_3",
-            seed_hex: "B7E151628AED2A6ABF7158809CF4F3C762E7160F38B4DA56A784D9045190CFEF",
-            message_hex: "243F6A8885A308D313198A2E03707344A4093822299F31D0082EFA98EC4E6C89",
-            description: "Cardano property-test seed with ChaCha-inspired message",
-        },
-        VectorDefinition {
-            test_name: "single_kes_vector_4",
-            seed_hex: "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
-            message_hex: "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
-            description: "All-0xFF seed and message for upper-bound coverage",
-        },
-    ]
-}
-
 fn build_single_kes_vectors(
     definitions: &[VectorDefinition],
 ) -> Result<SingleKesVectors, Box<dyn std::error::Error>> {
     let mut vectors = Vec::with_capacity(definitions.len());
 
     for def in definitions {
-        let seed_bytes = decode_seed(def.seed_hex)?;
-        let message_bytes = decode_hex(def.message_hex)?;
+        let seed_bytes = decode_seed(def.seed_hex.as_ref())?;
+        let message_bytes = decode_hex(def.message_hex.as_ref())?;
 
         let signing_key = SingleKes::<Ed25519>::gen_key_kes_from_seed_bytes(&seed_bytes)?;
         let verification_key = SingleKes::<Ed25519>::derive_verification_key(&signing_key)?;
@@ -230,11 +323,11 @@ fn build_single_kes_vectors(
         SingleKes::<Ed25519>::forget_signing_key_kes(signing_key);
 
         vectors.push(SingleKesVectorEntry {
-            test_name: def.test_name.to_owned(),
-            seed: def.seed_hex.to_owned(),
-            message: def.message_hex.to_owned(),
+            test_name: def.test_name.to_string(),
+            seed: def.seed_hex.to_string(),
+            message: def.message_hex.to_string(),
             period: 0,
-            description: def.description.to_owned(),
+            description: def.description.to_string(),
             expected: SingleKesExpected {
                 verification_key: encode_upper(vk_bytes),
                 signature: encode_upper(&signature_bytes),
@@ -258,8 +351,8 @@ fn build_compact_single_kes_vectors(
     let signature_len = <Ed25519 as DsignAlgorithm>::SIGNATURE_SIZE;
 
     for def in definitions {
-        let seed_bytes = decode_seed(def.seed_hex)?;
-        let message_bytes = decode_hex(def.message_hex)?;
+        let seed_bytes = decode_seed(def.seed_hex.as_ref())?;
+        let message_bytes = decode_hex(def.message_hex.as_ref())?;
 
         let signing_key = CompactSingleKes::<Ed25519>::gen_key_kes_from_seed_bytes(&seed_bytes)?;
         let verification_key = CompactSingleKes::<Ed25519>::derive_verification_key(&signing_key)?;
@@ -275,11 +368,11 @@ fn build_compact_single_kes_vectors(
         CompactSingleKes::<Ed25519>::forget_signing_key_kes(signing_key);
 
         vectors.push(CompactSingleKesVectorEntry {
-            test_name: def.test_name.to_owned(),
-            seed: def.seed_hex.to_owned(),
-            message: def.message_hex.to_owned(),
+            test_name: def.test_name.to_string(),
+            seed: def.seed_hex.to_string(),
+            message: def.message_hex.to_string(),
             period: 0,
-            description: def.description.to_owned(),
+            description: def.description.to_string(),
             expected: CompactSingleExpected {
                 derived_verification_key: encode_upper(&vk_bytes),
                 embedded_verification_key: encode_upper(embedded_vk),
@@ -300,7 +393,7 @@ fn build_compact_single_kes_vectors(
 fn build_sum_kes_vectors(
     definitions: &[VectorDefinition],
 ) -> Result<SumKesVectors, Box<dyn std::error::Error>> {
-    let hierarchical_defs: Vec<_> = definitions.iter().take(2).cloned().collect();
+    let hierarchical_defs: Vec<_> = definitions.to_vec();
     let mut levels = Vec::new();
 
     levels.push(build_hierarchical_level_vectors::<Sum1Kes>(
@@ -343,7 +436,7 @@ fn build_sum_kes_vectors(
 fn build_compact_sum_kes_vectors(
     definitions: &[VectorDefinition],
 ) -> Result<CompactSumKesVectors, Box<dyn std::error::Error>> {
-    let hierarchical_defs: Vec<_> = definitions.iter().take(2).cloned().collect();
+    let hierarchical_defs: Vec<_> = definitions.to_vec();
     let mut levels = Vec::new();
 
     levels.push(build_hierarchical_level_vectors::<CompactSum1Kes>(
@@ -405,10 +498,11 @@ where
 
         vectors.push(SumKesVectorEntry {
             test_name: format!("level{}_kes_vector_{}", level, index + 1),
-            seed: def.seed_hex.to_owned(),
+            seed: def.seed_hex.to_string(),
             description: format!(
                 "{} – tracked periods {:?}",
-                def.description, &tracked_periods
+                def.description.as_ref(),
+                &tracked_periods
             ),
             verification_key,
             tracked_periods: tracked,
@@ -425,7 +519,7 @@ where
 fn build_sum_kes_period_evolution_vectors(
     definitions: &[VectorDefinition],
 ) -> Result<PeriodEvolutionVectors, Box<dyn std::error::Error>> {
-    let hierarchical_defs: Vec<_> = definitions.iter().take(2).cloned().collect();
+    let hierarchical_defs: Vec<_> = definitions.to_vec();
     let mut levels = Vec::new();
 
     levels.push(build_period_evolution_level::<Sum1Kes>(
@@ -468,7 +562,7 @@ fn build_sum_kes_period_evolution_vectors(
 fn build_compact_sum_kes_period_evolution_vectors(
     definitions: &[VectorDefinition],
 ) -> Result<PeriodEvolutionVectors, Box<dyn std::error::Error>> {
-    let hierarchical_defs: Vec<_> = definitions.iter().take(2).cloned().collect();
+    let hierarchical_defs: Vec<_> = definitions.to_vec();
     let mut levels = Vec::new();
 
     levels.push(build_period_evolution_level::<CompactSum1Kes>(
@@ -522,10 +616,10 @@ where
         let (verification_key, periods) = generate_period_entries::<K>(def)?;
         vectors.push(PeriodEvolutionEntry {
             test_name: format!("level{}_kes_vector_{}", level, index + 1),
-            seed: def.seed_hex.to_owned(),
+            seed: def.seed_hex.to_string(),
             description: format!(
                 "{} – full period coverage 0..{}",
-                def.description,
+                def.description.as_ref(),
                 total_periods.saturating_sub(1)
             ),
             verification_key,
@@ -546,8 +640,8 @@ fn generate_period_entries<K>(
 where
     K: KesAlgorithm<Context = ()>,
 {
-    let seed_bytes = decode_seed(def.seed_hex)?;
-    let base_message = decode_hex(def.message_hex)?;
+    let seed_bytes = decode_seed(def.seed_hex.as_ref())?;
+    let base_message = decode_hex(def.message_hex.as_ref())?;
 
     let mut signing_key = K::gen_key_kes_from_seed_bytes(&seed_bytes)?;
     let verification_key = K::derive_verification_key(&signing_key)?;

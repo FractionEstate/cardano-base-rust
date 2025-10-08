@@ -12,6 +12,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   (`sum_kes_period_evolution_vectors.json`,
   `compact_sum_kes_period_evolution_vectors.json`) plus regression tests that
   assert every signature across the full hierarchy.
+- Deterministic seed/message helpers in `generate_kes_vectors.rs` that expand
+  the SingleKES and CompactSingleKES corpora to cover twelve vectors, ensuring
+  broader parity with the Haskell reference inputs.
 - SumKES JSON fixtures (`sum_kes_test_vectors.json`) mirrored from the Haskell
   reference generator (`Cardano.Crypto.KES.Sum`).
 - CompactSumKES level-1 JSON fixtures (`compact_sum_kes_test_vectors.json`)
@@ -40,10 +43,17 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - `compact_sum_kes_test_vectors.json` now covers CompactSumKES levels 1–7, and
   the regression harness exercises every level to match the regenerated
   fixtures.
+- Expanded SumKES/CompactSumKES tracked vector coverage to 32 deterministic
+  seeds per level and limited the full-period evolution suites to six
+  representative seeds for manageable fixture sizes.
+- `tests/kes_vectors.rs` now enforces minimum corpus lengths for
+  Single/CompactSingle/Sum/CompactSum fixtures so future regressions detect
+  accidental vector shrinkage.
 - `generate_ed25519_outputs.rs` surfaces optional debugging guidance when the
   new feature flag is enabled.
 - Library module exports extended to expose the sum KES fixtures at compile
   time.
 - Revalidated the full regression suite (`cargo test -p cardano-test-vectors`)
-  on 2025-10-14 after regenerating evolution fixtures, confirming parity with
-  the Haskell generators without requiring further code changes.
+  on 2025-10-07 after regenerating evolution fixtures, confirming fixture
+  integrity and internal harness stability (cross-language parity spot checks
+  for expanded KES structure tests remain pending).

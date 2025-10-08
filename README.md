@@ -8,12 +8,15 @@ Cardano ecosystem.
 
 ## Highlights
 
-- **Cryptography**: Ed25519 (standard and mlocked), ECDSA secp256k1, Schnorr secp256k1,
-  and Praos VRF implementations in [`cardano-crypto-class`](cardano-crypto-class/README.md).
-- **Key Evolving Signatures**: `SingleKes`, `Sum{0-7}Kes`, and compact variants with
-  Blake2b hashing, shared structural inspectors, serde-gated regression vectors for
-  CompactSum levels 1–7, and boundary tests that enforce expiry and tamper resistance in
-  [`cardano-crypto-class`](cardano-crypto-class/tests).
+- **Cryptography**: Ed25519 (standard and mlocked) parity complete; ECDSA secp256k1 & Schnorr
+  secp256k1 harnesses passing against embedded vectors (formal cross-language review pending);
+  Praos VRF parity complete in [`cardano-crypto-class`](cardano-crypto-class/README.md) and
+  [`cardano-vrf-pure`](cardano-vrf-pure/README.md).
+- **Key Evolving Signatures**: `SingleKes`, `Sum{0-7}Kes`, and `CompactSum{0-7}Kes` with Blake2b
+  hashing, structural + forward-security regressions, serde-gated vectors (tracked periods +
+  full evolution traces), and boundary/tamper tests in
+  [`cardano-crypto-class`](cardano-crypto-class/tests). Mlocked memory security & perf
+  benchmarking remain in progress.
 - **VRF reference implementation** ✅: Draft-03 and Draft-13 VRFs over Curve25519 in
   [`cardano-vrf-pure`](cardano-vrf-pure/README.md) with **byte-for-byte parity** to Cardano
   libsodium. See [`VRF_PARITY_COMPLETE.md`](cardano-vrf-pure/VRF_PARITY_COMPLETE.md).

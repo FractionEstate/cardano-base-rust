@@ -1,0 +1,45 @@
+{
+  "metadata": {
+    "description": "Baseline hash test vectors (initial scaffold) – to be cross-validated with Haskell implementation",
+    "version": 1,
+    "note": "Extend with large / multi-block cases and Haskell-generated confirmations"
+  },
+  "vectors": [
+    {
+      "name": "empty",
+      "input_hex": "",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sha256d": "5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456",
+      "sha512": "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e",
+      "sha3_256": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+      "sha3_512": "a69f73cca23a9ac5c8b567dc185a756e97c982164fe25859e0d1dcc1475c80a615b2123af1f5f94c11e3e9402c3ac558f500199d95b6d3e301758586281dcd26",
+      "keccak256": "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+      "ripemd160": "9c1185a5c5e9fc54612808977ee8f548b2258d31",
+      "hash160": "b472a266d0bd89c13706a4132ccfb16f7c3b9fcb"
+    },
+    {
+      "name": "hello_ascii",
+      "input_hex": "68656c6c6f20776f726c64", // "hello world"
+      "sha256": "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
+      "sha256d": "9595c9df90075148eb06860365df33584b75bff782a510c6cd4883a419833d50",
+      "sha512": "309ecc489c12d6eb4cc40f50c902f2b4d0ed77ee511a7c7a9bcd3ca86d4cd86f989dd35bc5ff499670da34255b45b0cfd830e81f605dcf7dc5542e93ae9cd76f",
+      "sha3_256": "644bcc7e564373040999aac89e7622f3ca71fba1d972fd94a31c3bfbf24e3938",
+      "sha3_512": "918bc241b3912a05b1512f1fb1ecae6dcd99955cf25036c2c598f82cd1501aaff95ddc679bb4b079050d01ef8a5ba4d6c5eaaeefa76d0c5889ba2746047f2d52",
+      "keccak256": "47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad",
+      "ripemd160": "98c615784ccb5fe5936fbc0cbe9dfdb408d92f0f",
+      "hash160": "d7d5ee7824f24c03f06ab4363860e84a057f340f"
+    },
+    {
+      "name": "short_sequence",
+      "input_hex": "00010203040506070809",
+      "sha256": "5106d6d0f1e6986f8abca8ff0fa89bbf908db8b27c12075b1219777084d64c06",
+      "sha256d": "7ca5f9777084ffcf274235a491091223eec1ab0ab03f1f5b262a1d182463af2e",
+      "sha512": "79f5f9bdb0fd6895a036ce14994816abfcaa364fce9962112dc6428841998e36cc83e7b0934cf247279e727e648b469dd66f233aa8481bf26a55ac4476718467",
+      "sha3_256": "708e9b186569c6e488d8b049f3d6954e4cb024ac6f6f1ae14fbf8d91bafe53d9",
+      "sha3_512": "bf9a795d4fc9b57591f8b1375791f23454abc1769358764ed47bb4af13eb42f40be9be83b7d4f8fcced6d7ccc353801c32750ae183774f046cb4156cb0994345",
+      "keccak256": "1aa9edf22c0029ebb631b565f39b8ddc29ab4345306948c869c5c5983e81d352",
+      "ripemd160": "2e987816854eaa023697e7e9d58afede5ecef3f0",
+      "hash160": "900eb61e5a849f2d96d4e79e15411c9a8a2dc4cc"
+    }
+  ]
+}

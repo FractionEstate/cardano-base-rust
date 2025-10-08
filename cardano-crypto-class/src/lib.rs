@@ -15,6 +15,8 @@ pub mod ffi;
 pub mod hash;
 pub mod kes;
 pub mod mlocked_bytes;
+#[cfg(feature = "mlocked-metrics")]
+pub mod mlocked_metrics;
 pub mod mlocked_seed;
 pub mod packed_bytes;
 pub mod pinned_sized_bytes;

@@ -1,3 +1,83 @@
+//! Key Evolving Signatures (KES)
+//!
+//! This module ports the hierarchy of KES implementations from the Haskell
+//! `cardano-crypto-class` package, preserving naming and structure to make
+//! cross-referencing straightforward:
+//!
+//! | Haskell Module | Rust Module / Type |
+//! |----------------|--------------------|
+//! | `Cardano.Crypto.KES.Class` | `kes::KesAlgorithm` trait |
+//! | `Cardano.Crypto.KES.Single` | `kes::single::SingleKes` |
+//! | `Cardano.Crypto.KES.CompactSingle` | `kes::compact_single::CompactSingleKes` |
+//! | `Cardano.Crypto.KES.Sum` | `kes::sum::{Sum0Kes..Sum7Kes}` |
+//! | `Cardano.Crypto.KES.CompactSum` | `kes::compact_sum::{CompactSum0Kes..CompactSum7Kes}` |
+//! | `hashVerKeyKES` (Haskell method) | `KesAlgorithm::hash_verification_key_kes` |
+//!
+//! # Forward security model
+//!
+//! A KES signing key evolves through a fixed number of discrete periods
+//! (enumerated from 0). Each evolution irreversibly destroys the ability to
+//! produce signatures for past periods. In practice this is achieved by:
+//!
+//! 1. Deriving fresh lower-level (or leaf) DSIGN keys from secret material.
+//! 2. Zeroizing / overwriting intermediate secret nodes when advancing.
+//! 3. Reconstructing verification key paths during verification instead of
+//!    storing all subtree keys persistently (Compact variants embed the
+//!    "off-path" key material inside signatures to enable this).
+//!
+//! The `update_kes` method returns `Ok(Some(new_key))` for a successful
+//! transition and `Ok(None)` when the key has reached `total_periods()` and has
+//! expired. Attempting to sign outside `[0, total_periods())` yields
+//! `KesError::PeriodOutOfRange`, while using an evolved key beyond its final
+//! period yields `KesError::KeyExpired`.
+//!
+//! # Period evolution guide
+//!
+//! | Family | Total Periods | Evolution Strategy |
+//! |--------|---------------|--------------------|
+//! | `SingleKes` / `CompactSingleKes` | 1 | Period fixed at 0; any other period rejected. |
+//! | `Sum n` | 2^n | Binary tree: first half uses left subtree; after boundary switch to right subtree; internal node secrets discarded as soon as children derived. |
+//! | `CompactSum n` | 2^n | Same schedule as `Sum n`, but signatures include the *off-path* verification key, letting the verifier reconstruct the full root with one fewer stored key per node. |
+//!
+//! Verification replays the period routing logic: it decides which leaf /
+//! subtree signature should be present and reconstructs intermediate hashes
+//! (or verification keys for compact variants) to compare against the root.
+//!
+//! # Zeroization & secure memory
+//!
+//! Signing keys may contain mlocked buffers. The `forget_signing_key_kes`
+//! method enforces explicit destruction semantics mirroring Haskell's
+//! `forgetSignKeyKES`. Internal evolution steps also overwrite obsolete secret
+//! material, supporting the forward security guarantee that historical signing
+//! capability cannot be restored.
+//!
+//! # Unsound operations
+//!
+//! The `UnsoundKesAlgorithm` trait exposes raw signing key (de)serialization
+//! strictly for testing / vector generation. Production code should never
+//! persist signing keys in raw form outside controlled secure memory contexts.
+//!
+//! # Metrics
+//!
+//! When compiled with the crate feature `kes-metrics`, lightweight relaxed
+//! atomic counters (see `kes::metrics`) provide coarse-grained counts of signing
+//! keys, signatures, signature bytes, and update operations to aid benchmarking
+//! and regression analysis. They are zero-cost when the feature is disabled.
+//!
+//! # Example
+//!
+//! ```rust
+//! use cardano_crypto_class::kes::{KesAlgorithm, SingleKes};
+//! use cardano_crypto_class::dsign::ed25519::Ed25519;
+//!
+//! // Generate a deterministic seed (all zeros for illustration) of required length.
+//! let seed = vec![0u8; SingleKes::<Ed25519>::SEED_SIZE];
+//! let sk = SingleKes::<Ed25519>::gen_key_kes_from_seed_bytes(&seed).unwrap();
+//! let vk = SingleKes::<Ed25519>::derive_verification_key(&sk).unwrap();
+//! let msg = b"epoch-boundary";
+//! let sig = SingleKes::<Ed25519>::sign_kes(&(), 0, msg, &sk).unwrap();
+//! SingleKes::<Ed25519>::verify_kes(&(), &vk, 0, msg, &sig).unwrap();
+//! ```
 use std::fmt;
 use std::marker::PhantomData;
 
@@ -10,6 +90,7 @@ use crate::util::SignableRepresentation;
 pub mod compact_single;
 pub mod compact_sum;
 pub mod hash;
+pub mod metrics;
 pub mod single;
 pub mod sum;
 pub mod verify_hash;

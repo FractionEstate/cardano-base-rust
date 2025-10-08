@@ -107,6 +107,10 @@ struct PeriodEvolutionVectorEntry {
 fn single_kes_vectors_match_generated_data() {
     let fixture = kes::get("single_kes_test_vectors.json").expect("single KES vectors present");
     let parsed: SingleKesVectors = serde_json::from_str(fixture).expect("valid single KES JSON");
+    assert!(
+        parsed.vectors.len() >= 12,
+        "expected at least 12 SingleKES vectors for coverage"
+    );
 
     for (index, vector) in parsed.vectors.iter().enumerate() {
         assert_eq!(0, vector.period, "SingleKES supports only period 0");
@@ -198,6 +202,10 @@ fn compact_single_kes_vectors_match_generated_data() {
         .expect("compact single KES vectors present");
     let parsed: CompactSingleKesVectors =
         serde_json::from_str(fixture).expect("valid compact single KES JSON");
+    assert!(
+        parsed.vectors.len() >= 12,
+        "expected at least 12 CompactSingleKES vectors for coverage"
+    );
 
     let signature_len = <Ed25519 as DsignAlgorithm>::SIGNATURE_SIZE;
 
@@ -308,6 +316,11 @@ fn sum_kes_vectors_cover_period_boundaries() {
     let parsed: SumKesVectors = serde_json::from_str(fixture).expect("valid sum KES JSON");
 
     for level in &parsed.levels {
+        assert!(
+            level.vectors.len() >= 32,
+            "expected at least 32 tracked vectors for SumKES level {}",
+            level.level
+        );
         match level.level {
             1 => exercise_sum_level::<Sum1Kes>(level),
             2 => exercise_sum_level::<Sum2Kes>(level),
@@ -327,6 +340,11 @@ fn sum_kes_vectors_reject_tampered_messages() {
     let parsed: SumKesVectors = serde_json::from_str(fixture).expect("valid sum KES JSON");
 
     for level in &parsed.levels {
+        assert!(
+            level.vectors.len() >= 32,
+            "expected at least 32 tracked vectors for CompactSumKES level {}",
+            level.level
+        );
         match level.level {
             1 => assert_sum_tampered_message_fails::<Sum1Kes>(level),
             2 => assert_sum_tampered_message_fails::<Sum2Kes>(level),
@@ -390,6 +408,11 @@ fn sum_kes_period_evolution_vectors_cover_full_sequences() {
         serde_json::from_str(fixture).expect("valid sum KES period evolution JSON");
 
     for level in &parsed.levels {
+        assert!(
+            level.vectors.len() >= 6,
+            "expected at least 6 period evolution vectors for SumKES level {}",
+            level.level
+        );
         match level.level {
             1 => exercise_period_evolution_level::<Sum1Kes>(level),
             2 => exercise_period_evolution_level::<Sum2Kes>(level),
@@ -411,6 +434,11 @@ fn compact_sum_kes_period_evolution_vectors_cover_full_sequences() {
         serde_json::from_str(fixture).expect("valid compact sum KES period evolution JSON");
 
     for level in &parsed.levels {
+        assert!(
+            level.vectors.len() >= 6,
+            "expected at least 6 period evolution vectors for CompactSumKES level {}",
+            level.level
+        );
         match level.level {
             1 => exercise_period_evolution_level::<CompactSum1Kes>(level),
             2 => exercise_period_evolution_level::<CompactSum2Kes>(level),

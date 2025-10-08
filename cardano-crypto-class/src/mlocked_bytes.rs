@@ -3,6 +3,12 @@ use std::ptr::{self, NonNull};
 use std::slice;
 
 use crate::ffi::{SizedMutPtr, SizedPtr};
+#[cfg(feature = "mlocked-metrics")]
+use crate::mlocked_metrics::{
+    record_allocation as record_mlocked_allocation,
+    record_failed_lock as record_mlocked_failed_lock,
+    record_zeroization as record_mlocked_zeroization,
+};
 use rand_core::OsError;
 use thiserror::Error;
 
@@ -88,9 +94,19 @@ impl MLockedRegion {
             unsafe {
                 libc::free(ptr.cast());
             }
+            #[cfg(feature = "mlocked-metrics")]
+            {
+                record_mlocked_failed_lock();
+            }
             return Err(MLockedError::LockFailed {
                 code: err.raw_os_error().unwrap_or_default(),
             });
+        }
+
+        #[cfg(feature = "mlocked-metrics")]
+        {
+            // Record the rounded allocation length actually locked.
+            record_mlocked_allocation(alloc_len);
         }
 
         Ok(Self {
@@ -141,6 +157,10 @@ impl Drop for MLockedRegion {
             // Zeroing memory for security before deallocation.
             unsafe {
                 ptr::write_bytes(self.ptr.as_ptr(), 0, self.len);
+            }
+            #[cfg(feature = "mlocked-metrics")]
+            {
+                record_mlocked_zeroization();
             }
         }
 
@@ -569,5 +589,45 @@ mod tests {
         let mut dst = MLockedBytes::new_zeroed(4).unwrap();
         unsafe { copy_mem(dst.as_mut_ptr(), src.as_ptr(), dst.len()) };
         assert_eq!(dst.as_slice(), &[9, 8, 7, 6]);
+    }
+}
+
+#[cfg(all(test, feature = "mlocked-metrics"))]
+mod metrics_tests {
+    use super::*;
+    use crate::mlocked_metrics as mm;
+
+    #[test]
+    fn metrics_increment_on_allocation_and_drop() {
+        let before = mm::snapshot();
+        {
+            let _a = MLockedBytes::new(0).unwrap(); // zero-sized edge case, len recorded as 0
+            let _b = MLockedBytes::new_aligned(13, 8).unwrap(); // rounds to 16
+            let _c = MLockedSizedBytes::<7>::new().unwrap(); // size 7
+        } // drop -> zeroizations recorded for non-zero allocations
+        let after = mm::snapshot();
+        assert!(
+            after.allocations >= before.allocations + 2,
+            "allocations not incremented sufficiently: before={:?} after={:?}",
+            before,
+            after
+        );
+        assert!(
+            after.allocation_bytes >= before.allocation_bytes + 23,
+            "expected at least 23 bytes (16 + 7) tracked"
+        );
+        assert!(
+            after.zeroizations >= before.zeroizations + 2,
+            "zeroizations should increase for non-zero allocations"
+        );
+    }
+
+    #[test]
+    fn invalid_alignment_error() {
+        match MLockedBytes::new_aligned(10, 0) {
+            Err(MLockedError::InvalidAlignment) => {},
+            Ok(_) => panic!("expected InvalidAlignment error"),
+            Err(e) => panic!("unexpected error: {:?}", e),
+        }
     }
 }
