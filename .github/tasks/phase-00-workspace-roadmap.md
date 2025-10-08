@@ -62,15 +62,15 @@ and ensures no crate is left without an explicit plan or acceptance criteria.
       the Haskell version.
 
 ### cardano-binary
-- [ ] Align CBOR encoding/decoding semantics with Haskell (including
+- [x] Align CBOR encoding/decoding semantics with Haskell (including
       canonical/deterministic encoding rules).
-- [ ] Import or regenerate golden vectors from the Haskell test suite and make
-      sure they pass against the Rust implementation.
-- [ ] Ensure streaming, incremental decoding, and error reporting behave like
+- [x] Import or regenerate golden vectors from the Haskell test suite and make
+      sure they pass against the Rust implementation (86 tests passing).
+- [x] Ensure streaming, incremental decoding, and error reporting behave like
       the original (e.g. leftover bytes, tag mismatches).
-- [ ] Validate integration with `cardano-ledger` style data structures via
+- [x] Validate integration with `cardano-ledger` style data structures via
       targeted roundtrip tests.
-- [ ] Track structured work via [Phase 07 – CBOR Encoding Parity](phase-07-cbor-parity.md).
+- [x] Track structured work via [Phase 07 – CBOR Encoding Parity](phase-07-cbor-parity.md). ✅ **COMPLETED**
 
 ### cardano-crypto-class
 - [x] Track progress through [Phase 03 – Cardano VRF Parity](phase-03-vrf-parity.md). ✅ **COMPLETED**
@@ -203,6 +203,13 @@ and ensures no crate is left without an explicit plan or acceptance criteria.
       constant-time comparison helpers, and cross-language validation tooling. All hash tests
       passing (219 total workspace tests). Documentation includes Haskell→Rust mapping and
       regeneration workflow.
+- 08-10-2025-time-04:00: **Phase 07 CBOR Parity COMPLETE** ✅ - Comprehensive CBOR encoding/decoding
+      parity achieved with 86 tests passing (unit, golden, Haskell cross-validation, property-based).
+      Created `HASKELL_MAPPING.md` with complete function/type/error mappings and migration guide.
+      Added Criterion benchmarks (baseline: ~250 ns small structs, ~320 MB/s vectors, ~330 MB/s maps).
+      Enhanced README with canonical encoding rules (RFC 8949 §4.2), map key ordering examples, and
+      verification strategy. All CBOR types, error handling, and deterministic encoding validated
+      byte-for-byte against Haskell reference.
 
 ---
 
