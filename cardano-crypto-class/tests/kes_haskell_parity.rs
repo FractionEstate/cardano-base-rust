@@ -197,6 +197,13 @@ where
 
     for vec_entry in &level_entry.vectors {
         let seed = hex_to_bytes(&vec_entry.seed);
+        let description = vec_entry.description.as_str();
+        assert!(
+            !description.trim().is_empty(),
+            "missing description for {} / {}",
+            algo_name,
+            vec_entry.test_name
+        );
         let mut sk = A::gen_key_kes_from_seed_bytes(&seed).expect("signing key");
         let vk = A::derive_verification_key(&sk).expect("derive vk");
         let expected_vk = hex_to_bytes(&vec_entry.verification_key);
@@ -217,6 +224,17 @@ where
                     A::verify_kes(&(), &vk, period, &msg, &sig).expect("verify");
                     let sig_ser_full = A::raw_serialize_signature_kes(&sig);
                     let expected_sig = hex_to_bytes(&tp.signature);
+                    let expected_raw_sig = hex_to_bytes(&tp.raw_signature);
+
+                    assert_eq!(
+                        sig_ser_full,
+                        expected_raw_sig.as_slice(),
+                        "raw_signature mismatch {} / {} period {} (description: {})",
+                        algo_name,
+                        vec_entry.test_name,
+                        period,
+                        description
+                    );
                     // For compact variants expected signature is prefix of full raw signature
                     let cmp_slice = if algo_name.starts_with("CompactSum") {
                         &sig_ser_full[..expected_sig.len()]

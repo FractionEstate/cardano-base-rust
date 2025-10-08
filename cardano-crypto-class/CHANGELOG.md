@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* Added `tests/hash_vectors.rs` regression coverage for SHA-256/SHA3/Keccak/RIPEMD160/Hash160/Blake2b helpers, backed by the regenerated `cardano-test-vectors/test_vectors/hash_test_vectors.json` corpus (boundary, rate, multi-block, and Bitcoin/Ethereum composite inputs) and a new Rust-side fixture generator (`generate_hash_vectors.rs`).
+* Tightened the KES parity harness (`tests/kes_haskell_parity.rs`) to assert raw signature hex dumps and require populated description metadata, eliminating lingering dead-field warnings while increasing fixture fidelity.
 * Introduced KES performance benchmarks (`benches/kes_bench.rs`) measuring key generation,
   signing, verification, and bounded evolution cycles for `SingleKes`, `Sum4Kes`, and
   `CompactSum4Kes`. Added `criterion` (dev-dependency) with HTML reports to establish a

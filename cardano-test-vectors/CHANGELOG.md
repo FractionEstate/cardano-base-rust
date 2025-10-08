@@ -33,6 +33,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Negative-path regression tests that mutate fixture messages and confirm the
   SingleKES, CompactSingleKES, SumKES, and CompactSumKES signatures reject the
   tampered payloads.
+- Hash parity fixture (`hash_test_vectors.json`) with SHA-2/SHA3/Keccak/
+  RIPEMD160/Hash160/Blake2b digests across empty, short, block-boundary, and
+  multi-block inputs plus a dedicated Rust generator
+  (`generate_hash_vectors.rs`) to keep the corpus aligned with
+  `cardano_crypto_class::hash`.
+- Added Bitcoin/Ethereum composite fixtures (genesis block header, genesis
+  public key, and legacy RLP transaction) to `hash_test_vectors.json`,
+  extending coverage for `sha256d` and `hash160` against widely referenced
+  real-world inputs.
 
 ### Changed
 - Refactored the KES vector generator to reuse shared period-signing logic and

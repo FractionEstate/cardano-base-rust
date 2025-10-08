@@ -1,6 +1,6 @@
 # Phase 06 – Hash Algorithm Parity
 
-**Status:** ☐ Not started  \
+**Status:** ☑ In progress  \
 **Primary owners:** _Unassigned_  \
 **Supporting crates:** `cardano-crypto-class`, `cardano-vrf-pure`
 
@@ -52,10 +52,30 @@ composite / staged hashing helpers, and hash-to-fixed-length utilities).
 - [ ] Produce Rust mapping table (README / doc comment) referencing each exported item.
 - [ ] Identify any missing algorithms or parameterisations.
 
+#### Current Rust Coverage Snapshot (initial audit)
+| Haskell Module / Concept | Rust Location / Function | Status |
+|--------------------------|--------------------------|--------|
+| SHA256 (`Hash.SHA256`) | `hash::sha256` | Implemented |
+| Double SHA256 (Bitcoin) | `hash::sha256d` | Implemented |
+| SHA512 (`Hash.SHA512`) | `hash::sha512` | Implemented |
+| SHA3-256 | `hash::sha3_256` | Implemented |
+| SHA3-512 | `hash::sha3_512` | Implemented |
+| Keccak-256 | `hash::keccak256` | Implemented |
+| RIPEMD160 | `hash::ripemd160` | Implemented |
+| Hash160 (RIPEMD160(SHA256)) | `hash::hash160` | Implemented |
+| Blake2b-256 | (present in KES module `kes/hash.rs` – integrate mapping) | Implemented (scoped) |
+| Blake2b-512 | (present in KES module `kes/hash.rs`) | Implemented (scoped) |
+| Domain-separated / composite helpers | (Some in KES / DSIGN contexts) | Partial / needs enumeration |
+| Incremental streaming API parity | (Digest traits via external crates) | Pending evaluation |
+
+> NOTE: Blake2b helpers reside in `cardano-crypto-class/src/kes/hash.rs`; decide whether to re-export or document path.
+> UPDATE: Blake2b256 / Blake2b512 now re-exported via `hash.rs` for a unified API; added explicit known-answer tests
+> (empty string and "hello world") to lock digest stability before adding larger vector sets.
+
 ### 2. Test Vector Acquisition
-- [ ] Gather or regenerate vectors for each algorithm (empty, short, multi-block, long messages).
-- [ ] Include edge cases: 0-length, 1-byte, block-size−1, block-size, block-size+1, large streaming input.
-- [ ] Add composite vectors (hash160, double SHA256) with known Bitcoin / Ethereum style examples.
+- [x] Gather or regenerate vectors for each algorithm (empty, short, multi-block, long messages).
+- [x] Include edge cases: 0-length, 1-byte, block-size−1, block-size, block-size+1, large streaming input.
+- [x] Add composite vectors (hash160, double SHA256) with known Bitcoin / Ethereum style examples.
 
 ### 3. Implementation Validation
 - [ ] Cross-check output lengths & constant definitions.
@@ -82,7 +102,7 @@ composite / staged hashing helpers, and hash-to-fixed-length utilities).
 - [ ] Note composite helper usage contexts (address construction, proof formatting).
 
 ### 8. Parity Evidence
-- [ ] Store golden test vectors in `cardano-test-vectors` (hash subdirectory).
+- [x] Store golden test vectors in `cardano-test-vectors` (hash subdirectory).
 - [ ] Provide script or instructions for regenerating vectors from Haskell.
 
 ### 9. Completion & Sign-off
@@ -100,7 +120,9 @@ composite / staged hashing helpers, and hash-to-fixed-length utilities).
 ## Reporting Cadence
 - (YYYY-MM-DD) INIT: Phase scaffold created.
 - (YYYY-MM-DD) AUDIT: Haskell mapping complete, missing items enumerated.
-- (YYYY-MM-DD) VECTORS: All golden vectors imported & validated.
+- (2025-10-08) VECTORS: Expanded hash corpus in `cardano-test-vectors` with boundary/multi-block coverage, added Rust generator + parity harness updates (`tests/hash_vectors.rs`), docs & changelog refreshed; Blake2b now included alongside SHA/Keccak/RIPEMD outputs.
+- (2025-10-08) COMPOSITES: Added Bitcoin genesis header/public key and canonical Ethereum legacy transaction fixtures to `hash_test_vectors.json`; regenerated parity harness, updated docs/CHANGELOG, and validated `sha256d`/`hash160` pathways over real-world inputs.
+- (2025-10-08) WARNINGS: Eliminated lingering `kes_haskell_parity` dead-field warnings by asserting raw signature hex dumps and enforcing populated descriptions in the JSON fixtures; full `cargo test -p cardano-crypto-class` run is clean.
 - (YYYY-MM-DD) BENCH: Baseline benchmarks captured.
 - (YYYY-MM-DD) COMPLETE: Parity confirmed, docs & CHANGELOG updated.
 

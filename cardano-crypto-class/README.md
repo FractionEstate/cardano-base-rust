@@ -21,6 +21,37 @@ Cardano-specific Key Evolving Signatures (KES).
   boundary tests assert expiry and tamper behaviour.
 - **VRF plumbing**: The crate wires through Praos VRF primitives so higher
   layers can embed them without crossing FFI boundaries.
+- **Hash utilities**: `hash::{sha256, sha3_256, keccak256, hash160, blake2b256, …}`
+  expose the same primitives as `Cardano.Crypto.Hash`, now backed by an
+  expanded JSON vector suite in `cardano-test-vectors` to lock byte-for-byte
+  parity across boundary and multi-block inputs.
+
+## Hash parity coverage
+
+The `hash` module mirrors the helpers from `Cardano.Crypto.Hash` and is now
+(`"hello world"`), SHA-2 block boundaries (63/64/65 bytes), SHA3-256 rate
+backed by JSON fixtures that cover empty inputs, classic sanity checks
+
+boundaries (136/137 bytes), single-byte edge cases, a 1024-byte
+multi-block pattern, and real-world composites such as the Bitcoin genesis
+block header/public key and a canonical go-ethereum legacy transaction. Run
+the parity harness with:
+```bash
+cargo test -p cardano-crypto-class --test hash_vectors
+```
+
+`hash_vectors.rs` loads `cardano-test-vectors/test_vectors/hash_test_vectors.json`
+and asserts SHA-256, double SHA-256, SHA-512, SHA3-256, SHA3-512, Keccak-256,
+RIPEMD-160, Hash160, Blake2b-256, and Blake2b-512 digests for every case. The
+fixture itself is regenerated via the companion helper in
+`cardano-test-vectors`:
+
+```bash
+cargo run -p cardano-test-vectors --bin generate_hash_vectors
+```
+
+Future Phase 06 work will fold in cross-language confirmations from the
+Haskell generator and streaming edge cases once the scaffolding lands.
 
 ## DSIGN parity progress
 
@@ -43,6 +74,8 @@ Cardano-specific Key Evolving Signatures (KES).
 | **CompactSum{1-7}Kes** | ✅ Vector parity | Serde-gated fixtures in `tests/compact_sum_kes_vectors.rs` assert byte-for-byte signatures for levels 1–7, including evolution and tamper checks. |
 | **Forward security** | ✅ Regression in place | `tests/kes_forward_security.rs` now walks every period for `Sum4Kes` and `CompactSum4Kes`, re-verifies historic signatures, rejects stale-period signing after each evolution, and asserts that rewind attempts fail with the expected errors. |
 | **Cross-language parity harness** | ✅ Unified | `tests/kes_haskell_parity.rs` loads the hierarchical JSON fixtures (Single / CompactSingle vectors and Sum / CompactSum levels 1–7) and asserts byte-for-byte verification key & signature parity while evolving keys across periods, mirroring the Haskell generator structure. |
+
+The harness now also cross-checks the stored raw signature envelopes and ensures every fixture ships with a description, keeping the JSON metadata exercised instead of silently drifting.
 
 ### Forward security & period evolution
 

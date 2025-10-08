@@ -15,6 +15,7 @@ cardano-test-vectors/
 │   ├── ed25519_test_vectors.json
 │   ├── ecdsa_secp256k1_test_vectors.json
 │   ├── schnorr_secp256k1_test_vectors.json
+│   ├── hash_test_vectors.json
 │   ├── compact_sum_kes_test_vectors.json (CompactSumKES levels 1–7, 32 deterministic seeds)
 │   ├── sum_kes_period_evolution_vectors.json (SumKES full evolution sequences, 6 representative seeds)
 │   ├── compact_sum_kes_period_evolution_vectors.json (CompactSumKES full evolution sequences, 6 representative seeds)
@@ -60,6 +61,34 @@ kept alongside the VRF set:
 
 The Ed25519 vectors are also used for the RFC 8032 parity checks in
 `cardano-crypto-class`.
+
+### Hash vectors
+
+`hash_test_vectors.json` captures baseline digests for the hashing helpers in
+`cardano-crypto-class::hash`. The corpus covers:
+
+- canonical sanity checks (`""`, `"hello world"`, and the ascending byte
+    sequence used by existing harnesses),
+- SHA-2 block boundaries (63/64/65 byte sequential inputs),
+- SHA3-256 rate boundaries (136/137 byte inputs),
+- a 1024-byte multi-block pattern (0x00–0xff repeated),
+- single-byte edge cases, and
+- composite real-world fixtures: the Bitcoin genesis block header, the
+    corresponding uncompressed public key (hash160 of which yields the first
+    P2PKH address), and an RLP-encoded Ethereum legacy transaction used in the
+    official go-ethereum documentation.
+
+Each vector stores SHA-256, double SHA-256, SHA-512, SHA3-256, SHA3-512,
+Keccak-256, RIPEMD-160, Hash160, Blake2b-256, and Blake2b-512 outputs. The
+fixture is regenerated with:
+
+```bash
+cargo run -p cardano-test-vectors --bin generate_hash_vectors
+```
+
+The generator derives all digests via the Rust implementations to guarantee the
+JSON stays in sync with `cardano-crypto-class`. Future work will append
+Haskell-confirmed digests and streaming edge cases.
 
 ### KES vectors
 
@@ -158,6 +187,13 @@ cargo run -p cardano-test-vectors --bin generate_kes_vectors
 The command emits updated Single/CompactSingle/Sum/CompactSum corpora with the
 deterministic seed/message expansion described above.
 
+Regenerate the hash corpus (boundary and multi-block coverage for
+`cardano_crypto_class::hash`) with:
+
+```bash
+cargo run -p cardano-test-vectors --bin generate_hash_vectors
+```
+
 ## Tests
 
 ```bash
@@ -175,11 +211,12 @@ The crate ships with lightweight regression tests:
     signature stability across levels and periods
 
 **Latest validation:** `cargo test -p cardano-test-vectors` completed on
-2025-10-07 confirming that all embedded VRF, DSIGN (Ed25519 / ECDSA / Schnorr),
-and KES fixture suites load and pass their associated regressions. KES evolution
-fixtures and tracked-period corpora were regenerated prior to this run; vector
-counts are enforced by the tests to guard against accidental shrinkage. Cross-
-language spot checks for newly added KES structural invariants are queued in a
+2025-10-08 confirming that all embedded VRF, DSIGN (Ed25519 / ECDSA / Schnorr),
+hash, and KES fixture suites load and pass their associated regressions. KES
+evolution fixtures and tracked-period corpora were regenerated prior to this
+run; vector counts are enforced by the tests to guard against accidental
+shrinkage. Cross-language spot checks for newly added KES structural invariants
+plus hash parity streaming cases and Haskell-derived fixtures are queued in a
 follow‑up task.
 
 All suites pass under the default workspace toolchain.
