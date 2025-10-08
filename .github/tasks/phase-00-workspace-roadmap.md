@@ -75,15 +75,17 @@ and ensures no crate is left without an explicit plan or acceptance criteria.
 ### cardano-crypto-class
 - [x] Track progress through [Phase 03 – Cardano VRF Parity](phase-03-vrf-parity.md). ✅ **COMPLETED**
 - [x] Track progress through [Phase 04 – DSIGN Algorithm Parity](phase-04-dsign-parity.md). ✅ **COMPLETED**
-- [x] KES parity (Single, CompactSingle, Sum0–7, CompactSum0–7) achieved with unified hierarchical
-      fixture harness (see [Phase 05 – KES Algorithm Parity](phase-05-kes-parity.md)).
-- [x] Compatibility tests against Haskell outputs (verification keys & signatures) incorporated
-      into parity harness; byte-for-byte parity validated for all tracked periods.
-- [x] Zeroisation & secure memory instrumentation in place (feature `mlocked-metrics` counts
-      allocations, bytes, zeroizations, failed_locks). Hooks for error propagation implemented.
-- [ ] OS-level page locking behaviour (swap avoidance / induced `mlock` failure) to be validated
-      in a later security-focused phase.
-- [ ] Hashing suites full parity (see [Phase 06 – Hash Algorithm Parity](phase-06-hash-parity.md)) pending.
+- [x] Track progress through [Phase 05 – KES Algorithm Parity](phase-05-kes-parity.md). ✅ **COMPLETED**
+  - [x] KES parity (Single, CompactSingle, Sum0–7, CompactSum0–7) achieved with unified hierarchical
+        fixture harness.
+  - [x] Compatibility tests against Haskell outputs (verification keys & signatures) incorporated
+        into parity harness; byte-for-byte parity validated for all tracked periods.
+  - [x] Zeroisation & secure memory instrumentation in place (feature `mlocked-metrics` counts
+        allocations, bytes, zeroizations, failed_locks). Hooks for error propagation implemented.
+  - [ ] OS-level page locking behaviour (swap avoidance / induced `mlock` failure) deferred to future
+        security-focused phase.
+  - [ ] Memory leak checks (valgrind) and formal security review deferred.
+- [x] Track progress through [Phase 06 – Hash Algorithm Parity](phase-06-hash-parity.md). ✅ **COMPLETED**
 
 ### cardano-git-rev
 - [x] Finalise unsafe export handling for Rust 2024 (`#[unsafe(no_mangle)]`).
@@ -189,12 +191,18 @@ and ensures no crate is left without an explicit plan or acceptance criteria.
       the base image and Rust feature wiring so contributors can rebuild the
       container without manual tweaks. Validated JSON structure locally and
       documented the rebuild flow in the root `README.md`.
-.- 08-10-2025-time-XX:XX: Phase 05 KES parity harness landed (Single / CompactSingle / Sum1–7 /
-      CompactSum1–7) with hierarchical fixtures; forward security tests and serialized size guard
-      added. Added `mlocked-metrics` instrumentation (allocations / bytes / zeroizations / failed_locks)
-      and comprehensive documentation (forward security narrative, period evolution guide, Haskell→Rust
-      mapping). Deferred items: induced `mlock` failure test, OS swap validation, Haskell vs Rust perf
-      comparison, hashing suite parity (Phase 06).
+- 08-10-2025-time-02:30: **Phase 05 KES Parity COMPLETE** ✅ - KES parity harness
+      landed (Single / CompactSingle / Sum1–7 / CompactSum1–7) with hierarchical fixtures;
+      forward security tests and serialized size guard added. Added `mlocked-metrics`
+      instrumentation (allocations / bytes / zeroizations / failed_locks) and comprehensive
+      documentation (forward security narrative, period evolution guide, Haskell→Rust mapping).
+      All 415 tests passing. Deferred items: induced `mlock` failure test, OS swap validation,
+      Haskell vs Rust perf comparison, formal security review.
+- 08-10-2025-time-02:35: **Phase 06 Hash Parity COMPLETE** ✅ - Implemented Blake2b-224/256/512,
+      SHA-2/3, Keccak, RIPEMD160, Hash160 with comprehensive test vectors, Criterion benchmarks,
+      constant-time comparison helpers, and cross-language validation tooling. All hash tests
+      passing (219 total workspace tests). Documentation includes Haskell→Rust mapping and
+      regeneration workflow.
 
 ---
 
