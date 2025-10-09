@@ -49,9 +49,15 @@ pub fn cardano_vrf_verify(
     message: &[u8],
 ) -> VrfResult<[u8; 64]> {
     // Step 1: Parse proof components
-    let gamma_bytes: [u8; 32] = proof[0..32].try_into().unwrap();
-    let c_bytes_short: [u8; 16] = proof[32..48].try_into().unwrap();
-    let s_bytes: [u8; 32] = proof[48..80].try_into().unwrap();
+    let gamma_bytes: [u8; 32] = proof[0..32]
+        .try_into()
+        .expect("VRF proof gamma segment must be 32 bytes");
+    let c_bytes_short: [u8; 16] = proof[32..48]
+        .try_into()
+        .expect("VRF proof challenge segment must be 16 bytes");
+    let s_bytes: [u8; 32] = proof[48..80]
+        .try_into()
+        .expect("VRF proof scalar segment must be 32 bytes");
 
     // Parse public key
     let y_point = CompressedEdwardsY(*public_key)
@@ -64,11 +70,8 @@ pub fn cardano_vrf_verify(
         .ok_or(VrfError::InvalidProof)?;
 
     // Parse s (must be canonical)
-    let s_option: Option<Scalar> = Scalar::from_canonical_bytes(s_bytes).into();
-    if s_option.is_none() {
-        return Err(VrfError::InvalidScalar);
-    }
-    let s = s_option.unwrap();
+    let s = Option::<Scalar>::from(Scalar::from_canonical_bytes(s_bytes))
+        .ok_or(VrfError::InvalidScalar)?;
 
     // Reconstruct full challenge c
     let mut c_bytes = [0u8; 32];

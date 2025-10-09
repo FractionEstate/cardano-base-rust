@@ -151,6 +151,10 @@ impl<'de, const N: usize> Deserialize<'de> for PackedBytes<N> {
 }
 
 /// Pack bytes from a slice and offset, panicking if bounds are violated.
+///
+/// # Panics
+///
+/// Panics when `bytes` does not contain `N` bytes starting at `offset`.
 #[must_use]
 pub fn pack_bytes<const N: usize>(bytes: &[u8], offset: usize) -> PackedBytes<N> {
     pack_bytes_maybe(bytes, offset).expect("pack_bytes: slice too short")
@@ -167,6 +171,10 @@ pub fn pack_bytes_maybe<const N: usize>(bytes: &[u8], offset: usize) -> Option<P
 }
 
 /// Pack bytes from a slice ensuring the slice length matches the packed length.
+///
+/// # Errors
+///
+/// Returns an error if `bytes.len()` does not equal `N`.
 pub fn pack_pinned_bytes<const N: usize>(bytes: &[u8]) -> Result<PackedBytes<N>, PackedBytesError> {
     if bytes.len() != N {
         return Err(PackedBytesError::LengthMismatch {

@@ -81,6 +81,11 @@ pub trait DsignAlgorithm {
     ) -> Self::Signature;
 
     /// Verify a signature over raw bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the signature is invalid for the provided message
+    /// or key material.
     fn verify_bytes(
         context: &Self::Context,
         verification_key: &Self::VerificationKey,
@@ -92,6 +97,11 @@ pub trait DsignAlgorithm {
     ///
     /// Mirrors the Haskell `genKeyDSIGN` behaviour by panicking when the seed
     /// does not provide enough bytes.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the supplied [`Seed`] cannot provide
+    /// [`DsignAlgorithm::SEED_SIZE`] bytes.
     #[must_use]
     fn gen_key(seed: &Seed) -> Self::SigningKey {
         let (material, _) = get_bytes_from_seed_t(Self::SEED_SIZE, seed.clone());
@@ -137,6 +147,10 @@ where
 }
 
 /// Verify a [`SignedDsign`] value.
+///
+/// # Errors
+///
+/// Returns an error if signature verification fails.
 pub fn verify_signed_dsign<A, M>(
     context: &A::Context,
     verification_key: &A::VerificationKey,
@@ -256,11 +270,20 @@ pub trait DsignMAlgorithm: DsignAlgorithm {
     type SeedMaterial;
 
     /// Derive the verification key from an mlocked signing key.
+    ///
+    /// # Errors
+    ///
+    /// Propagates failures returned by the underlying algorithm or memory
+    /// handling.
     fn derive_verification_key_m(
         signing_key: &Self::MLockedSigningKey,
     ) -> Result<Self::VerificationKey, DsignMError>;
 
     /// Sign raw bytes using an mlocked signing key.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if signing fails.
     fn sign_bytes_m(
         context: &Self::Context,
         message: &[u8],
@@ -268,14 +291,27 @@ pub trait DsignMAlgorithm: DsignAlgorithm {
     ) -> Result<Self::Signature, DsignError>;
 
     /// Generate a signing key from an mlocked seed.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if key generation fails or the seed material is
+    /// invalid.
     fn gen_key_m(seed: &Self::SeedMaterial) -> Result<Self::MLockedSigningKey, DsignMError>;
 
     /// Clone an mlocked signing key.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if cloning fails.
     fn clone_key_m(
         signing_key: &Self::MLockedSigningKey,
     ) -> Result<Self::MLockedSigningKey, DsignMError>;
 
     /// Extract the seed material from an mlocked signing key.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the seed cannot be recovered.
     fn get_seed_m(signing_key: &Self::MLockedSigningKey)
     -> Result<Self::SeedMaterial, DsignMError>;
 
@@ -284,6 +320,10 @@ pub trait DsignMAlgorithm: DsignAlgorithm {
 }
 
 /// Convenience wrapper for signing using an mlocked key.
+///
+/// # Errors
+///
+/// Propagates failures from the underlying signing routine.
 pub fn signed_dsign_m<A, M>(
     context: &A::Context,
     message: &M,
@@ -301,10 +341,18 @@ where
 /// Trait exposing unsound serialisation for mlocked signing keys.
 pub trait UnsoundDsignMAlgorithm: DsignMAlgorithm {
     /// Serialise an mlocked signing key into raw bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if serialisation fails.
     fn raw_serialize_signing_key_m(
         signing_key: &Self::MLockedSigningKey,
     ) -> Result<Vec<u8>, DsignMError>;
 
     /// Deserialise an mlocked signing key from raw bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the bytes do not represent a valid signing key.
     fn raw_deserialize_signing_key_m(bytes: &[u8]) -> Result<Self::MLockedSigningKey, DsignMError>;
 }

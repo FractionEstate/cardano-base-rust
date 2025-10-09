@@ -6,7 +6,6 @@
 
 #![allow(clippy::unreadable_literal)]
 #![cfg_attr(test, allow(clippy::unwrap_used))]
-#![cfg_attr(test, allow(clippy::assert_eq_literal_bool))]
 #![cfg_attr(test, allow(clippy::panic))]
 
 pub mod direct_serialise;

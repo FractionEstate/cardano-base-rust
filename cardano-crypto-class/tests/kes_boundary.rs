@@ -68,11 +68,10 @@ fn compact_sum2_kes_rejects_verification_key_mismatch() {
         CompactSum2Kes::sign_kes(&(), 1, message, &signing_key).expect("compact sum signing");
 
     let mut mismatched_vk = CompactSum2Kes::raw_serialize_verification_key_kes(&verification_key);
-    if let Some(first) = mismatched_vk.first_mut() {
-        *first ^= 0x01;
-    } else {
-        panic!("verification key unexpectedly empty");
-    }
+    let first = mismatched_vk
+        .first_mut()
+        .expect("compact sum verification key serialization yields bytes");
+    *first ^= 0x01;
 
     assert_eq!(
         CompactSum2Kes::verify_kes(&(), &mismatched_vk, 1, message, &signature),
@@ -124,10 +123,10 @@ fn compact_sum2_kes_sign_out_of_range_period_fails() {
     let err = CompactSum2Kes::sign_kes(&(), period, message, &signing_key)
         .err()
         .expect("signing at out-of-range period should fail");
-    match err {
-        KesMError::Kes(KesError::PeriodOutOfRange { .. }) => {},
-        other => panic!("unexpected error for out-of-range signing: {other:?}"),
-    }
+    assert!(
+        matches!(err, KesMError::Kes(KesError::PeriodOutOfRange { .. })),
+        "unexpected error for out-of-range signing: {err:?}"
+    );
 
     CompactSum2Kes::forget_signing_key_kes(signing_key);
 }

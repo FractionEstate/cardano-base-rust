@@ -116,7 +116,9 @@ fn run_sum_signature_components(level: usize, seed_byte: u8, label: &[u8]) {
         5 => assert_sum_signature_components::<Sum5Kes>(level, seed_byte, label),
         6 => assert_sum_signature_components::<Sum6Kes>(level, seed_byte, label),
         7 => assert_sum_signature_components::<Sum7Kes>(level, seed_byte, label),
-        other => panic!("unsupported sum level {other}"),
+        other => {
+            assert!((0..=7).contains(&other), "unsupported sum level {other}");
+        },
     }
 }
 #[test]
@@ -149,16 +151,17 @@ fn single_kes_end_to_end_workflow_and_errors() {
         .expect_err("verification should fail for tampered message");
     assert!(matches!(tampered_err, KesError::VerificationFailed));
 
-    let sign_err = Kes::sign_kes(&(), 1, message, &signing_key)
-        .err()
-        .expect("signing beyond period 0 must fail");
-    assert!(matches!(
-        sign_err,
-        KesMError::Kes(KesError::PeriodOutOfRange {
-            period: 1,
-            max_period: 1
-        })
-    ));
+    let sign_result = Kes::sign_kes(&(), 1, message, &signing_key);
+    assert!(sign_result.is_err(), "signing beyond period 0 must fail");
+    if let Err(sign_err) = sign_result {
+        assert!(matches!(
+            sign_err,
+            KesMError::Kes(KesError::PeriodOutOfRange {
+                period: 1,
+                max_period: 1
+            })
+        ));
+    }
 
     let expired = Kes::update_kes(&(), signing_key, 0).expect("single update succeeds");
     assert!(expired.is_none(), "SingleKES must expire after period 0");
@@ -269,11 +272,19 @@ fn sum3_kes_end_to_end_workflow_and_errors() {
     assert!(matches!(mismatch_err, KesError::VerificationFailed));
 
     let out_of_range_message = message(b"phase-05-sum", total_periods);
-    let out_of_range_err = Kes::sign_kes(&(), total_periods, &out_of_range_message, &fresh_key)
-        .expect_err("signing beyond final period must fail");
-    match out_of_range_err {
-        KesMError::Kes(KesError::PeriodOutOfRange { .. }) => {},
-        other => panic!("unexpected error when signing out of range: {other:?}"),
+    let out_of_range_result = Kes::sign_kes(&(), total_periods, &out_of_range_message, &fresh_key);
+    assert!(
+        out_of_range_result.is_err(),
+        "signing beyond final period must fail"
+    );
+    if let Err(out_of_range_err) = out_of_range_result {
+        assert!(
+            matches!(
+                out_of_range_err,
+                KesMError::Kes(KesError::PeriodOutOfRange { .. })
+            ),
+            "unexpected error when signing out of range: {out_of_range_err:?}"
+        );
     }
 
     let raw_signature_example = stored_signatures
@@ -309,7 +320,7 @@ fn sum3_kes_end_to_end_workflow_and_errors() {
     truncated_vk.pop();
     assert!(
         Kes::raw_deserialize_verification_key_kes(&truncated_vk).is_none(),
-        "truncated verification key hash must be rejected"
+        "truncated verification key must be rejected"
     );
 
     let mut extended_vk = raw_verification_key.clone();
@@ -461,15 +472,17 @@ fn compact_single_kes_end_to_end_workflow_and_errors() {
         .expect_err("verification should fail for tampered message");
     assert!(matches!(tampered_err, KesError::VerificationFailed));
 
-    let sign_err = Kes::sign_kes(&(), 1, message, &signing_key)
-        .expect_err("signing beyond period 0 must fail");
-    assert!(matches!(
-        sign_err,
-        KesMError::Kes(KesError::PeriodOutOfRange {
-            period: 1,
-            max_period: 1
-        })
-    ));
+    let sign_result = Kes::sign_kes(&(), 1, message, &signing_key);
+    assert!(sign_result.is_err(), "signing beyond period 0 must fail");
+    if let Err(sign_err) = sign_result {
+        assert!(matches!(
+            sign_err,
+            KesMError::Kes(KesError::PeriodOutOfRange {
+                period: 1,
+                max_period: 1
+            })
+        ));
+    }
 
     let expired = Kes::update_kes(&(), signing_key, 0).expect("compact single update succeeds");
     assert!(
@@ -595,12 +608,19 @@ fn compact_sum3_kes_end_to_end_workflow_and_errors() {
     assert!(matches!(mismatch_err, KesError::VerificationFailed));
 
     let out_of_range_message = message(b"phase-05-compact-sum", total_periods);
-    let out_of_range_err = Kes::sign_kes(&(), total_periods, &out_of_range_message, &fresh_key)
-        .err()
-        .expect("signing beyond final compact sum period must fail");
-    match out_of_range_err {
-        KesMError::Kes(KesError::PeriodOutOfRange { .. }) => {},
-        other => panic!("unexpected error when signing out of range: {other:?}"),
+    let out_of_range_result = Kes::sign_kes(&(), total_periods, &out_of_range_message, &fresh_key);
+    assert!(
+        out_of_range_result.is_err(),
+        "signing beyond final compact sum period must fail"
+    );
+    if let Err(out_of_range_err) = out_of_range_result {
+        assert!(
+            matches!(
+                out_of_range_err,
+                KesMError::Kes(KesError::PeriodOutOfRange { .. })
+            ),
+            "unexpected error when signing out of range: {out_of_range_err:?}"
+        );
     }
 
     let raw_signature_example = stored_signatures

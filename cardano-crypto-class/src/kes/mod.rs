@@ -187,11 +187,19 @@ pub trait KesAlgorithm {
     fn total_periods() -> Period;
 
     /// Derive the verification key from a signing key.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the signing key cannot produce a valid verification key.
     fn derive_verification_key(
         signing_key: &Self::SigningKey,
     ) -> Result<Self::VerificationKey, KesMError>;
 
     /// Sign a message at a specific period.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the signing operation fails or the key material is invalid.
     fn sign_kes(
         context: &Self::Context,
         period: Period,
@@ -200,6 +208,10 @@ pub trait KesAlgorithm {
     ) -> Result<Self::Signature, KesMError>;
 
     /// Verify a KES signature at a specific period.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if verification fails.
     fn verify_kes(
         context: &Self::Context,
         verification_key: &Self::VerificationKey,
@@ -211,6 +223,10 @@ pub trait KesAlgorithm {
     /// Update (evolve) the signing key to the next period.
     ///
     /// Returns None if the key has expired (reached max period).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the signing key cannot be evolved.
     fn update_kes(
         context: &Self::Context,
         signing_key: Self::SigningKey,
@@ -218,12 +234,25 @@ pub trait KesAlgorithm {
     ) -> Result<Option<Self::SigningKey>, KesMError>;
 
     /// Generate a signing key from a seed.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the derived seed bytes do not produce a valid signing key.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the supplied [`Seed`] does not provide enough entropy to
+    /// produce [`KesAlgorithm::SEED_SIZE`] bytes.
     fn gen_key_kes(seed: &Seed) -> Result<Self::SigningKey, KesMError> {
         let (material, _) = get_bytes_from_seed_t(Self::SEED_SIZE, seed.clone());
         Self::gen_key_kes_from_seed_bytes(&material)
     }
 
     /// Generate a signing key from raw seed bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the bytes do not form a valid signing key.
     fn gen_key_kes_from_seed_bytes(seed: &[u8]) -> Result<Self::SigningKey, KesMError>;
 
     /// Serialize the verification key.
@@ -276,9 +305,17 @@ pub trait KesAlgorithm {
 /// Trait for unsound KES operations (exposing signing key serialization).
 pub trait UnsoundKesAlgorithm: KesAlgorithm {
     /// Serialize a signing key (UNSOUND - use only for testing).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the signing key cannot be serialized.
     fn raw_serialize_signing_key_kes(signing_key: &Self::SigningKey) -> Result<Vec<u8>, KesMError>;
 
     /// Deserialize a signing key (UNSOUND - use only for testing).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the bytes do not represent a valid signing key.
     fn raw_deserialize_signing_key_kes(bytes: &[u8]) -> Result<Self::SigningKey, KesMError>;
 }
 
@@ -335,6 +372,10 @@ where
 }
 
 /// Convenience function to create a signed KES value.
+///
+/// # Errors
+///
+/// Propagates failures from the underlying signing routine.
 pub fn signed_kes<A, M>(
     context: &A::Context,
     period: Period,
@@ -351,6 +392,10 @@ where
 }
 
 /// Verify a signed KES value.
+///
+/// # Errors
+///
+/// Returns an error if verification fails.
 pub fn verify_signed_kes<A, M>(
     context: &A::Context,
     verification_key: &A::VerificationKey,

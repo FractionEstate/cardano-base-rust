@@ -96,6 +96,10 @@ fn embedded_revision_store() -> &'static Mutex<String> {
 ///
 /// This helper is intended for tests that need to simulate patching the
 /// embedded revision at runtime without relying on raw pointer manipulation.
+///
+/// # Panics
+///
+/// Panics if the embedded revision mutex is poisoned.
 #[must_use]
 pub fn set_embedded_revision_for_testing(new_revision: impl Into<String>) -> EmbeddedRevisionGuard {
     let mut slot = embedded_revision_store()
@@ -144,6 +148,11 @@ fn run_git_command(args: impl IntoIterator<Item = &'static str>) -> Result<Outpu
 ///
 /// Intended strictly for tests to simulate error scenarios. The override is
 /// removed once the returned guard is dropped.
+///
+/// # Panics
+///
+/// Panics if the git command override mutex is poisoned or if an override is
+/// already active.
 #[must_use]
 pub fn override_git_command_for_testing<F>(hook: F) -> GitCommandOverrideGuard
 where

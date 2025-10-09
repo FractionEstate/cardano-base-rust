@@ -123,17 +123,21 @@ mod tests {
         let tagged = encode_nested_cbor(&payload).unwrap();
         let decoded: Value = ciborium::from_reader(&tagged[..]).unwrap();
 
-        match decoded {
-            Value::Tag(24, boxed_value) => match *boxed_value {
-                Value::Bytes(bytes) => {
-                    let mut expected = Vec::new();
-                    ciborium::into_writer(&payload, &mut expected).unwrap();
-                    assert_eq!(bytes, expected);
-                },
-                other => panic!("unexpected inner value: {other:?}"),
-            },
-            other => panic!("unexpected value: {other:?}"),
+        let boxed_value = match decoded {
+            Value::Tag(24, boxed_value) => Ok(boxed_value),
+            _ => Err(()),
         }
+        .expect("expected Tag(24) wrapper");
+
+        let bytes = match *boxed_value {
+            Value::Bytes(bytes) => Ok(bytes),
+            _ => Err(()),
+        }
+        .expect("expected byte string in Tag(24) payload");
+
+        let mut expected = Vec::new();
+        ciborium::into_writer(&payload, &mut expected).unwrap();
+        assert_eq!(bytes, expected);
     }
 
     #[test]

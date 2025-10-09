@@ -155,10 +155,12 @@ mod tests {
         ciborium::into_writer(&sample, &mut bytes).unwrap();
         bytes.extend_from_slice(&[0xff]); // extra data
         let err = decode_full::<Sample>(&bytes).unwrap_err();
-        match err {
-            BinaryError::Leftover { leftover_len, .. } => assert_eq!(leftover_len, 1),
-            other => panic!("unexpected error: {other:?}"),
+        let leftover_len = match err {
+            BinaryError::Leftover { leftover_len, .. } => Ok(leftover_len),
+            _ => Err(()),
         }
+        .expect("expected leftover error");
+        assert_eq!(leftover_len, 1);
     }
 
     #[test]
@@ -175,13 +177,13 @@ mod tests {
         let mut payload = Vec::new();
         ciborium::into_writer(&payload_data, &mut payload).unwrap();
         let err = decode_nested_cbor_bytes(&payload).unwrap_err();
-        match err {
-            BinaryError::NestedTag { expected, found } => {
-                assert_eq!(expected, 24);
-                assert_eq!(found, None);
-            },
-            other => panic!("unexpected error: {other:?}"),
+        let (expected, found) = match err {
+            BinaryError::NestedTag { expected, found } => Ok((expected, found)),
+            _ => Err(()),
         }
+        .expect("expected nested tag error");
+        assert_eq!(expected, 24);
+        assert_eq!(found, None);
     }
 
     #[test]

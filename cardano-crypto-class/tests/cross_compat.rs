@@ -9,7 +9,7 @@ mod cross_compat {
     use cardano_crypto_class::Ed25519;
     use cardano_crypto_class::dsign::DsignAlgorithm;
     use cardano_crypto_class::seed::mk_seed_from_bytes;
-    use serde::Deserialize;
+    use serde::{Deserialize, Serialize};
     use std::fs;
 
     /// Test vector for cross-compatibility testing
@@ -50,10 +50,13 @@ mod cross_compat {
     /// Load test vectors from JSON file
     fn load_test_vectors(filename: &str) -> TestVectorFile {
         let path = format!("tests/test_vectors/{}", filename);
-        let contents = fs::read_to_string(&path)
-            .unwrap_or_else(|e| panic!("Failed to read test vector file {}: {}", path, e));
-        serde_json::from_str(&contents)
-            .unwrap_or_else(|e| panic!("Failed to parse test vector file {}: {}", path, e))
+        let contents = fs::read_to_string(&path).expect("failed to read test vector file");
+        serde_json::from_str(&contents).expect("failed to parse test vector file")
+    }
+
+    fn encode_cbor_into<T: Serialize>(value: &T, buffer: &mut Vec<u8>) {
+        buffer.clear();
+        ciborium::into_writer(value, buffer).expect("CBOR serialization must succeed");
     }
 
     // =============================================================================
@@ -68,7 +71,7 @@ mod cross_compat {
         let vk = Ed25519::derive_verification_key(&sk);
 
         let mut cbor = Vec::new();
-        ciborium::into_writer(&vk, &mut cbor).expect("Failed to serialize");
+        encode_cbor_into(&vk, &mut cbor);
 
         // Ed25519 VK should be: 0x58 (bytes, length 1-byte) + 0x20 (32 bytes) + 32 bytes data
         assert_eq!(cbor.len(), 34, "Ed25519 VK CBOR length should be 34 bytes");
@@ -87,7 +90,7 @@ mod cross_compat {
         let sig = Ed25519::sign_bytes(&(), message, &sk);
 
         let mut cbor = Vec::new();
-        ciborium::into_writer(&sig, &mut cbor).expect("Failed to serialize");
+        encode_cbor_into(&sig, &mut cbor);
 
         // Ed25519 Sig should be: 0x58 (bytes) + 0x40 (64 bytes) + 64 bytes data
         assert_eq!(cbor.len(), 66, "Ed25519 Sig CBOR length should be 66 bytes");
@@ -106,10 +109,10 @@ mod cross_compat {
         let vk = Ed25519::derive_verification_key(&sk);
 
         let mut cbor1 = Vec::new();
-        ciborium::into_writer(&vk, &mut cbor1).unwrap();
+        encode_cbor_into(&vk, &mut cbor1);
 
         let mut cbor2 = Vec::new();
-        ciborium::into_writer(&vk, &mut cbor2).unwrap();
+        encode_cbor_into(&vk, &mut cbor2);
 
         assert_eq!(
             cbor1,
@@ -131,13 +134,23 @@ mod cross_compat {
 
         for vector in &vectors.vectors {
             // Decode seed and message
-            let seed_bytes = hex_decode(&vector.seed)
-                .unwrap_or_else(|e| panic!("Invalid seed hex in {}: {}", vector.name, e));
+            let seed_bytes = match hex_decode(&vector.seed) {
+                Ok(bytes) => bytes,
+                Err(err) => {
+                    failed.push(format!("{}: Invalid seed hex: {}", vector.name, err));
+                    continue;
+                },
+            };
             let message_bytes = if vector.message.is_empty() {
-                vec![]
+                Vec::new()
             } else {
-                hex_decode(&vector.message)
-                    .unwrap_or_else(|e| panic!("Invalid message hex in {}: {}", vector.name, e))
+                match hex_decode(&vector.message) {
+                    Ok(bytes) => bytes,
+                    Err(err) => {
+                        failed.push(format!("{}: Invalid message hex: {}", vector.name, err));
+                        continue;
+                    },
+                }
             };
 
             // Generate key and signature in Rust
@@ -148,9 +161,9 @@ mod cross_compat {
 
             // Serialize to CBOR
             let mut vk_cbor = Vec::new();
-            ciborium::into_writer(&vk, &mut vk_cbor).unwrap();
+            encode_cbor_into(&vk, &mut vk_cbor);
             let mut sig_cbor = Vec::new();
-            ciborium::into_writer(&sig, &mut sig_cbor).unwrap();
+            encode_cbor_into(&sig, &mut sig_cbor);
 
             // Compare with expected Haskell output
             let vk_hex = hex_encode(&vk_cbor);
@@ -197,8 +210,8 @@ mod cross_compat {
             for failure in &failed {
                 println!("  {}", failure);
             }
-            panic!("{} test vector(s) failed", failed.len());
         }
+        assert!(failed.is_empty(), "{} test vector(s) failed", failed.len());
     }
 
     #[test]
@@ -216,7 +229,7 @@ mod cross_compat {
             (
                 "random_seed",
                 hex_decode("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
-                    .unwrap(),
+                    .expect("invalid hex literal for random seed"),
                 "",
             ),
         ];
@@ -228,9 +241,9 @@ mod cross_compat {
             let sig = Ed25519::sign_bytes(&(), message.as_bytes(), &sk);
 
             let mut vk_cbor = Vec::new();
-            ciborium::into_writer(&vk, &mut vk_cbor).unwrap();
+            encode_cbor_into(&vk, &mut vk_cbor);
             let mut sig_cbor = Vec::new();
-            ciborium::into_writer(&sig, &mut sig_cbor).unwrap();
+            encode_cbor_into(&sig, &mut sig_cbor);
 
             println!("Test: {}", name);
             println!("  Seed:    {}", hex_encode(&seed_bytes));
@@ -259,7 +272,7 @@ mod cross_compat {
         let vk = Ed25519::derive_verification_key(&sk);
 
         let mut cbor = Vec::new();
-        ciborium::into_writer(&vk, &mut cbor).unwrap();
+        encode_cbor_into(&vk, &mut cbor);
 
         // First byte should have major type 2 (byte string)
         let major_type = (cbor[0] & 0xE0) >> 5; // Extract top 3 bits
@@ -282,7 +295,7 @@ mod cross_compat {
         let vk = Ed25519::derive_verification_key(&sk);
 
         let mut cbor = Vec::new();
-        ciborium::into_writer(&vk, &mut cbor).unwrap();
+        encode_cbor_into(&vk, &mut cbor);
 
         // For 32-byte string, should use 1-byte length encoding (0x58 0x20)
         // Not 2-byte (0x59) or 4-byte (0x5A) or 8-byte (0x5B)
@@ -307,7 +320,7 @@ mod cross_compat {
             (
                 "random_seed",
                 hex_decode("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
-                    .unwrap(),
+                    .expect("invalid hex literal for random VRF seed"),
                 "",
             ),
         ];
@@ -321,9 +334,9 @@ mod cross_compat {
 
             // Serialize to CBOR
             let mut vk_cbor = Vec::new();
-            ciborium::into_writer(&vk, &mut vk_cbor).unwrap();
+            encode_cbor_into(&vk, &mut vk_cbor);
             let mut proof_cbor = Vec::new();
-            ciborium::into_writer(&proof, &mut proof_cbor).unwrap();
+            encode_cbor_into(&proof, &mut proof_cbor);
 
             println!("Test: {}", name);
             println!("  Seed:        {}", hex_encode(&seed_bytes));
@@ -385,9 +398,9 @@ mod cross_compat {
 
             // Serialize to CBOR
             let mut vk_cbor = Vec::new();
-            ciborium::into_writer(&vk, &mut vk_cbor).unwrap();
+            encode_cbor_into(&vk, &mut vk_cbor);
             let mut proof_cbor = Vec::new();
-            ciborium::into_writer(&proof, &mut proof_cbor).unwrap();
+            encode_cbor_into(&proof, &mut proof_cbor);
 
             println!("Test: {}", name);
             // Only show first 64 chars of seed for readability
@@ -455,9 +468,9 @@ mod cross_compat {
 
             // Serialize to CBOR
             let mut vk_cbor = Vec::new();
-            ciborium::into_writer(&vk, &mut vk_cbor).unwrap();
+            encode_cbor_into(&vk, &mut vk_cbor);
             let mut proof_cbor = Vec::new();
-            ciborium::into_writer(&proof, &mut proof_cbor).unwrap();
+            encode_cbor_into(&proof, &mut proof_cbor);
 
             println!("Test: {}", name);
             println!("  Seed:        {}", hex_encode(&seed_bytes));
@@ -508,22 +521,24 @@ mod cross_compat {
 
         for (name, seed_bytes, message, period) in test_cases {
             // Generate signing key from seed
-            let mut seed = MLockedSeed::<32>::new_zeroed().unwrap();
+            let mut seed = MLockedSeed::<32>::new_zeroed().expect("Failed to allocate seed");
             seed.as_mut_bytes().copy_from_slice(&seed_bytes);
-            let signing_key = Ed25519::gen_key_m(&seed).unwrap();
+            let signing_key = Ed25519::gen_key_m(&seed).expect("Failed to derive signing key");
 
             // Derive verification key
-            let vk = SingleKesEd25519::derive_verification_key(&signing_key).unwrap();
+            let vk = SingleKesEd25519::derive_verification_key(&signing_key)
+                .expect("Failed to derive verification key");
 
             // Sign the message with period
             let message_bytes = message.as_bytes();
-            let sig = SingleKesEd25519::sign_kes(&(), period, message_bytes, &signing_key).unwrap();
+            let sig = SingleKesEd25519::sign_kes(&(), period, message_bytes, &signing_key)
+                .expect("Failed to sign message");
 
             // Serialize to CBOR
             let mut vk_cbor = Vec::new();
-            ciborium::into_writer(&vk, &mut vk_cbor).unwrap();
+            encode_cbor_into(&vk, &mut vk_cbor);
             let mut sig_cbor = Vec::new();
-            ciborium::into_writer(&sig, &mut sig_cbor).unwrap();
+            encode_cbor_into(&sig, &mut sig_cbor);
 
             println!("Test: {}", name);
             println!("  Seed:        {}", hex_encode(&seed_bytes));
@@ -580,23 +595,24 @@ mod cross_compat {
 
         for (name, seed_bytes, message, period) in test_cases {
             // Generate signing key from seed
-            let mut seed = MLockedSeed::<32>::new_zeroed().unwrap();
+            let mut seed = MLockedSeed::<32>::new_zeroed().expect("Failed to allocate seed");
             seed.as_mut_bytes().copy_from_slice(&seed_bytes);
-            let signing_key = Ed25519::gen_key_m(&seed).unwrap();
+            let signing_key = Ed25519::gen_key_m(&seed).expect("Failed to derive signing key");
 
             // Derive verification key
-            let vk = CompactSingleKesEd25519::derive_verification_key(&signing_key).unwrap();
+            let vk = CompactSingleKesEd25519::derive_verification_key(&signing_key)
+                .expect("Failed to derive verification key");
 
             // Sign the message with period
             let message_bytes = message.as_bytes();
             let sig = CompactSingleKesEd25519::sign_kes(&(), period, message_bytes, &signing_key)
-                .unwrap();
+                .expect("Failed to sign message");
 
             // Serialize to CBOR
             let mut vk_cbor = Vec::new();
-            ciborium::into_writer(&vk, &mut vk_cbor).unwrap();
+            encode_cbor_into(&vk, &mut vk_cbor);
             let mut sig_cbor = Vec::new();
-            ciborium::into_writer(&sig, &mut sig_cbor).unwrap();
+            encode_cbor_into(&sig, &mut sig_cbor);
 
             println!("Test: {}", name);
             println!("  Seed:        {}", hex_encode(&seed_bytes));

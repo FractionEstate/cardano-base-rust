@@ -147,7 +147,7 @@ impl MockCertificate {
 }
 
 impl MockSigningKey {
-    fn to_bytes(&self) -> [u8; MockVRF::SIGNING_KEY_SIZE] {
+    fn as_bytes(&self) -> [u8; MockVRF::SIGNING_KEY_SIZE] {
         write_binary_word64(self.0).try_into().expect("length 8")
     }
 }
@@ -210,7 +210,7 @@ impl VRFAlgorithm for MockVRF {
         signing_key: &Self::SigningKey,
     ) -> (OutputVRF<Self>, Self::Proof) {
         let mut serialized = cbor_bytes(message);
-        serialized.extend_from_slice(&cbor_bytes(&signing_key.to_bytes()));
+        serialized.extend_from_slice(&cbor_bytes(&signing_key.as_bytes()));
 
         let digest = short_hash(&serialized);
         let output = OutputVRF::<Self>::from_bytes(digest.to_vec())

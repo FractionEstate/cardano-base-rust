@@ -51,6 +51,10 @@ impl<const N: usize> PinnedSizedBytes<N> {
     }
 
     /// Attempt to construct from a slice, ensuring the length matches `N`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `slice.len()` differs from `N`.
     pub fn from_slice(slice: &[u8]) -> Result<Self, PinnedSizedBytesError> {
         if slice.len() != N {
             return Err(PinnedSizedBytesError::SizeMismatch {
@@ -65,6 +69,11 @@ impl<const N: usize> PinnedSizedBytes<N> {
 
     /// Decode a hexadecimal string into the pinned buffer, matching Haskell's
     /// Template Haskell helper.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the string cannot be decoded or does not yield `N`
+    /// bytes.
     pub fn from_hex(hex: &str) -> Result<Self, PinnedSizedBytesError> {
         let bytes = decode_hex_string(hex, N)?;
         Self::from_slice(&bytes)
@@ -172,9 +181,13 @@ impl<const N: usize> PinnedSizedBytes<N> {
     }
 
     /// Equivalent of `psbFromByteString` which panics on size mismatch.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `slice.len()` differs from `N`.
     #[must_use]
     pub fn from_slice_or_panic(slice: &[u8]) -> Self {
-        Self::from_slice(slice).unwrap_or_else(|err| panic!("psbFromByteString: {}", err))
+        Self::from_slice(slice).expect("psbFromByteString: size mismatch")
     }
 
     /// Convert a pointer to pinned bytes into a sized pointer wrapper.

@@ -158,20 +158,21 @@ pub fn ge25519_elligator2_faithful(r: &FieldElement) -> (FieldElement, FieldElem
     }
 
     // Recover y from curve equation y = sqrt(x^3 + A*x^2 + x)
-    let mut y_opt = {
+    let y = {
         let x_sq2 = x.square().reduce();
         let x_cu2 = (x_sq2 * x).reduce();
         let ax_sq2 = (x_sq2 * a_fe).reduce();
         let rhs = (x_cu2 + ax_sq2 + x).reduce();
-        rhs.sqrt()
+        match rhs.sqrt() {
+            Some(value) => value,
+            None => {
+                debug::log(|| {
+                    "ge25519_elligator2_faithful: sqrt failed (should not happen)".to_string()
+                });
+                FieldElement::zero()
+            },
+        }
     };
-
-    if y_opt.is_none() {
-        debug::log(|| "ge25519_elligator2_faithful: sqrt failed (should not happen)".to_string());
-        // In C they abort(); we propagate by returning zero y.
-        y_opt = Some(FieldElement::zero());
-    }
-    let y = y_opt.unwrap();
 
     fn fe_hex(fe: &FieldElement) -> String {
         fe.to_bytes().iter().map(|b| format!("{:02x}", b)).collect()
@@ -331,10 +332,9 @@ pub fn xmont_to_ymont(x: &FieldElement, sign: u8) -> Option<FieldElement> {
     let y_opt = rhs.sqrt();
 
     y_opt.map(|mut y| {
-        // Select sign based on sign bit
-        if sign == 1 && !y.is_negative() {
-            y = -y;
-        } else if sign == 0 && y.is_negative() {
+        // Flip sign when the canonical sign bit does not match the requested one.
+        let expect_negative = sign == 1;
+        if y.is_negative() != expect_negative {
             y = -y;
         }
         y.reduce()
@@ -390,21 +390,17 @@ mod tests {
         assert!(is_qr, "Square of 2 should be a QR");
 
         // sqrt(x^2) should give us back something whose square is x^2
-        match x2.sqrt() {
-            Some(sqrt_x2) => {
-                // eprintln!("sqrt(4) = {}", hex::encode(sqrt_x2.to_bytes()));
-                let sqrt_x2_squared = sqrt_x2.square();
-                // eprintln!("sqrt(4)^2 = {}", hex::encode(sqrt_x2_squared.to_bytes()));
-                assert_eq!(
-                    sqrt_x2_squared.to_bytes(),
-                    x2.to_bytes(),
-                    "sqrt(x^2)^2 should equal x^2"
-                );
-            },
-            None => {
-                panic!("sqrt of x^2 should exist");
-            },
-        }
+        let sqrt_x2 = x2
+            .sqrt()
+            .expect("sqrt of x^2 should exist for quadratic residues");
+        // eprintln!("sqrt(4) = {}", hex::encode(sqrt_x2.to_bytes()));
+        let sqrt_x2_squared = sqrt_x2.square();
+        // eprintln!("sqrt(4)^2 = {}", hex::encode(sqrt_x2_squared.to_bytes()));
+        assert_eq!(
+            sqrt_x2_squared.to_bytes(),
+            x2.to_bytes(),
+            "sqrt(x^2)^2 should equal x^2"
+        );
     }
 
     #[test]

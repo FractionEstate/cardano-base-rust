@@ -147,6 +147,11 @@ impl From<FromHexError> for DecodeHexError {
 }
 
 /// Decode hexadecimal bytes ensuring the decoded len matches expectations.
+///
+/// # Errors
+///
+/// Returns an error if the bytes are not valid hexadecimal or if the decoded
+/// length differs from `expected_len`.
 pub fn decode_hex_byte_string(
     bytes: &[u8],
     expected_len: usize,
@@ -162,6 +167,11 @@ pub fn decode_hex_byte_string(
 }
 
 /// Decode hexadecimal string with optional `0x` prefix ensuring expected length.
+///
+/// # Errors
+///
+/// Returns an error if the string contains non-ASCII characters, is not valid
+/// hexadecimal, or if the decoded length differs from `expected_len`.
 pub fn decode_hex_string(input: &str, expected_len: usize) -> Result<Vec<u8>, DecodeHexError> {
     let trimmed = input.strip_prefix("0x").unwrap_or(input);
     if !trimmed.is_ascii() {

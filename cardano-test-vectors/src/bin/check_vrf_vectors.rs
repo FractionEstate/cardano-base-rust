@@ -14,7 +14,7 @@ fn run() -> Result<(), String> {
     if args.len() != 3 {
         return Err(format!(
             "usage: {} <reference-dir> <local-dir>",
-            args.get(0)
+            args.first()
                 .map(|s| s.as_str())
                 .unwrap_or("check_vrf_vectors")
         ));

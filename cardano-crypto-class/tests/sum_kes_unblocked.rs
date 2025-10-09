@@ -16,7 +16,7 @@ fn test_sum_kes_1_gen_key_from_seed_bytes() {
     );
 
     // Verify we can derive a verification key
-    let sk = signing_key.unwrap();
+    let sk = signing_key.expect("Sum1Kes key generation should succeed");
     let vk = Sum1Kes::derive_verification_key(&sk);
     assert!(vk.is_ok(), "derive_verification_key should succeed");
 }
@@ -33,7 +33,7 @@ fn test_sum_kes_2_gen_key_from_seed_bytes() {
         signing_key.err()
     );
 
-    let sk = signing_key.unwrap();
+    let sk = signing_key.expect("Sum2Kes key generation should succeed");
     let vk = Sum2Kes::derive_verification_key(&sk);
     assert!(vk.is_ok(), "derive_verification_key should succeed");
 }
@@ -44,19 +44,25 @@ fn test_sum_kes_can_sign_at_different_periods() {
     let seed_bytes = vec![42u8; Sum2Kes::SEED_SIZE];
     let message = b"Sum KES test message";
 
-    let sk = Sum2Kes::gen_key_kes_from_seed_bytes(&seed_bytes).unwrap();
-    let vk = Sum2Kes::derive_verification_key(&sk).unwrap();
+    let sk = Sum2Kes::gen_key_kes_from_seed_bytes(&seed_bytes)
+        .expect("Sum2Kes key generation should succeed");
+    let vk = Sum2Kes::derive_verification_key(&sk)
+        .expect("Sum2Kes verification key derivation should succeed");
 
     // Sign at period 0
-    let sig0 = Sum2Kes::sign_kes(&(), 0, message, &sk).unwrap();
+    let sig0 = Sum2Kes::sign_kes(&(), 0, message, &sk)
+        .expect("Sum2Kes signing at period 0 should succeed");
     assert!(
         Sum2Kes::verify_kes(&(), &vk, 0, message, &sig0).is_ok(),
         "Signature at period 0 should verify"
     );
 
     // Evolve to period 1
-    let sk1 = Sum2Kes::update_kes(&(), sk, 0).unwrap().unwrap();
-    let sig1 = Sum2Kes::sign_kes(&(), 1, message, &sk1).unwrap();
+    let sk1 = Sum2Kes::update_kes(&(), sk, 0)
+        .expect("Sum2Kes update_kes should return Ok")
+        .expect("Sum2Kes update_kes should yield a new signing key");
+    let sig1 = Sum2Kes::sign_kes(&(), 1, message, &sk1)
+        .expect("Sum2Kes signing at period 1 should succeed");
     assert!(
         Sum2Kes::verify_kes(&(), &vk, 1, message, &sig1).is_ok(),
         "Signature at period 1 should verify"
@@ -68,11 +74,15 @@ fn test_sum_kes_deterministic_generation() {
     // Verify that Sum KES generates deterministic keys from same seed
     let seed_bytes = vec![123u8; Sum1Kes::SEED_SIZE];
 
-    let sk1 = Sum1Kes::gen_key_kes_from_seed_bytes(&seed_bytes).unwrap();
-    let sk2 = Sum1Kes::gen_key_kes_from_seed_bytes(&seed_bytes).unwrap();
+    let sk1 = Sum1Kes::gen_key_kes_from_seed_bytes(&seed_bytes)
+        .expect("Sum1Kes key generation should succeed");
+    let sk2 = Sum1Kes::gen_key_kes_from_seed_bytes(&seed_bytes)
+        .expect("Sum1Kes key generation should succeed");
 
-    let vk1 = Sum1Kes::derive_verification_key(&sk1).unwrap();
-    let vk2 = Sum1Kes::derive_verification_key(&sk2).unwrap();
+    let vk1 = Sum1Kes::derive_verification_key(&sk1)
+        .expect("Sum1Kes verification key derivation should succeed");
+    let vk2 = Sum1Kes::derive_verification_key(&sk2)
+        .expect("Sum1Kes verification key derivation should succeed");
 
     assert_eq!(vk1, vk2, "Same seed should produce same verification key");
 }

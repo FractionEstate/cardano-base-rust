@@ -42,7 +42,7 @@ for detailed logging.\n"
     let data = fs::read(&vector_path)?;
     let file: TestVectorFile = serde_json::from_slice(&data)?;
 
-    if file.algorithm.to_ascii_lowercase() != "ed25519" {
+    if !file.algorithm.eq_ignore_ascii_case("ed25519") {
         return Err(format!(
             "unexpected algorithm '{}' in {}; expected 'ed25519'",
             file.algorithm,

@@ -184,9 +184,8 @@ impl PraosBatchCompatSigningKey {
     pub fn derive_verification_key(
         &self,
     ) -> Result<PraosBatchCompatVerificationKey, PraosBatchConstructionError> {
-        // Extract seed (first 32 bytes) from sk
-        let seed: [u8; 32] = self.as_bytes()[0..32].try_into().unwrap();
-        // Use common::seed_to_public_key
+        let mut seed = [0u8; 32];
+        seed.copy_from_slice(&self.as_bytes()[0..32]);
         let pk = common::seed_to_public_key(&seed);
         Ok(PraosBatchCompatVerificationKey { bytes: pk.to_vec() })
     }
@@ -212,8 +211,8 @@ impl PraosBatchCompatSigningKey {
         &self,
         message: &[u8],
     ) -> Result<PraosBatchCompatProof, PraosBatchConstructionError> {
-        // Use VrfDraft13::prove
-        let sk: [u8; 64] = self.as_bytes().try_into().unwrap();
+        let mut sk = [0u8; 64];
+        sk.copy_from_slice(self.as_bytes());
         let proof = VrfDraft13::prove(&sk, message)?;
         Ok(PraosBatchCompatProof {
             bytes: proof.to_vec(),
@@ -277,14 +276,20 @@ impl PraosBatchCompatVerificationKey {
         self.bytes.clone()
     }
 
+    /// Verify a VRF proof against this verification key.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the verification routine fails unexpectedly.
     pub fn verify(
         &self,
         message: &[u8],
         proof: &PraosBatchCompatProof,
     ) -> Result<Option<Vec<u8>>, PraosBatchConstructionError> {
-        // Use VrfDraft13::verify
-        let pk: [u8; 32] = self.bytes.as_slice().try_into().unwrap();
-        let proof_bytes: [u8; 128] = proof.bytes.as_slice().try_into().unwrap();
+        let mut pk = [0u8; 32];
+        pk.copy_from_slice(self.bytes.as_slice());
+        let mut proof_bytes = [0u8; 128];
+        proof_bytes.copy_from_slice(proof.bytes.as_slice());
 
         match VrfDraft13::verify(&pk, &proof_bytes, message) {
             Ok(output) => Ok(Some(output.to_vec())),
@@ -357,8 +362,8 @@ impl PraosBatchCompatProof {
     /// This function should not fail under normal circumstances as extraction
     /// is deterministic. Returns `Ok(None)` if the proof is malformed.
     pub fn to_output_bytes(&self) -> Result<Option<Vec<u8>>, PraosBatchConstructionError> {
-        // Use VrfDraft13::proof_to_hash
-        let proof_bytes: [u8; 128] = self.bytes.as_slice().try_into().unwrap();
+        let mut proof_bytes = [0u8; 128];
+        proof_bytes.copy_from_slice(self.bytes.as_slice());
         match VrfDraft13::proof_to_hash(&proof_bytes) {
             Ok(output) => Ok(Some(output.to_vec())),
             Err(_) => Ok(None),
@@ -377,8 +382,8 @@ pub fn keypair_from_seed(
     (PraosBatchCompatVerificationKey, PraosBatchCompatSigningKey),
     PraosBatchConstructionError,
 > {
-    // Use VrfDraft13::keypair_from_seed
-    let seed_bytes: [u8; 32] = seed.as_bytes().try_into().unwrap();
+    let mut seed_bytes = [0u8; 32];
+    seed_bytes.copy_from_slice(seed.as_bytes());
     let (sk_array, pk_array) = VrfDraft13::keypair_from_seed(&seed_bytes);
 
     // Store in mlocked memory
@@ -411,9 +416,16 @@ pub fn keypair_from_seed_bytes(
     keypair_from_seed(&seed)
 }
 
+/// Derive a batch-compatible signing key deterministically from a [`Seed`].
+///
+/// # Panics
+///
+/// Panics if the seed does not provide enough bytes or if the resulting
+/// material is not a valid signing key.
 #[must_use]
 pub fn signing_key_from_seed(seed: &Seed) -> PraosBatchCompatSigningKey {
-    let (material, _) = crate::seed::get_bytes_from_seed_t(signing_key_size(), seed.clone());
+    let (material, _) = crate::seed::get_bytes_from_seed(signing_key_size(), seed.clone())
+        .expect("seed produced insufficient material for signing key");
     signing_key_from_bytes(&material).expect("seed produced invalid praos batch signing key")
 }
 
@@ -488,6 +500,12 @@ pub fn unsafe_raw_seed(seed: &PraosBatchCompatSeed) -> Vec<u8> {
     seed.to_vec()
 }
 
+/// Extracts a batch-compatible VRF output from a proof.
+///
+/// # Errors
+///
+/// Returns an error if the proof cannot be converted into an output or if the
+/// resulting byte string has the wrong length.
 pub fn output_from_proof(
     proof: &PraosBatchCompatProof,
 ) -> Result<Option<OutputVRF<PraosBatchCompatVRF>>, PraosBatchConstructionError> {

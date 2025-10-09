@@ -480,6 +480,7 @@ impl FieldElement {
     ///
     /// `true` if the element has a square root, `false` otherwise
     #[must_use]
+    #[allow(clippy::just_underscores_and_digits)]
     pub fn is_square(&self) -> bool {
         let x = self.reduce();
         if x.is_zero() {
@@ -587,8 +588,8 @@ impl FieldElement {
         let mask = -(choice as i64);
         let mut result = [0i64; 10];
 
-        for i in 0..10 {
-            result[i] = b.0[i] ^ (mask & (a.0[i] ^ b.0[i]));
+        for ((result_limb, &a_limb), &b_limb) in result.iter_mut().zip(a.0.iter()).zip(b.0.iter()) {
+            *result_limb = b_limb ^ (mask & (a_limb ^ b_limb));
         }
 
         FieldElement(result)
@@ -606,10 +607,10 @@ impl FieldElement {
     pub fn conditional_swap(a: &mut Self, b: &mut Self, choice: u8) {
         let mask = -(choice as i64);
 
-        for i in 0..10 {
-            let t = mask & (a.0[i] ^ b.0[i]);
-            a.0[i] ^= t;
-            b.0[i] ^= t;
+        for (a_limb, b_limb) in a.0.iter_mut().zip(b.0.iter_mut()) {
+            let t = mask & (*a_limb ^ *b_limb);
+            *a_limb ^= t;
+            *b_limb ^= t;
         }
     }
 
@@ -650,8 +651,8 @@ impl Add for FieldElement {
     /// Performs component-wise addition of limbs.
     fn add(self, other: Self) -> Self {
         let mut h = [0i64; 10];
-        for i in 0..10 {
-            h[i] = self.0[i] + other.0[i];
+        for ((acc, &lhs), &rhs) in h.iter_mut().zip(self.0.iter()).zip(other.0.iter()) {
+            *acc = lhs + rhs;
         }
         FieldElement(h)
     }
@@ -665,8 +666,8 @@ impl Sub for FieldElement {
     /// Performs component-wise subtraction of limbs.
     fn sub(self, other: Self) -> Self {
         let mut h = [0i64; 10];
-        for i in 0..10 {
-            h[i] = self.0[i] - other.0[i];
+        for ((acc, &lhs), &rhs) in h.iter_mut().zip(self.0.iter()).zip(other.0.iter()) {
+            *acc = lhs - rhs;
         }
         FieldElement(h)
     }
@@ -1009,12 +1010,11 @@ mod tests {
             for (i, b) in eb.iter().enumerate() {
                 exp_bytes[i] = *b;
             }
-            if prod_bytes != exp_bytes {
-                panic!(
-                    "Mul mismatch: a={:?} b={:?} got={:02x?} expect={:02x?}",
-                    a.0, b.0, prod_bytes, exp_bytes
-                );
-            }
+            assert_eq!(
+                prod_bytes, exp_bytes,
+                "Mul mismatch: a={:?} b={:?} got={:02x?} expect={:02x?}",
+                a.0, b.0, prod_bytes, exp_bytes
+            );
         }
     }
 

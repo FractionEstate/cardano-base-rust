@@ -5,10 +5,10 @@
 //!
 //! Fixture layout (as embedded by cardano-test-vectors):
 //! * single / compact_single: {
-//!       "vectors": [ { seed (hex), message (hex), period, expected { verification_key / derived_verification_key, signature, raw_signature } } ]
+//!   "vectors": [ { seed (hex), message (hex), period, expected { verification_key / derived_verification_key, signature, raw_signature } } ]
 //!   }
 //! * sum / compact_sum: {
-//!       "levels": [ { level, total_periods, vectors: [ { verification_key, seed, tracked_periods: [ { period, message (hex), signature, raw_signature } ] } ] } ]
+//!   "levels": [ { level, total_periods, vectors: [ { verification_key, seed, tracked_periods: [ { period, message (hex), signature, raw_signature } ] } ] } ]
 //!   }
 //!
 //! Raw signatures for compact variants concatenate the signature bytes with the embedded
@@ -37,12 +37,16 @@ fn hex_to_bytes(hex: &str) -> Vec<u8> {
 }
 
 fn hex_val(c: u8) -> u8 {
-    match c {
-        b'0'..=b'9' => c - b'0',
-        b'a'..=b'f' => c - b'a' + 10,
-        b'A'..=b'F' => c - b'A' + 10,
-        _ => panic!("invalid hex char"),
+    fn digit(value: u8) -> Option<u8> {
+        match value {
+            b'0'..=b'9' => Some(value - b'0'),
+            b'a'..=b'f' => Some(value - b'a' + 10),
+            b'A'..=b'F' => Some(value - b'A' + 10),
+            _ => None,
+        }
     }
+
+    digit(c).expect("fixture hex digits must be valid")
 }
 
 // --------------------------- Single / Compact -----------------------------

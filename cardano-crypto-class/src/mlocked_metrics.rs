@@ -54,12 +54,12 @@ pub(crate) fn record_zeroization() {
 pub fn snapshot() -> MLockedMetrics {
     #[cfg(feature = "mlocked-metrics")]
     {
-        return MLockedMetrics {
+        MLockedMetrics {
             allocations: ALLOCATIONS.load(Ordering::Relaxed),
             allocation_bytes: ALLOCATION_BYTES.load(Ordering::Relaxed),
             failed_locks: FAILED_LOCKS.load(Ordering::Relaxed),
             zeroizations: ZEROIZATIONS.load(Ordering::Relaxed),
-        };
+        }
     }
     #[cfg(not(feature = "mlocked-metrics"))]
     {

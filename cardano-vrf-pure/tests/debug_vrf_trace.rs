@@ -18,11 +18,11 @@ fn debug_vrf_ver03_generated_1() {
     let expected_pi_hex = "000f006e64c91f84212919fe0899970cd341206fc081fe599339c8492e2cea3299ae9de4b6ce21cda0a975f65f45b70f82b3952ba6d0dbe11a06716e67aca233c0d78f115a655aa1952ada9f3d692a0a";
     let expected_beta_hex = "9930b5dddc0938f01cf6f9746eded569ee676bd6ff3b4f19233d74b903ec53a45c5728116088b7c622b6d6c354f7125c7d09870b56ec6f1e4bf4970f607e04b2";
 
-    let sk_seed = hex::decode(sk_hex).unwrap();
-    let pk = hex::decode(pk_hex).unwrap();
-    let alpha = hex::decode(alpha_hex).unwrap();
-    let expected_pi = hex::decode(expected_pi_hex).unwrap();
-    let expected_beta = hex::decode(expected_beta_hex).unwrap();
+    let sk_seed = hex::decode(sk_hex).expect("valid secret key hex");
+    let pk = hex::decode(pk_hex).expect("valid public key hex");
+    let alpha = hex::decode(alpha_hex).expect("valid alpha hex");
+    let expected_pi = hex::decode(expected_pi_hex).expect("valid proof hex");
+    let expected_beta = hex::decode(expected_beta_hex).expect("valid beta hex");
 
     // Construct 64-byte secret key
     let mut skpk = [0u8; 64];
@@ -79,7 +79,7 @@ fn debug_vrf_ver03_generated_1() {
 
         let expected_u_bytes =
             hex::decode("58a9499d48d9ec7ee9aeaf05035c05decff66beca27d8bf7bf374363f5dc0a5e")
-                .unwrap();
+                .expect("valid expected u hex");
         let mut expected_u_array = [0u8; 32];
         expected_u_array.copy_from_slice(&expected_u_bytes);
         let expected_u = FieldElement::from_bytes(&expected_u_array);
@@ -231,7 +231,7 @@ fn debug_vrf_ver03_generated_1() {
             println!("Match: {}", proof[..] == expected_pi[..]);
 
             // Try verification
-            let pk_array: [u8; 32] = pk.try_into().unwrap();
+            let pk_array: [u8; 32] = pk.clone().try_into().expect("public key must be 32 bytes");
             match cardano_vrf_verify(&pk_array, &proof, &alpha) {
                 Ok(beta) => {
                     println!("\nGenerated beta: {}", hex::encode(&beta));

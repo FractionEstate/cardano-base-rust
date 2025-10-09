@@ -57,7 +57,7 @@ fn sum_kes_vectors_match_generated_data() {
             5 => exercise_sum_level::<Sum5Kes>(level),
             6 => exercise_sum_level::<Sum6Kes>(level),
             7 => exercise_sum_level::<Sum7Kes>(level),
-            other => panic!("unexpected sum level {other}"),
+            other => assert!((1..=7).contains(&other), "unexpected sum level {other}"),
         }
     }
 }

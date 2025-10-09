@@ -329,7 +329,9 @@ fn sum_kes_vectors_cover_period_boundaries() {
             5 => exercise_sum_level::<Sum5Kes>(level),
             6 => exercise_sum_level::<Sum6Kes>(level),
             7 => exercise_sum_level::<Sum7Kes>(level),
-            other => panic!("unexpected SumKES level {other}"),
+            other => {
+                assert!((1..=7).contains(&other), "unexpected SumKES level {other}");
+            },
         }
     }
 }
@@ -353,7 +355,9 @@ fn sum_kes_vectors_reject_tampered_messages() {
             5 => assert_sum_tampered_message_fails::<Sum5Kes>(level),
             6 => assert_sum_tampered_message_fails::<Sum6Kes>(level),
             7 => assert_sum_tampered_message_fails::<Sum7Kes>(level),
-            other => panic!("unexpected SumKES level {other}"),
+            other => {
+                assert!((1..=7).contains(&other), "unexpected SumKES level {other}");
+            },
         }
     }
 }
@@ -374,7 +378,12 @@ fn compact_sum_kes_vectors_reject_tampered_messages() {
             5 => assert_sum_tampered_message_fails::<CompactSum5Kes>(level),
             6 => assert_sum_tampered_message_fails::<CompactSum6Kes>(level),
             7 => assert_sum_tampered_message_fails::<CompactSum7Kes>(level),
-            other => panic!("unexpected CompactSumKES level {other}"),
+            other => {
+                assert!(
+                    (1..=7).contains(&other),
+                    "unexpected CompactSumKES level {other}"
+                );
+            },
         }
     }
 }
@@ -395,7 +404,12 @@ fn compact_sum_kes_vectors_cover_all_levels() {
             5 => exercise_sum_level::<CompactSum5Kes>(level),
             6 => exercise_sum_level::<CompactSum6Kes>(level),
             7 => exercise_sum_level::<CompactSum7Kes>(level),
-            other => panic!("unexpected CompactSumKES level {other}"),
+            other => {
+                assert!(
+                    (1..=7).contains(&other),
+                    "unexpected CompactSumKES level {other}"
+                );
+            },
         }
     }
 }
@@ -421,7 +435,12 @@ fn sum_kes_period_evolution_vectors_cover_full_sequences() {
             5 => exercise_period_evolution_level::<Sum5Kes>(level),
             6 => exercise_period_evolution_level::<Sum6Kes>(level),
             7 => exercise_period_evolution_level::<Sum7Kes>(level),
-            other => panic!("unexpected SumKES evolution level {other}"),
+            other => {
+                assert!(
+                    (1..=7).contains(&other),
+                    "unexpected SumKES evolution level {other}"
+                );
+            },
         }
     }
 }
@@ -447,7 +466,12 @@ fn compact_sum_kes_period_evolution_vectors_cover_full_sequences() {
             5 => exercise_period_evolution_level::<CompactSum5Kes>(level),
             6 => exercise_period_evolution_level::<CompactSum6Kes>(level),
             7 => exercise_period_evolution_level::<CompactSum7Kes>(level),
-            other => panic!("unexpected CompactSumKES evolution level {other}"),
+            other => {
+                assert!(
+                    (1..=7).contains(&other),
+                    "unexpected CompactSumKES evolution level {other}"
+                );
+            },
         }
     }
 }
@@ -477,33 +501,33 @@ where
         let total_periods = K::total_periods();
 
         for period in 0..total_periods {
-            if let Some(expected) = period_entries.peek() {
-                if expected.period == period {
-                    let message = decode_hex(&expected.message);
-                    assert_eq!(
-                        expected.signature, expected.raw_signature,
-                        "signature/raw mismatch at level {} period {}",
-                        level.level, period
-                    );
-                    let expected_signature = decode_hex(&expected.raw_signature);
+            if let Some(expected) = period_entries.peek()
+                && expected.period == period
+            {
+                let message = decode_hex(&expected.message);
+                assert_eq!(
+                    expected.signature, expected.raw_signature,
+                    "signature/raw mismatch at level {} period {}",
+                    level.level, period
+                );
+                let expected_signature = decode_hex(&expected.raw_signature);
 
-                    let signature =
-                        K::sign_kes(&(), period, &message, &signing_key).expect("sum signing");
-                    let raw_signature = K::raw_serialize_signature_kes(&signature);
+                let signature =
+                    K::sign_kes(&(), period, &message, &signing_key).expect("sum signing");
+                let raw_signature = K::raw_serialize_signature_kes(&signature);
 
-                    assert_eq!(
-                        expected_signature, raw_signature,
-                        "signature mismatch at level {} period {}",
-                        level.level, period
-                    );
+                assert_eq!(
+                    expected_signature, raw_signature,
+                    "signature mismatch at level {} period {}",
+                    level.level, period
+                );
 
-                    let deserialised = K::raw_deserialize_signature_kes(&raw_signature)
-                        .expect("sum signature deserialise");
-                    K::verify_kes(&(), &verification_key, period, &message, &deserialised)
-                        .expect("sum verification");
+                let deserialised = K::raw_deserialize_signature_kes(&raw_signature)
+                    .expect("sum signature deserialise");
+                K::verify_kes(&(), &verification_key, period, &message, &deserialised)
+                    .expect("sum verification");
 
-                    period_entries.next();
-                }
+                period_entries.next();
             }
 
             if period + 1 == total_periods {

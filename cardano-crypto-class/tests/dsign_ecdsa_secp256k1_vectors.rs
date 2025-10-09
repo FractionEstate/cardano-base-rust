@@ -39,13 +39,21 @@ fn test_ecdsa_vectors_parse() {
     let vectors = parse_ecdsa_vectors();
 
     assert_eq!(
-        vectors["algorithm"].as_str().unwrap(),
+        vectors["algorithm"]
+            .as_str()
+            .expect("algorithm field should be a string"),
         "EcdsaSecp256k1DSIGN"
     );
 
-    let sign_verify = vectors["sign_and_verify_vectors"].as_array().unwrap();
-    let verify_only = vectors["verify_only_vectors"].as_array().unwrap();
-    let errors = vectors["error_vectors"].as_array().unwrap();
+    let sign_verify = vectors["sign_and_verify_vectors"]
+        .as_array()
+        .expect("sign_and_verify_vectors should be an array");
+    let verify_only = vectors["verify_only_vectors"]
+        .as_array()
+        .expect("verify_only_vectors should be an array");
+    let errors = vectors["error_vectors"]
+        .as_array()
+        .expect("error_vectors should be an array");
 
     println!("Loaded ECDSA Secp256k1 test vectors:");
     println!("  Sign/Verify: {}", sign_verify.len());
@@ -58,16 +66,22 @@ fn test_ecdsa_vectors_parse() {
 #[test]
 fn test_ecdsa_key_generation_from_seed() {
     let vectors = parse_ecdsa_vectors();
-    let vector_array = vectors["sign_and_verify_vectors"].as_array().unwrap();
+    let vector_array = vectors["sign_and_verify_vectors"]
+        .as_array()
+        .expect("sign_and_verify_vectors should be an array");
 
     println!("\n=== ECDSA Secp256k1 Key Generation ===");
 
     for vector in vector_array {
-        let test_name = vector["test_name"].as_str().unwrap();
+        let test_name = vector["test_name"]
+            .as_str()
+            .expect("test_name should be a string");
         println!("\nVector: {}", test_name);
 
         // Generate keys from secret key
-        let secret_key_hex = vector["secret_key"].as_str().unwrap();
+        let secret_key_hex = vector["secret_key"]
+            .as_str()
+            .expect("secret_key should be a string");
         let secret_key_bytes = decode_hex(secret_key_hex);
 
         // Create seed from secret key (ECDSA uses the bytes directly as secret key)
@@ -99,23 +113,31 @@ fn test_ecdsa_key_generation_from_seed() {
 #[test]
 fn test_ecdsa_sign_and_verify() {
     let vectors = parse_ecdsa_vectors();
-    let vector_array = vectors["sign_and_verify_vectors"].as_array().unwrap();
+    let vector_array = vectors["sign_and_verify_vectors"]
+        .as_array()
+        .expect("sign_and_verify_vectors should be an array");
 
     println!("\n=== ECDSA Secp256k1 Sign and Verify ===");
 
     for vector in vector_array {
-        let test_name = vector["test_name"].as_str().unwrap();
+        let test_name = vector["test_name"]
+            .as_str()
+            .expect("test_name should be a string");
         println!("\n=== Testing: {} ===", test_name);
 
         // Generate keys
-        let secret_key_hex = vector["secret_key"].as_str().unwrap();
+        let secret_key_hex = vector["secret_key"]
+            .as_str()
+            .expect("secret_key should be a string");
         let secret_key_bytes = decode_hex(secret_key_hex);
         let seed = mk_seed_from_bytes(secret_key_bytes);
         let signing_key = EcdsaSecp256k1DSIGN::gen_key(&seed);
         let verification_key = EcdsaSecp256k1DSIGN::derive_verification_key(&signing_key);
 
         // Decode message (ECDSA requires 32-byte hash)
-        let message_hex = vector["message"].as_str().unwrap();
+        let message_hex = vector["message"]
+            .as_str()
+            .expect("message should be a string");
         let message = decode_hex(message_hex);
 
         assert_eq!(message.len(), 32, "ECDSA message should be 32-byte hash");
@@ -147,29 +169,41 @@ fn test_ecdsa_sign_and_verify() {
 #[test]
 fn test_ecdsa_verify_known_signatures() {
     let vectors = parse_ecdsa_vectors();
-    let vector_array = vectors["verify_only_vectors"].as_array().unwrap();
+    let vector_array = vectors["verify_only_vectors"]
+        .as_array()
+        .expect("verify_only_vectors should be an array");
 
     println!("\n=== ECDSA Secp256k1 Verify Known Signatures ===");
 
     for vector in vector_array {
-        let test_name = vector["test_name"].as_str().unwrap();
-        let should_verify = vector["should_verify"].as_bool().unwrap();
+        let test_name = vector["test_name"]
+            .as_str()
+            .expect("test_name should be a string");
+        let should_verify = vector["should_verify"]
+            .as_bool()
+            .expect("should_verify should be a boolean");
 
         println!("\n=== Testing: {} ===", test_name);
         println!("Expected to verify: {}", should_verify);
 
         // Decode components
-        let vk_hex = vector["verification_key"].as_str().unwrap();
+        let vk_hex = vector["verification_key"]
+            .as_str()
+            .expect("verification_key should be a string");
         let vk_bytes = decode_hex(vk_hex);
         println!("VK bytes ({}): {}", vk_bytes.len(), hex::encode(&vk_bytes));
         let verification_key = EcdsaSecp256k1DSIGN::raw_deserialize_verification_key(&vk_bytes)
             .expect("Should deserialize verification key");
 
-        let message_hex = vector["message"].as_str().unwrap();
+        let message_hex = vector["message"]
+            .as_str()
+            .expect("message should be a string");
         let message = decode_hex(message_hex);
         println!("Message ({}): {}", message.len(), hex::encode(&message));
 
-        let sig_hex = vector["signature"].as_str().unwrap();
+        let sig_hex = vector["signature"]
+            .as_str()
+            .expect("signature should be a string");
         let sig_bytes = decode_hex(sig_hex);
         println!(
             "Signature ({}): {}",
@@ -220,12 +254,16 @@ fn test_ecdsa_verify_known_signatures() {
 #[test]
 fn test_ecdsa_error_cases() {
     let vectors = parse_ecdsa_vectors();
-    let error_vectors = vectors["error_vectors"].as_array().unwrap();
+    let error_vectors = vectors["error_vectors"]
+        .as_array()
+        .expect("error_vectors should be an array");
 
     println!("\n=== ECDSA Secp256k1 Error Cases ===");
 
     for vector in error_vectors {
-        let test_name = vector["test_name"].as_str().unwrap();
+        let test_name = vector["test_name"]
+            .as_str()
+            .expect("test_name should be a string");
         println!("\n=== Testing: {} ===", test_name);
 
         // Test verification key parsing errors
@@ -308,18 +346,24 @@ fn test_ecdsa_error_cases() {
 #[test]
 fn test_ecdsa_deterministic_signatures() {
     let vectors = parse_ecdsa_vectors();
-    let vector_array = vectors["sign_and_verify_vectors"].as_array().unwrap();
+    let vector_array = vectors["sign_and_verify_vectors"]
+        .as_array()
+        .expect("sign_and_verify_vectors should be an array");
 
     println!("\n=== ECDSA Secp256k1 Deterministic Signatures ===");
 
     // Use first vector
     let vector = &vector_array[0];
-    let secret_key_hex = vector["secret_key"].as_str().unwrap();
+    let secret_key_hex = vector["secret_key"]
+        .as_str()
+        .expect("secret_key should be a string");
     let secret_key_bytes = decode_hex(secret_key_hex);
     let seed = mk_seed_from_bytes(secret_key_bytes);
     let signing_key = EcdsaSecp256k1DSIGN::gen_key(&seed);
 
-    let message_hex = vector["message"].as_str().unwrap();
+    let message_hex = vector["message"]
+        .as_str()
+        .expect("message should be a string");
     let message = decode_hex(message_hex);
 
     // Sign twice
@@ -339,19 +383,25 @@ fn test_ecdsa_deterministic_signatures() {
 #[test]
 fn test_ecdsa_serialization_roundtrip() {
     let vectors = parse_ecdsa_vectors();
-    let vector_array = vectors["sign_and_verify_vectors"].as_array().unwrap();
+    let vector_array = vectors["sign_and_verify_vectors"]
+        .as_array()
+        .expect("sign_and_verify_vectors should be an array");
 
     println!("\n=== ECDSA Secp256k1 Serialization Roundtrip ===");
 
     // Use first vector
     let vector = &vector_array[0];
-    let secret_key_hex = vector["secret_key"].as_str().unwrap();
+    let secret_key_hex = vector["secret_key"]
+        .as_str()
+        .expect("secret_key should be a string");
     let secret_key_bytes = decode_hex(secret_key_hex);
     let seed = mk_seed_from_bytes(secret_key_bytes);
     let signing_key = EcdsaSecp256k1DSIGN::gen_key(&seed);
     let verification_key = EcdsaSecp256k1DSIGN::derive_verification_key(&signing_key);
 
-    let message_hex = vector["message"].as_str().unwrap();
+    let message_hex = vector["message"]
+        .as_str()
+        .expect("message should be a string");
     let message = decode_hex(message_hex);
     let signature = EcdsaSecp256k1DSIGN::sign_bytes(&CONTEXT, &message, &signing_key);
 
@@ -395,19 +445,25 @@ fn test_ecdsa_serialization_roundtrip() {
 #[test]
 fn test_ecdsa_wrong_message_fails() {
     let vectors = parse_ecdsa_vectors();
-    let vector_array = vectors["sign_and_verify_vectors"].as_array().unwrap();
+    let vector_array = vectors["sign_and_verify_vectors"]
+        .as_array()
+        .expect("sign_and_verify_vectors should be an array");
 
     println!("\n=== ECDSA Secp256k1 Wrong Message Verification ===");
 
     // Use first vector
     let vector = &vector_array[0];
-    let secret_key_hex = vector["secret_key"].as_str().unwrap();
+    let secret_key_hex = vector["secret_key"]
+        .as_str()
+        .expect("secret_key should be a string");
     let secret_key_bytes = decode_hex(secret_key_hex);
     let seed = mk_seed_from_bytes(secret_key_bytes);
     let signing_key = EcdsaSecp256k1DSIGN::gen_key(&seed);
     let verification_key = EcdsaSecp256k1DSIGN::derive_verification_key(&signing_key);
 
-    let message_hex = vector["message"].as_str().unwrap();
+    let message_hex = vector["message"]
+        .as_str()
+        .expect("message should be a string");
     let message = decode_hex(message_hex);
     let signature = EcdsaSecp256k1DSIGN::sign_bytes(&CONTEXT, &message, &signing_key);
 
@@ -428,7 +484,9 @@ fn test_ecdsa_wrong_message_fails() {
 #[test]
 fn test_ecdsa_wrong_key_fails() {
     let vectors = parse_ecdsa_vectors();
-    let vector_array = vectors["sign_and_verify_vectors"].as_array().unwrap();
+    let vector_array = vectors["sign_and_verify_vectors"]
+        .as_array()
+        .expect("sign_and_verify_vectors should be an array");
 
     println!("\n=== ECDSA Secp256k1 Wrong Key Verification ===");
 
@@ -437,19 +495,25 @@ fn test_ecdsa_wrong_key_fails() {
     let vector2 = &vector_array[1];
 
     // Generate keys from first vector
-    let secret_key_hex1 = vector1["secret_key"].as_str().unwrap();
+    let secret_key_hex1 = vector1["secret_key"]
+        .as_str()
+        .expect("secret_key should be a string");
     let secret_key_bytes1 = decode_hex(secret_key_hex1);
     let seed1 = mk_seed_from_bytes(secret_key_bytes1);
     let signing_key1 = EcdsaSecp256k1DSIGN::gen_key(&seed1);
 
     // Generate verification key from second vector (different key)
-    let secret_key_hex2 = vector2["secret_key"].as_str().unwrap();
+    let secret_key_hex2 = vector2["secret_key"]
+        .as_str()
+        .expect("secret_key should be a string");
     let secret_key_bytes2 = decode_hex(secret_key_hex2);
     let seed2 = mk_seed_from_bytes(secret_key_bytes2);
     let signing_key2 = EcdsaSecp256k1DSIGN::gen_key(&seed2);
     let verification_key2 = EcdsaSecp256k1DSIGN::derive_verification_key(&signing_key2);
 
-    let message_hex = vector1["message"].as_str().unwrap();
+    let message_hex = vector1["message"]
+        .as_str()
+        .expect("message should be a string");
     let message = decode_hex(message_hex);
     let signature = EcdsaSecp256k1DSIGN::sign_bytes(&CONTEXT, &message, &signing_key1);
 

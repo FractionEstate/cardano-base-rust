@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use cardano_crypto_class::kes::hash::Blake2b256;
 use cardano_crypto_class::kes::{
     CompactSum0Kes, CompactSum1Kes, CompactSum2Kes, CompactSum3Kes, Sum0Kes, Sum1Kes, Sum2Kes,
@@ -13,6 +15,12 @@ pub struct ExpectedCompactNode {
 
 pub type ExpectedSumNode = ExpectedCompactNode;
 
+/// Build the expected compact SumKES verification tree for the provided seed.
+///
+/// # Panics
+///
+/// Panics if key generation fails for the provided seed material.
+#[must_use]
 pub fn build_expected_compact_tree(level: usize, seed: &[u8]) -> ExpectedCompactNode {
     if level == 0 {
         let signing_key = CompactSum0Kes::gen_key_kes_from_seed_bytes(seed)
@@ -37,6 +45,12 @@ pub fn build_expected_compact_tree(level: usize, seed: &[u8]) -> ExpectedCompact
     }
 }
 
+/// Build the expected SumKES verification tree for the provided seed.
+///
+/// # Panics
+///
+/// Panics if key generation fails for the provided seed material.
+#[must_use]
 pub fn build_expected_sum_tree(level: usize, seed: &[u8]) -> ExpectedSumNode {
     if level == 0 {
         let signing_key = Sum0Kes::gen_key_kes_from_seed_bytes(seed).expect("sum leaf signing key");
@@ -60,32 +74,52 @@ pub fn build_expected_sum_tree(level: usize, seed: &[u8]) -> ExpectedSumNode {
     }
 }
 
+const SUM_SIGNATURE_SIZES: [usize; 8] = [
+    Sum0Kes::SIGNATURE_SIZE,
+    Sum1Kes::SIGNATURE_SIZE,
+    Sum2Kes::SIGNATURE_SIZE,
+    Sum3Kes::SIGNATURE_SIZE,
+    Sum4Kes::SIGNATURE_SIZE,
+    Sum5Kes::SIGNATURE_SIZE,
+    Sum6Kes::SIGNATURE_SIZE,
+    Sum7Kes::SIGNATURE_SIZE,
+];
+
+const SUM_VERIFICATION_KEY_SIZES: [usize; 8] = [
+    Sum0Kes::VERIFICATION_KEY_SIZE,
+    Sum1Kes::VERIFICATION_KEY_SIZE,
+    Sum2Kes::VERIFICATION_KEY_SIZE,
+    Sum3Kes::VERIFICATION_KEY_SIZE,
+    Sum4Kes::VERIFICATION_KEY_SIZE,
+    Sum5Kes::VERIFICATION_KEY_SIZE,
+    Sum6Kes::VERIFICATION_KEY_SIZE,
+    Sum7Kes::VERIFICATION_KEY_SIZE,
+];
+
+/// Return the SumKES signature size for a given tree level.
+///
+/// # Panics
+///
+/// Panics if `level` is greater than 7.
+#[must_use]
 pub fn sum_signature_size_for_level(level: usize) -> usize {
-    match level {
-        0 => Sum0Kes::SIGNATURE_SIZE,
-        1 => Sum1Kes::SIGNATURE_SIZE,
-        2 => Sum2Kes::SIGNATURE_SIZE,
-        3 => Sum3Kes::SIGNATURE_SIZE,
-        4 => Sum4Kes::SIGNATURE_SIZE,
-        5 => Sum5Kes::SIGNATURE_SIZE,
-        6 => Sum6Kes::SIGNATURE_SIZE,
-        7 => Sum7Kes::SIGNATURE_SIZE,
-        _ => panic!("unsupported sum level {level}"),
-    }
+    SUM_SIGNATURE_SIZES
+        .get(level)
+        .copied()
+        .expect("SumKES level must be between 0 and 7")
 }
 
+/// Return the SumKES verification key size for a given tree level.
+///
+/// # Panics
+///
+/// Panics if `level` is greater than 7.
+#[must_use]
 pub fn sum_verification_key_size_for_level(level: usize) -> usize {
-    match level {
-        0 => Sum0Kes::VERIFICATION_KEY_SIZE,
-        1 => Sum1Kes::VERIFICATION_KEY_SIZE,
-        2 => Sum2Kes::VERIFICATION_KEY_SIZE,
-        3 => Sum3Kes::VERIFICATION_KEY_SIZE,
-        4 => Sum4Kes::VERIFICATION_KEY_SIZE,
-        5 => Sum5Kes::VERIFICATION_KEY_SIZE,
-        6 => Sum6Kes::VERIFICATION_KEY_SIZE,
-        7 => Sum7Kes::VERIFICATION_KEY_SIZE,
-        _ => panic!("unsupported sum level {level}"),
-    }
+    SUM_VERIFICATION_KEY_SIZES
+        .get(level)
+        .copied()
+        .expect("SumKES level must be between 0 and 7")
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -94,6 +128,7 @@ pub enum Direction {
     Right,
 }
 
+#[must_use]
 pub fn compute_period_path(mut period: u64, levels: usize) -> Vec<Direction> {
     let mut path = Vec::with_capacity(levels);
     for level in (0..levels).rev() {
@@ -108,6 +143,11 @@ pub fn compute_period_path(mut period: u64, levels: usize) -> Vec<Direction> {
     path
 }
 
+/// Inspect a SumKES signature against the expected tree structure.
+///
+/// # Panics
+///
+/// Panics if the signature layout does not match the expected structure for `level`.
 pub fn inspect_sum_signature(
     level: usize,
     signature_bytes: &[u8],
@@ -183,26 +223,52 @@ pub fn inspect_sum_signature(
     }
 }
 
+const COMPACT_SIGNATURE_SIZES: [usize; 4] = [
+    CompactSum0Kes::SIGNATURE_SIZE,
+    CompactSum1Kes::SIGNATURE_SIZE,
+    CompactSum2Kes::SIGNATURE_SIZE,
+    CompactSum3Kes::SIGNATURE_SIZE,
+];
+
+const COMPACT_VERIFICATION_KEY_SIZES: [usize; 4] = [
+    CompactSum0Kes::VERIFICATION_KEY_SIZE,
+    CompactSum1Kes::VERIFICATION_KEY_SIZE,
+    CompactSum2Kes::VERIFICATION_KEY_SIZE,
+    CompactSum3Kes::VERIFICATION_KEY_SIZE,
+];
+
+/// Return the compact SumKES signature size for a given tree level.
+///
+/// # Panics
+///
+/// Panics if `level` is greater than 3.
+#[must_use]
 pub fn signature_size_for_level(level: usize) -> usize {
-    match level {
-        0 => CompactSum0Kes::SIGNATURE_SIZE,
-        1 => CompactSum1Kes::SIGNATURE_SIZE,
-        2 => CompactSum2Kes::SIGNATURE_SIZE,
-        3 => CompactSum3Kes::SIGNATURE_SIZE,
-        _ => panic!("unsupported compact sum level {level}"),
-    }
+    COMPACT_SIGNATURE_SIZES
+        .get(level)
+        .copied()
+        .expect("Compact SumKES level must be between 0 and 3")
 }
 
+/// Return the compact SumKES verification key size for a given tree level.
+///
+/// # Panics
+///
+/// Panics if `level` is greater than 3.
+#[must_use]
 pub fn verification_key_size_for_level(level: usize) -> usize {
-    match level {
-        0 => CompactSum0Kes::VERIFICATION_KEY_SIZE,
-        1 => CompactSum1Kes::VERIFICATION_KEY_SIZE,
-        2 => CompactSum2Kes::VERIFICATION_KEY_SIZE,
-        3 => CompactSum3Kes::VERIFICATION_KEY_SIZE,
-        _ => panic!("unsupported compact sum level {level}"),
-    }
+    COMPACT_VERIFICATION_KEY_SIZES
+        .get(level)
+        .copied()
+        .expect("Compact SumKES level must be between 0 and 3")
 }
 
+/// Inspect a compact SumKES signature against the expected tree structure.
+///
+/// # Panics
+///
+/// Panics if the signature layout does not match the expected structure for `level`.
+#[must_use]
 pub fn inspect_compact_sum_signature(
     level: usize,
     signature_bytes: &[u8],

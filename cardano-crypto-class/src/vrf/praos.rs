@@ -161,8 +161,8 @@ impl PraosSigningKey {
     /// This function should not fail under normal circumstances as it performs
     /// deterministic cryptographic key derivation.
     pub fn derive_verification_key(&self) -> Result<PraosVerificationKey, PraosConstructionError> {
-        // Extract seed (first 32 bytes) from sk
-        let seed: [u8; 32] = self.as_bytes()[0..32].try_into().unwrap();
+        let mut seed = [0u8; 32];
+        seed.copy_from_slice(&self.as_bytes()[0..32]);
         // Use common::seed_to_public_key to derive public key
         let pk = common::seed_to_public_key(&seed);
         Ok(PraosVerificationKey { bytes: pk.to_vec() })
@@ -186,8 +186,8 @@ impl PraosSigningKey {
     ///
     /// Returns an error if the VRF proof generation fails.
     pub fn prove(&self, message: &[u8]) -> Result<PraosProof, PraosConstructionError> {
-        // Use VrfDraft03::prove with the 64-byte secret key
-        let sk: [u8; 64] = self.as_bytes().try_into().unwrap();
+        let mut sk = [0u8; 64];
+        sk.copy_from_slice(self.as_bytes());
         let proof = VrfDraft03::prove(&sk, message)?;
         Ok(PraosProof {
             bytes: proof.to_vec(),
@@ -252,9 +252,10 @@ impl PraosVerificationKey {
         message: &[u8],
         proof: &PraosProof,
     ) -> Result<Option<Vec<u8>>, PraosConstructionError> {
-        // Use VrfDraft03::verify
-        let pk: [u8; 32] = self.bytes.as_slice().try_into().unwrap();
-        let proof_bytes: [u8; 80] = proof.bytes.as_slice().try_into().unwrap();
+        let mut pk = [0u8; 32];
+        pk.copy_from_slice(self.bytes.as_slice());
+        let mut proof_bytes = [0u8; 80];
+        proof_bytes.copy_from_slice(proof.bytes.as_slice());
 
         match VrfDraft03::verify(&pk, &proof_bytes, message) {
             Ok(output) => Ok(Some(output.to_vec())),
@@ -404,8 +405,8 @@ impl PraosProof {
     /// This function should not fail under normal circumstances as extraction
     /// is deterministic. Returns `Ok(None)` if the proof is malformed.
     pub fn to_output_bytes(&self) -> Result<Option<Vec<u8>>, PraosConstructionError> {
-        // Use VrfDraft03::proof_to_hash
-        let proof_bytes: [u8; 80] = self.bytes.as_slice().try_into().unwrap();
+        let mut proof_bytes = [0u8; 80];
+        proof_bytes.copy_from_slice(self.bytes.as_slice());
         match VrfDraft03::proof_to_hash(&proof_bytes) {
             Ok(output) => Ok(Some(output.to_vec())),
             Err(_) => Ok(None),
@@ -490,8 +491,8 @@ impl DirectDeserialise for PraosProof {
 pub fn keypair_from_seed(
     seed: &PraosSeed,
 ) -> Result<(PraosVerificationKey, PraosSigningKey), PraosConstructionError> {
-    // Use VrfDraft03::keypair_from_seed or common functions
-    let seed_bytes: [u8; 32] = seed.as_bytes().try_into().unwrap();
+    let mut seed_bytes = [0u8; 32];
+    seed_bytes.copy_from_slice(seed.as_bytes());
     let (sk_array, pk_array) = VrfDraft03::keypair_from_seed(&seed_bytes);
 
     // Store in mlocked memory
@@ -521,9 +522,16 @@ pub fn keypair_from_seed_bytes(
     keypair_from_seed(&seed)
 }
 
+/// Derive a signing key deterministically from a [`Seed`].
+///
+/// # Panics
+///
+/// Panics if the seed does not contain enough bytes or if the derived
+/// material does not form a valid signing key.
 #[must_use]
 pub fn signing_key_from_seed(seed: &Seed) -> PraosSigningKey {
-    let (material, _) = crate::seed::get_bytes_from_seed_t(signing_key_size(), seed.clone());
+    let (material, _) = crate::seed::get_bytes_from_seed(signing_key_size(), seed.clone())
+        .expect("seed produced insufficient material for signing key");
     signing_key_from_bytes(&material).expect("seed produced invalid signing key")
 }
 

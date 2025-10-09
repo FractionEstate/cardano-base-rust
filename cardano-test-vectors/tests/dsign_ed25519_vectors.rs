@@ -70,18 +70,19 @@ fn ed25519_vectors_produce_expected_outputs() {
             );
         }
 
-        <Ed25519 as DsignAlgorithm>::verify_bytes(
+        let verification = <Ed25519 as DsignAlgorithm>::verify_bytes(
             &(),
             &verification_key,
             &message_bytes,
             &signature,
-        )
-        .unwrap_or_else(|err| {
-            panic!(
-                "signature verification failed for {} (index {}): {:?}",
-                vector.test_name, index, err
-            )
-        });
+        );
+        assert!(
+            verification.is_ok(),
+            "signature verification failed for {} (index {}): {:?}",
+            vector.test_name,
+            index,
+            verification.err()
+        );
     }
 }
 

@@ -58,13 +58,13 @@ pub(crate) fn record_update() {
 pub fn snapshot() -> KesMetrics {
     #[cfg(feature = "kes-metrics")]
     {
-        return KesMetrics {
+        KesMetrics {
             signing_keys: SIGNING_KEYS.load(Ordering::Relaxed),
             signing_key_bytes: SIGNING_KEY_BYTES.load(Ordering::Relaxed),
             signatures: SIGNATURES.load(Ordering::Relaxed),
             signature_bytes: SIGNATURE_BYTES.load(Ordering::Relaxed),
             updates: UPDATES.load(Ordering::Relaxed),
-        };
+        }
     }
     #[cfg(not(feature = "kes-metrics"))]
     {

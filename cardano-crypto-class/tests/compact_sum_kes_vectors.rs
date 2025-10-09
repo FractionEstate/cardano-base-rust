@@ -43,16 +43,23 @@ fn compact_sum_vectors_match_generated_data() {
         serde_json::from_str(fixture).expect("valid compact sum JSON");
 
     for level in &parsed.levels {
-        match level.level {
-            1 => exercise_compact_sum_level::<CompactSum1Kes>(level),
-            2 => exercise_compact_sum_level::<CompactSum2Kes>(level),
-            3 => exercise_compact_sum_level::<CompactSum3Kes>(level),
-            4 => exercise_compact_sum_level::<CompactSum4Kes>(level),
-            5 => exercise_compact_sum_level::<CompactSum5Kes>(level),
-            6 => exercise_compact_sum_level::<CompactSum6Kes>(level),
-            7 => exercise_compact_sum_level::<CompactSum7Kes>(level),
-            other => panic!("unexpected compact sum level {other}"),
-        }
+        let exercise: fn(&CompactSumLevel) = match level.level {
+            1 => exercise_compact_sum_level::<CompactSum1Kes>,
+            2 => exercise_compact_sum_level::<CompactSum2Kes>,
+            3 => exercise_compact_sum_level::<CompactSum3Kes>,
+            4 => exercise_compact_sum_level::<CompactSum4Kes>,
+            5 => exercise_compact_sum_level::<CompactSum5Kes>,
+            6 => exercise_compact_sum_level::<CompactSum6Kes>,
+            7 => exercise_compact_sum_level::<CompactSum7Kes>,
+            other => {
+                assert!(
+                    (1..=7).contains(&other),
+                    "unexpected compact sum level {other}"
+                );
+                continue;
+            },
+        };
+        exercise(level);
     }
 }
 

@@ -48,6 +48,11 @@ where
     assert_eq!(&from_haskell, value, "Failed to decode Haskell encoding");
 }
 
+/// Decode a hex string and crash the test with context on failure
+fn decode_hex_vector(hex: &str) -> Vec<u8> {
+    hex::decode(hex).expect("hex test vector must be valid")
+}
+
 // ============================================================================
 // CBOR Primitive Type Tests (from Haskell cardano-binary test suite)
 // ============================================================================
@@ -55,58 +60,55 @@ where
 #[test]
 fn haskell_compat_unit() {
     // Haskell: encode () = [0xf6] (null)
-    assert_cbor_matches_haskell(&(), &hex::decode("f6").unwrap());
+    assert_cbor_matches_haskell(&(), &decode_hex_vector("f6"));
 }
 
 #[test]
 fn haskell_compat_bool_false() {
     // Haskell: encode False = [0xf4]
-    assert_cbor_matches_haskell(&false, &hex::decode("f4").unwrap());
+    assert_cbor_matches_haskell(&false, &decode_hex_vector("f4"));
 }
 
 #[test]
 fn haskell_compat_bool_true() {
     // Haskell: encode True = [0xf5]
-    assert_cbor_matches_haskell(&true, &hex::decode("f5").unwrap());
+    assert_cbor_matches_haskell(&true, &decode_hex_vector("f5"));
 }
 
 #[test]
 fn haskell_compat_word8_small() {
     // Haskell: encode (42 :: Word8) = [0x18, 0x2a]
-    assert_roundtrip_with_encoding(&42u8, &hex::decode("182a").unwrap());
+    assert_roundtrip_with_encoding(&42u8, &decode_hex_vector("182a"));
 }
 
 #[test]
 fn haskell_compat_word8_zero() {
     // Haskell: encode (0 :: Word8) = [0x00]
-    assert_roundtrip_with_encoding(&0u8, &hex::decode("00").unwrap());
+    assert_roundtrip_with_encoding(&0u8, &decode_hex_vector("00"));
 }
 
 #[test]
 fn haskell_compat_word64() {
     // Haskell: encode (1000000 :: Word64) = [0x1a, 0x00, 0x0f, 0x42, 0x40]
-    assert_roundtrip_with_encoding(&1000000u64, &hex::decode("1a000f4240").unwrap());
+    assert_roundtrip_with_encoding(&1000000u64, &decode_hex_vector("1a000f4240"));
 }
 
 #[test]
 fn haskell_compat_int_negative() {
     // Haskell: encode (-42 :: Int) = [0x38, 0x29]
-    assert_roundtrip_with_encoding(&-42i32, &hex::decode("3829").unwrap());
+    assert_roundtrip_with_encoding(&-42i32, &decode_hex_vector("3829"));
 }
 
 #[test]
 fn haskell_compat_string_empty() {
     // Haskell: encode ("" :: Text) = [0x60]
-    assert_roundtrip_with_encoding(&String::from(""), &hex::decode("60").unwrap());
+    assert_roundtrip_with_encoding(&String::from(""), &decode_hex_vector("60"));
 }
 
 #[test]
 fn haskell_compat_string_hello() {
     // Haskell: encode ("hello" :: Text) = [0x65, 'h', 'e', 'l', 'l', 'o']
-    assert_roundtrip_with_encoding(
-        &String::from("hello"),
-        &hex::decode("6568656c6c6f").unwrap(),
-    );
+    assert_roundtrip_with_encoding(&String::from("hello"), &decode_hex_vector("6568656c6c6f"));
 }
 
 #[test]
@@ -115,7 +117,7 @@ fn haskell_compat_bytestring() {
     use serde_bytes::ByteBuf;
     let bytes = ByteBuf::from(vec![0xde, 0xad, 0xbe, 0xef]);
     // CBOR: 0x44 (4-byte bytestring) + data
-    assert_roundtrip_with_encoding(&bytes, &hex::decode("44deadbeef").unwrap());
+    assert_roundtrip_with_encoding(&bytes, &decode_hex_vector("44deadbeef"));
 }
 
 // ============================================================================
@@ -126,14 +128,14 @@ fn haskell_compat_bytestring() {
 fn haskell_compat_list_empty() {
     // Haskell: encode ([] :: [Word8]) = [0x80] (empty array)
     let empty: Vec<u8> = vec![];
-    assert_roundtrip_with_encoding(&empty, &hex::decode("80").unwrap());
+    assert_roundtrip_with_encoding(&empty, &decode_hex_vector("80"));
 }
 
 #[test]
 fn haskell_compat_list_integers() {
     // Haskell: encode ([1,2,3] :: [Word8]) = [0x83, 0x01, 0x02, 0x03]
     let list = vec![1u8, 2u8, 3u8];
-    assert_roundtrip_with_encoding(&list, &hex::decode("83010203").unwrap());
+    assert_roundtrip_with_encoding(&list, &decode_hex_vector("83010203"));
 }
 
 #[test]
@@ -141,7 +143,7 @@ fn haskell_compat_tuple_2() {
     // Haskell: encode ((42, True) :: (Word8, Bool))
     // CBOR: [0x82, 0x18, 0x2a, 0xf5] (2-element array)
     let tuple = (42u8, true);
-    assert_roundtrip_with_encoding(&tuple, &hex::decode("82182af5").unwrap());
+    assert_roundtrip_with_encoding(&tuple, &decode_hex_vector("82182af5"));
 }
 
 #[test]
@@ -149,21 +151,21 @@ fn haskell_compat_tuple_3() {
     // Haskell: encode ((1, 2, 3) :: (Word8, Word8, Word8))
     // CBOR: [0x83, 0x01, 0x02, 0x03] (3-element array)
     let tuple = (1u8, 2u8, 3u8);
-    assert_roundtrip_with_encoding(&tuple, &hex::decode("83010203").unwrap());
+    assert_roundtrip_with_encoding(&tuple, &decode_hex_vector("83010203"));
 }
 
 #[test]
 fn haskell_compat_maybe_none() {
     // Haskell: encode (Nothing :: Maybe Word8) = [0xf6] (null)
     let value: Option<u8> = None;
-    assert_roundtrip_with_encoding(&value, &hex::decode("f6").unwrap());
+    assert_roundtrip_with_encoding(&value, &decode_hex_vector("f6"));
 }
 
 #[test]
 fn haskell_compat_maybe_some() {
     // Haskell: encode (Just 42 :: Maybe Word8) = [0x18, 0x2a]
     let value: Option<u8> = Some(42);
-    assert_roundtrip_with_encoding(&value, &hex::decode("182a").unwrap());
+    assert_roundtrip_with_encoding(&value, &decode_hex_vector("182a"));
 }
 
 // ============================================================================
@@ -385,11 +387,11 @@ fn haskell_compat_utf8_unicode() {
 fn haskell_compat_empty_collections() {
     // Empty vector
     let empty_vec: Vec<u32> = vec![];
-    assert_roundtrip_with_encoding(&empty_vec, &hex::decode("80").unwrap());
+    assert_roundtrip_with_encoding(&empty_vec, &decode_hex_vector("80"));
 
     // Empty string
     let empty_str = String::from("");
-    assert_roundtrip_with_encoding(&empty_str, &hex::decode("60").unwrap());
+    assert_roundtrip_with_encoding(&empty_str, &decode_hex_vector("60"));
 }
 
 // ============================================================================
@@ -401,7 +403,7 @@ fn haskell_compat_empty_collections() {
 fn haskell_known_test_vector_1() {
     // From Haskell: Test.Cardano.Binary.RoundTrip
     // encode (42 :: Integer)
-    assert_roundtrip_with_encoding(&42i64, &hex::decode("182a").unwrap());
+    assert_roundtrip_with_encoding(&42i64, &decode_hex_vector("182a"));
 }
 
 #[test]
@@ -409,7 +411,7 @@ fn haskell_known_test_vector_2() {
     // From Haskell: Test.Cardano.Binary.RoundTrip
     // encode [1,2,3,4,5] :: [Word8]
     let vec = vec![1u8, 2u8, 3u8, 4u8, 5u8];
-    assert_roundtrip_with_encoding(&vec, &hex::decode("850102030405").unwrap());
+    assert_roundtrip_with_encoding(&vec, &decode_hex_vector("850102030405"));
 }
 
 #[test]
@@ -417,7 +419,7 @@ fn haskell_known_test_vector_3() {
     // From Haskell: Test.Cardano.Binary.RoundTrip
     // encode (True, False, 42 :: Word8)
     let tuple = (true, false, 42u8);
-    assert_roundtrip_with_encoding(&tuple, &hex::decode("83f5f4182a").unwrap());
+    assert_roundtrip_with_encoding(&tuple, &decode_hex_vector("83f5f4182a"));
 }
 
 // ============================================================================

@@ -91,7 +91,7 @@ pub mod vrf {
     }
 
     /// Convenience helper that returns the list of vector names.
-    #[must_use]
+    #[must_use = "Iterate to consume the VRF vector names"]
     pub fn names() -> impl Iterator<Item = &'static str> {
         ALL.iter().map(|vector| vector.name)
     }
@@ -134,7 +134,7 @@ pub mod dsign {
     }
 
     /// Convenience helper that returns the list of vector names.
-    #[must_use]
+    #[must_use = "Iterate to consume the DSIGN vector names"]
     pub fn names() -> impl Iterator<Item = &'static str> {
         ALL.iter().map(|vector| vector.name)
     }
@@ -188,7 +188,7 @@ pub mod kes {
     }
 
     /// Convenience helper that returns the list of vector names.
-    #[must_use]
+    #[must_use = "Iterate to consume the KES vector names"]
     pub fn names() -> impl Iterator<Item = &'static str> {
         ALL.iter().map(|vector| vector.name)
     }
@@ -239,7 +239,7 @@ pub mod bls12_381 {
     }
 
     /// Convenience helper that returns the list of vector names.
-    #[must_use]
+    #[must_use = "Iterate to consume the BLS12-381 vector names"]
     pub fn names() -> impl Iterator<Item = &'static str> {
         ALL.iter().map(|vector| vector.name)
     }

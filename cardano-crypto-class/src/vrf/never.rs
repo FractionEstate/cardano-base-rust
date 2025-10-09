@@ -51,6 +51,12 @@ impl VRFAlgorithm for NeverVRF {
         NeverVerificationKey
     }
 
+    /// Always panics because this algorithm is intentionally unavailable.
+    ///
+    /// # Panics
+    ///
+    /// Panics whenever invoked.
+    #[allow(clippy::panic)]
     fn evaluate_bytes(
         _context: &Self::Context,
         _message: &[u8],
@@ -59,6 +65,12 @@ impl VRFAlgorithm for NeverVRF {
         panic!("VRF unavailable")
     }
 
+    /// Always panics because this algorithm is intentionally unavailable.
+    ///
+    /// # Panics
+    ///
+    /// Panics whenever invoked.
+    #[allow(clippy::panic)]
     fn verify_bytes(
         _context: &Self::Context,
         _verification_key: &Self::VerificationKey,

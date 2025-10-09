@@ -195,6 +195,10 @@ impl DsignAlgorithm for SchnorrSecp256k1DSIGN {
 }
 
 /// Generate a keypair using a cryptographic RNG.
+///
+/// # Panics
+///
+/// Panics if the sampled bytes do not form a valid secp256k1 secret key.
 pub fn generate_keypair<R: RngCore + CryptoRng>(rng: &mut R) -> (SigningKey, VerificationKey) {
     let secp = Secp256k1::new();
     // Generate random 32 bytes for secret key
@@ -218,7 +222,7 @@ mod tests {
         let mut rng = rand::rng();
         let (signing_key, verification_key) = generate_keypair(&mut rng);
 
-        let context = Context::default();
+        let context = Context;
         let message = b"Hello, Bitcoin Taproot!";
         let signature = SchnorrSecp256k1DSIGN::sign_bytes(&context, message, &signing_key);
 
@@ -254,7 +258,7 @@ mod tests {
     fn test_schnorr_secp256k1_signature_format() {
         let mut rng = rand::rng();
         let (signing_key, _) = generate_keypair(&mut rng);
-        let context = Context::default();
+        let context = Context;
         let message = b"Test message";
 
         let signature = SchnorrSecp256k1DSIGN::sign_bytes(&context, message, &signing_key);
@@ -284,7 +288,7 @@ mod tests {
     fn test_schnorr_secp256k1_wrong_signature() {
         let mut rng = rand::rng();
         let (signing_key, verification_key) = generate_keypair(&mut rng);
-        let context = Context::default();
+        let context = Context;
 
         let message = b"Original message";
         let signature = SchnorrSecp256k1DSIGN::sign_bytes(&context, message, &signing_key);
@@ -314,8 +318,8 @@ mod tests {
         let ecdsa_sk = ecdsa_secp256k1::EcdsaSecp256k1DSIGN::gen_key(&seed);
 
         let message = b"Same message, different algorithms";
-        let schnorr_ctx = Context::default();
-        let ecdsa_ctx = ecdsa_secp256k1::Context::default();
+        let schnorr_ctx = Context;
+        let ecdsa_ctx = ecdsa_secp256k1::Context;
 
         let schnorr_sig = SchnorrSecp256k1DSIGN::sign_bytes(&schnorr_ctx, message, &schnorr_sk);
         let ecdsa_sig =

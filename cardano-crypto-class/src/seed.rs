@@ -36,7 +36,7 @@ impl Seed {
 
     /// View the seed contents as a byte slice.
     #[must_use]
-    pub fn as_ref(&self) -> &[u8] {
+    pub fn as_slice(&self) -> &[u8] {
         &self.bytes
     }
 
@@ -75,6 +75,12 @@ impl From<&[u8]> for Seed {
     }
 }
 
+impl AsRef<[u8]> for Seed {
+    fn as_ref(&self) -> &[u8] {
+        &self.bytes
+    }
+}
+
 /// Construct a [`Seed`] deterministically from the provided bytes.
 pub fn mk_seed_from_bytes(bytes: impl Into<Vec<u8>>) -> Seed {
     Seed::from_bytes(bytes)
@@ -100,6 +106,10 @@ pub fn get_bytes_from_seed(n: usize, seed: Seed) -> Option<(Vec<u8>, Seed)> {
 
 /// Take `n` bytes from the seed, returning an error describing how many bytes
 /// were supplied versus demanded if there is insufficient material left.
+///
+/// # Errors
+///
+/// Returns an error when fewer than `n` bytes remain.
 pub fn get_bytes_from_seed_either(
     n: usize,
     seed: Seed,
@@ -117,12 +127,13 @@ pub fn get_bytes_from_seed_either(
 
 /// Take `n` bytes from the seed, panicking with [`SeedBytesExhausted`] on
 /// exhaustion.
+///
+/// # Panics
+///
+/// Panics when the seed contains fewer than `n` bytes.
 #[must_use]
 pub fn get_bytes_from_seed_t(n: usize, seed: Seed) -> (Vec<u8>, Seed) {
-    match get_bytes_from_seed_either(n, seed) {
-        Ok(result) => result,
-        Err(err) => panic!("{err}"),
-    }
+    get_bytes_from_seed(n, seed).expect("seed bytes exhausted")
 }
 
 /// Split a seed into two smaller seeds. The first contains `n` bytes and the
@@ -155,6 +166,10 @@ where
 
 /// Obtain a [`Seed`] by reading `n` bytes of entropy from the operating
 /// system.
+///
+/// # Panics
+///
+/// Panics if the operating system RNG fails to provide entropy.
 #[must_use]
 pub fn read_seed_from_system_entropy(n: usize) -> Seed {
     let mut buffer = vec![0u8; n];

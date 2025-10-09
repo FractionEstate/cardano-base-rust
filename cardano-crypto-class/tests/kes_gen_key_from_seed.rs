@@ -21,7 +21,7 @@ fn test_single_kes_gen_key_from_seed_bytes() {
     );
 
     // Verify we can derive a verification key
-    let sk = signing_key.unwrap();
+    let sk = signing_key.expect("gen_key_kes_from_seed_bytes should succeed");
     let vk = SingleKesEd25519::derive_verification_key(&sk);
     assert!(vk.is_ok(), "derive_verification_key should succeed");
 }
@@ -39,7 +39,7 @@ fn test_compact_single_kes_gen_key_from_seed_bytes() {
     );
 
     // Verify we can derive a verification key
-    let sk = signing_key.unwrap();
+    let sk = signing_key.expect("gen_key_kes_from_seed_bytes should succeed");
     let vk = CompactSingleKesEd25519::derive_verification_key(&sk);
     assert!(vk.is_ok(), "derive_verification_key should succeed");
 }
@@ -49,11 +49,15 @@ fn test_gen_key_from_seed_bytes_deterministic() {
     // Verify that the same seed produces the same keys
     let seed_bytes = [42u8; 32];
 
-    let sk1 = SingleKesEd25519::gen_key_kes_from_seed_bytes(&seed_bytes).unwrap();
-    let sk2 = SingleKesEd25519::gen_key_kes_from_seed_bytes(&seed_bytes).unwrap();
+    let sk1 = SingleKesEd25519::gen_key_kes_from_seed_bytes(&seed_bytes)
+        .expect("Failed to generate signing key from seed");
+    let sk2 = SingleKesEd25519::gen_key_kes_from_seed_bytes(&seed_bytes)
+        .expect("Failed to generate signing key from seed");
 
-    let vk1 = SingleKesEd25519::derive_verification_key(&sk1).unwrap();
-    let vk2 = SingleKesEd25519::derive_verification_key(&sk2).unwrap();
+    let vk1 =
+        SingleKesEd25519::derive_verification_key(&sk1).expect("Failed to derive verification key");
+    let vk2 =
+        SingleKesEd25519::derive_verification_key(&sk2).expect("Failed to derive verification key");
 
     // Verification keys should be identical
     assert_eq!(vk1, vk2, "Same seed should produce same verification key");
@@ -65,15 +69,17 @@ fn test_gen_key_from_seed_bytes_can_sign() {
     let seed_bytes = [123u8; 32];
     let message = b"Hello, KES!";
 
-    let sk = SingleKesEd25519::gen_key_kes_from_seed_bytes(&seed_bytes).unwrap();
-    let vk = SingleKesEd25519::derive_verification_key(&sk).unwrap();
+    let sk = SingleKesEd25519::gen_key_kes_from_seed_bytes(&seed_bytes)
+        .expect("Failed to generate signing key from seed");
+    let vk =
+        SingleKesEd25519::derive_verification_key(&sk).expect("Failed to derive verification key");
 
     // Sign a message at period 0
     let signature = SingleKesEd25519::sign_kes(&(), 0, message, &sk);
     assert!(signature.is_ok(), "Signing should succeed");
 
     // Verify the signature
-    let sig = signature.unwrap();
+    let sig = signature.expect("Signing should succeed");
     let verification = SingleKesEd25519::verify_kes(&(), &vk, 0, message, &sig);
     assert!(verification.is_ok(), "Verification should succeed");
 }

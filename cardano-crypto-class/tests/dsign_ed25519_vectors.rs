@@ -21,6 +21,21 @@ fn parse_ed25519_vectors() -> Value {
     serde_json::from_str(json).expect("Should parse Ed25519 test vectors JSON")
 }
 
+fn expect_str<'a>(value: &'a Value, key: &str) -> &'a str {
+    value
+        .get(key)
+        .and_then(Value::as_str)
+        .expect("test vector field must be a string")
+}
+
+fn expect_array<'a>(value: &'a Value, key: &str) -> &'a [Value] {
+    value
+        .get(key)
+        .and_then(Value::as_array)
+        .map(|v| v.as_slice())
+        .expect("test vector field must be an array")
+}
+
 #[test]
 fn test_ed25519_vectors_exist() {
     let json =
@@ -32,8 +47,8 @@ fn test_ed25519_vectors_exist() {
 fn test_ed25519_vectors_parse() {
     let vectors = parse_ed25519_vectors();
 
-    assert_eq!(vectors["algorithm"].as_str().unwrap(), "Ed25519DSIGN");
-    let vector_array = vectors["vectors"].as_array().unwrap();
+    assert_eq!(expect_str(&vectors, "algorithm"), "Ed25519DSIGN");
+    let vector_array = expect_array(&vectors, "vectors");
     assert!(
         !vector_array.is_empty(),
         "Should have at least one test vector"
@@ -45,17 +60,17 @@ fn test_ed25519_vectors_parse() {
 #[test]
 fn test_ed25519_key_generation_from_seed() {
     let vectors = parse_ed25519_vectors();
-    let vector_array = vectors["vectors"].as_array().unwrap();
+    let vector_array = expect_array(&vectors, "vectors");
 
     for vector in vector_array {
-        let test_name = vector["test_name"].as_str().unwrap();
-        let description = vector["description"].as_str().unwrap();
+        let test_name = expect_str(vector, "test_name");
+        let description = expect_str(vector, "description");
 
         println!("\n=== Testing: {} ===", test_name);
         println!("Description: {}", description);
 
         // Decode seed
-        let seed_hex = vector["seed"].as_str().unwrap();
+        let seed_hex = expect_str(vector, "seed");
         let seed_bytes = decode_hex(seed_hex);
         assert_eq!(
             seed_bytes.len(),
@@ -97,22 +112,22 @@ fn test_ed25519_rfc8032_test_vectors() {
     println!("\n=== RFC 8032 Ed25519 Test Vector Validation ===");
 
     let vectors = parse_ed25519_vectors();
-    let vector_array = vectors["vectors"].as_array().unwrap();
+    let vector_array = expect_array(&vectors, "vectors");
 
     // Filter for RFC 8032 test vectors
     let rfc_vectors: Vec<&serde_json::Value> = vector_array
         .iter()
-        .filter(|v| v["test_name"].as_str().unwrap().starts_with("RFC_8032"))
+        .filter(|value| expect_str(value, "test_name").starts_with("RFC_8032"))
         .collect();
 
     println!("Found {} RFC 8032 test vectors\n", rfc_vectors.len());
 
     for vector in rfc_vectors {
-        let test_name = vector["test_name"].as_str().unwrap();
+        let test_name = expect_str(vector, "test_name");
         println!("=== {} ===", test_name);
 
         // Generate keys from seed
-        let seed_hex = vector["seed"].as_str().unwrap();
+        let seed_hex = expect_str(vector, "seed");
         let seed_bytes = decode_hex(seed_hex);
         let seed = mk_seed_from_bytes(seed_bytes);
         let signing_key = Ed25519::gen_key(&seed);
@@ -135,7 +150,7 @@ fn test_ed25519_rfc8032_test_vectors() {
         }
 
         // Sign message
-        let message_hex = vector["message"].as_str().unwrap();
+        let message_hex = expect_str(vector, "message");
         let message = if message_hex.is_empty() {
             vec![]
         } else {
@@ -177,22 +192,22 @@ fn test_ed25519_rfc8032_test_vectors() {
 #[test]
 fn test_ed25519_sign_and_verify() {
     let vectors = parse_ed25519_vectors();
-    let vector_array = vectors["vectors"].as_array().unwrap();
+    let vector_array = expect_array(&vectors, "vectors");
 
     for vector in vector_array {
-        let test_name = vector["test_name"].as_str().unwrap();
+        let test_name = expect_str(vector, "test_name");
 
         println!("\n=== Testing Sign/Verify: {} ===", test_name);
 
         // Generate keys from seed
-        let seed_hex = vector["seed"].as_str().unwrap();
+        let seed_hex = expect_str(vector, "seed");
         let seed_bytes = decode_hex(seed_hex);
         let seed = mk_seed_from_bytes(seed_bytes);
         let signing_key = Ed25519::gen_key(&seed);
         let verification_key = Ed25519::derive_verification_key(&signing_key);
 
         // Decode message
-        let message_hex = vector["message"].as_str().unwrap();
+        let message_hex = expect_str(vector, "message");
         let message = decode_hex(message_hex);
         println!("Message: {} bytes", message.len());
 
@@ -235,21 +250,23 @@ fn test_ed25519_sign_and_verify() {
 #[test]
 fn test_ed25519_verify_fails_wrong_message() {
     let vectors = parse_ed25519_vectors();
-    let vector_array = vectors["vectors"].as_array().unwrap();
+    let vector_array = expect_array(&vectors, "vectors");
 
     // Use the first vector
-    let vector = &vector_array[0];
+    let vector = vector_array
+        .first()
+        .expect("at least one Ed25519 test vector available");
 
     println!("\n=== Testing Wrong Message Verification ===");
 
     // Generate keys and sign original message
-    let seed_hex = vector["seed"].as_str().unwrap();
+    let seed_hex = expect_str(vector, "seed");
     let seed_bytes = decode_hex(seed_hex);
     let seed = mk_seed_from_bytes(seed_bytes);
     let signing_key = Ed25519::gen_key(&seed);
     let verification_key = Ed25519::derive_verification_key(&signing_key);
 
-    let message_hex = vector["message"].as_str().unwrap();
+    let message_hex = expect_str(vector, "message");
     let message = decode_hex(message_hex);
     let signature = Ed25519::sign_bytes(&(), &message, &signing_key);
 
@@ -267,20 +284,22 @@ fn test_ed25519_verify_fails_wrong_message() {
 #[test]
 fn test_ed25519_verify_fails_wrong_key() {
     let vectors = parse_ed25519_vectors();
-    let vector_array = vectors["vectors"].as_array().unwrap();
+    let vector_array = expect_array(&vectors, "vectors");
 
     // Use the first vector
-    let vector = &vector_array[0];
+    let vector = vector_array
+        .first()
+        .expect("at least one Ed25519 test vector available");
 
     println!("\n=== Testing Wrong Key Verification ===");
 
     // Generate keys and sign message
-    let seed_hex = vector["seed"].as_str().unwrap();
+    let seed_hex = expect_str(vector, "seed");
     let seed_bytes = decode_hex(seed_hex);
     let seed = mk_seed_from_bytes(seed_bytes);
     let signing_key = Ed25519::gen_key(&seed);
 
-    let message_hex = vector["message"].as_str().unwrap();
+    let message_hex = expect_str(vector, "message");
     let message = decode_hex(message_hex);
     let signature = Ed25519::sign_bytes(&(), &message, &signing_key);
 
@@ -302,16 +321,18 @@ fn test_ed25519_verify_fails_wrong_key() {
 #[test]
 fn test_ed25519_deterministic_signatures() {
     let vectors = parse_ed25519_vectors();
-    let vector_array = vectors["vectors"].as_array().unwrap();
+    let vector_array = expect_array(&vectors, "vectors");
 
     // Use the first vector
-    let vector = &vector_array[0];
+    let vector = vector_array
+        .first()
+        .expect("at least one Ed25519 test vector available");
 
     println!("\n=== Testing Deterministic Signatures ===");
 
-    let seed_hex = vector["seed"].as_str().unwrap();
+    let seed_hex = expect_str(vector, "seed");
     let seed_bytes = decode_hex(seed_hex);
-    let message_hex = vector["message"].as_str().unwrap();
+    let message_hex = expect_str(vector, "message");
     let message = decode_hex(message_hex);
 
     // Sign the same message multiple times with the same key
@@ -335,20 +356,22 @@ fn test_ed25519_deterministic_signatures() {
 #[test]
 fn test_ed25519_serialization_roundtrip() {
     let vectors = parse_ed25519_vectors();
-    let vector_array = vectors["vectors"].as_array().unwrap();
+    let vector_array = expect_array(&vectors, "vectors");
 
     // Use the first vector
-    let vector = &vector_array[0];
+    let vector = vector_array
+        .first()
+        .expect("at least one Ed25519 test vector available");
 
     println!("\n=== Testing Serialization Roundtrip ===");
 
-    let seed_hex = vector["seed"].as_str().unwrap();
+    let seed_hex = expect_str(vector, "seed");
     let seed_bytes = decode_hex(seed_hex);
     let seed = mk_seed_from_bytes(seed_bytes);
     let signing_key = Ed25519::gen_key(&seed);
     let verification_key = Ed25519::derive_verification_key(&signing_key);
 
-    let message_hex = vector["message"].as_str().unwrap();
+    let message_hex = expect_str(vector, "message");
     let message = decode_hex(message_hex);
     let signature = Ed25519::sign_bytes(&(), &message, &signing_key);
 

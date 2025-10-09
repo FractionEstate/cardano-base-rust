@@ -394,36 +394,15 @@ fn build_sum_kes_vectors(
     definitions: &[VectorDefinition],
 ) -> Result<SumKesVectors, Box<dyn std::error::Error>> {
     let hierarchical_defs: Vec<_> = definitions.to_vec();
-    let mut levels = Vec::new();
-
-    levels.push(build_hierarchical_level_vectors::<Sum1Kes>(
-        1,
-        &hierarchical_defs,
-    )?);
-    levels.push(build_hierarchical_level_vectors::<Sum2Kes>(
-        2,
-        &hierarchical_defs,
-    )?);
-    levels.push(build_hierarchical_level_vectors::<Sum3Kes>(
-        3,
-        &hierarchical_defs,
-    )?);
-    levels.push(build_hierarchical_level_vectors::<Sum4Kes>(
-        4,
-        &hierarchical_defs,
-    )?);
-    levels.push(build_hierarchical_level_vectors::<Sum5Kes>(
-        5,
-        &hierarchical_defs,
-    )?);
-    levels.push(build_hierarchical_level_vectors::<Sum6Kes>(
-        6,
-        &hierarchical_defs,
-    )?);
-    levels.push(build_hierarchical_level_vectors::<Sum7Kes>(
-        7,
-        &hierarchical_defs,
-    )?);
+    let levels = vec![
+        build_hierarchical_level_vectors::<Sum1Kes>(1, &hierarchical_defs)?,
+        build_hierarchical_level_vectors::<Sum2Kes>(2, &hierarchical_defs)?,
+        build_hierarchical_level_vectors::<Sum3Kes>(3, &hierarchical_defs)?,
+        build_hierarchical_level_vectors::<Sum4Kes>(4, &hierarchical_defs)?,
+        build_hierarchical_level_vectors::<Sum5Kes>(5, &hierarchical_defs)?,
+        build_hierarchical_level_vectors::<Sum6Kes>(6, &hierarchical_defs)?,
+        build_hierarchical_level_vectors::<Sum7Kes>(7, &hierarchical_defs)?,
+    ];
 
     Ok(SumKesVectors {
         description: "SumKES hierarchical deterministic vectors",
@@ -437,36 +416,15 @@ fn build_compact_sum_kes_vectors(
     definitions: &[VectorDefinition],
 ) -> Result<CompactSumKesVectors, Box<dyn std::error::Error>> {
     let hierarchical_defs: Vec<_> = definitions.to_vec();
-    let mut levels = Vec::new();
-
-    levels.push(build_hierarchical_level_vectors::<CompactSum1Kes>(
-        1,
-        &hierarchical_defs,
-    )?);
-    levels.push(build_hierarchical_level_vectors::<CompactSum2Kes>(
-        2,
-        &hierarchical_defs,
-    )?);
-    levels.push(build_hierarchical_level_vectors::<CompactSum3Kes>(
-        3,
-        &hierarchical_defs,
-    )?);
-    levels.push(build_hierarchical_level_vectors::<CompactSum4Kes>(
-        4,
-        &hierarchical_defs,
-    )?);
-    levels.push(build_hierarchical_level_vectors::<CompactSum5Kes>(
-        5,
-        &hierarchical_defs,
-    )?);
-    levels.push(build_hierarchical_level_vectors::<CompactSum6Kes>(
-        6,
-        &hierarchical_defs,
-    )?);
-    levels.push(build_hierarchical_level_vectors::<CompactSum7Kes>(
-        7,
-        &hierarchical_defs,
-    )?);
+    let levels = vec![
+        build_hierarchical_level_vectors::<CompactSum1Kes>(1, &hierarchical_defs)?,
+        build_hierarchical_level_vectors::<CompactSum2Kes>(2, &hierarchical_defs)?,
+        build_hierarchical_level_vectors::<CompactSum3Kes>(3, &hierarchical_defs)?,
+        build_hierarchical_level_vectors::<CompactSum4Kes>(4, &hierarchical_defs)?,
+        build_hierarchical_level_vectors::<CompactSum5Kes>(5, &hierarchical_defs)?,
+        build_hierarchical_level_vectors::<CompactSum6Kes>(6, &hierarchical_defs)?,
+        build_hierarchical_level_vectors::<CompactSum7Kes>(7, &hierarchical_defs)?,
+    ];
 
     Ok(CompactSumKesVectors {
         description: "CompactSumKES hierarchical deterministic vectors",
@@ -520,36 +478,15 @@ fn build_sum_kes_period_evolution_vectors(
     definitions: &[VectorDefinition],
 ) -> Result<PeriodEvolutionVectors, Box<dyn std::error::Error>> {
     let hierarchical_defs: Vec<_> = definitions.to_vec();
-    let mut levels = Vec::new();
-
-    levels.push(build_period_evolution_level::<Sum1Kes>(
-        1,
-        &hierarchical_defs,
-    )?);
-    levels.push(build_period_evolution_level::<Sum2Kes>(
-        2,
-        &hierarchical_defs,
-    )?);
-    levels.push(build_period_evolution_level::<Sum3Kes>(
-        3,
-        &hierarchical_defs,
-    )?);
-    levels.push(build_period_evolution_level::<Sum4Kes>(
-        4,
-        &hierarchical_defs,
-    )?);
-    levels.push(build_period_evolution_level::<Sum5Kes>(
-        5,
-        &hierarchical_defs,
-    )?);
-    levels.push(build_period_evolution_level::<Sum6Kes>(
-        6,
-        &hierarchical_defs,
-    )?);
-    levels.push(build_period_evolution_level::<Sum7Kes>(
-        7,
-        &hierarchical_defs,
-    )?);
+    let levels = vec![
+        build_period_evolution_level::<Sum1Kes>(1, &hierarchical_defs)?,
+        build_period_evolution_level::<Sum2Kes>(2, &hierarchical_defs)?,
+        build_period_evolution_level::<Sum3Kes>(3, &hierarchical_defs)?,
+        build_period_evolution_level::<Sum4Kes>(4, &hierarchical_defs)?,
+        build_period_evolution_level::<Sum5Kes>(5, &hierarchical_defs)?,
+        build_period_evolution_level::<Sum6Kes>(6, &hierarchical_defs)?,
+        build_period_evolution_level::<Sum7Kes>(7, &hierarchical_defs)?,
+    ];
 
     Ok(PeriodEvolutionVectors {
         description: "SumKES full period evolution sequences",
@@ -563,36 +500,15 @@ fn build_compact_sum_kes_period_evolution_vectors(
     definitions: &[VectorDefinition],
 ) -> Result<PeriodEvolutionVectors, Box<dyn std::error::Error>> {
     let hierarchical_defs: Vec<_> = definitions.to_vec();
-    let mut levels = Vec::new();
-
-    levels.push(build_period_evolution_level::<CompactSum1Kes>(
-        1,
-        &hierarchical_defs,
-    )?);
-    levels.push(build_period_evolution_level::<CompactSum2Kes>(
-        2,
-        &hierarchical_defs,
-    )?);
-    levels.push(build_period_evolution_level::<CompactSum3Kes>(
-        3,
-        &hierarchical_defs,
-    )?);
-    levels.push(build_period_evolution_level::<CompactSum4Kes>(
-        4,
-        &hierarchical_defs,
-    )?);
-    levels.push(build_period_evolution_level::<CompactSum5Kes>(
-        5,
-        &hierarchical_defs,
-    )?);
-    levels.push(build_period_evolution_level::<CompactSum6Kes>(
-        6,
-        &hierarchical_defs,
-    )?);
-    levels.push(build_period_evolution_level::<CompactSum7Kes>(
-        7,
-        &hierarchical_defs,
-    )?);
+    let levels = vec![
+        build_period_evolution_level::<CompactSum1Kes>(1, &hierarchical_defs)?,
+        build_period_evolution_level::<CompactSum2Kes>(2, &hierarchical_defs)?,
+        build_period_evolution_level::<CompactSum3Kes>(3, &hierarchical_defs)?,
+        build_period_evolution_level::<CompactSum4Kes>(4, &hierarchical_defs)?,
+        build_period_evolution_level::<CompactSum5Kes>(5, &hierarchical_defs)?,
+        build_period_evolution_level::<CompactSum6Kes>(6, &hierarchical_defs)?,
+        build_period_evolution_level::<CompactSum7Kes>(7, &hierarchical_defs)?,
+    ];
 
     Ok(PeriodEvolutionVectors {
         description: "CompactSumKES full period evolution sequences",

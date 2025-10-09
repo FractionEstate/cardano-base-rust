@@ -128,7 +128,7 @@ fn golden_bool_true() {
     assert_eq!(bytes, vec![0xf5], "CBOR format changed for true");
 
     let decoded: bool = decode_full(&bytes).expect("deserialization failed");
-    assert_eq!(decoded, true);
+    assert!(decoded);
 }
 
 /// Test that false serializes to the expected CBOR bytes
@@ -141,7 +141,7 @@ fn golden_bool_false() {
     assert_eq!(bytes, vec![0xf4], "CBOR format changed for false");
 
     let decoded: bool = decode_full(&bytes).expect("deserialization failed");
-    assert_eq!(decoded, false);
+    assert!(!decoded);
 }
 
 /// Test that byte arrays serialize with the correct CBOR type

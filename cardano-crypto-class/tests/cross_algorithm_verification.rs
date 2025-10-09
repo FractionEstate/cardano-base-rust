@@ -54,8 +54,8 @@ fn test_algorithm_signature_uniqueness() {
 
     // Sign with each algorithm
     let ed25519_ctx = ();
-    let ecdsa_ctx = ecdsa_secp256k1::Context::default();
-    let schnorr_ctx = schnorr_secp256k1::Context::default();
+    let ecdsa_ctx = ecdsa_secp256k1::Context;
+    let schnorr_ctx = schnorr_secp256k1::Context;
 
     let ed25519_sig = Ed25519::sign_bytes(&ed25519_ctx, message, &ed25519_sk);
     let ecdsa_sig =
@@ -136,7 +136,7 @@ fn test_cross_key_verification_fails() {
         &ecdsa_secp256k1::EcdsaSecp256k1DSIGN::gen_key(&seed2),
     );
 
-    let ecdsa_ctx = ecdsa_secp256k1::Context::default();
+    let ecdsa_ctx = ecdsa_secp256k1::Context;
     let ecdsa_sig =
         ecdsa_secp256k1::EcdsaSecp256k1DSIGN::sign_bytes(&ecdsa_ctx, message, &ecdsa_sk1);
 
@@ -229,8 +229,10 @@ fn test_serialization_roundtrip_all_algorithms() {
         let sk_bytes = Ed25519::raw_serialize_signing_key(&sk);
         let vk_bytes = Ed25519::raw_serialize_verification_key(&vk);
 
-        let sk_restored = Ed25519::raw_deserialize_signing_key(&sk_bytes).unwrap();
-        let vk_restored = Ed25519::raw_deserialize_verification_key(&vk_bytes).unwrap();
+        let sk_restored = Ed25519::raw_deserialize_signing_key(&sk_bytes)
+            .expect("ed25519 signing key deserialise");
+        let vk_restored = Ed25519::raw_deserialize_verification_key(&vk_bytes)
+            .expect("ed25519 verification key deserialise");
 
         assert_eq!(Ed25519::raw_serialize_signing_key(&sk_restored), sk_bytes);
         assert_eq!(vk, vk_restored);
@@ -245,10 +247,11 @@ fn test_serialization_roundtrip_all_algorithms() {
         let vk_bytes = ecdsa_secp256k1::EcdsaSecp256k1DSIGN::raw_serialize_verification_key(&vk);
 
         let sk_restored =
-            ecdsa_secp256k1::EcdsaSecp256k1DSIGN::raw_deserialize_signing_key(&sk_bytes).unwrap();
+            ecdsa_secp256k1::EcdsaSecp256k1DSIGN::raw_deserialize_signing_key(&sk_bytes)
+                .expect("ecdsa signing key deserialise");
         let vk_restored =
             ecdsa_secp256k1::EcdsaSecp256k1DSIGN::raw_deserialize_verification_key(&vk_bytes)
-                .unwrap();
+                .expect("ecdsa verification key deserialise");
 
         assert_eq!(
             ecdsa_secp256k1::EcdsaSecp256k1DSIGN::raw_serialize_signing_key(&sk_restored),
@@ -268,10 +271,10 @@ fn test_serialization_roundtrip_all_algorithms() {
 
         let sk_restored =
             schnorr_secp256k1::SchnorrSecp256k1DSIGN::raw_deserialize_signing_key(&sk_bytes)
-                .unwrap();
+                .expect("schnorr signing key deserialise");
         let vk_restored =
             schnorr_secp256k1::SchnorrSecp256k1DSIGN::raw_deserialize_verification_key(&vk_bytes)
-                .unwrap();
+                .expect("schnorr verification key deserialise");
 
         assert_eq!(
             schnorr_secp256k1::SchnorrSecp256k1DSIGN::raw_serialize_signing_key(&sk_restored),
@@ -301,7 +304,7 @@ fn test_message_tampering_detection() {
     {
         let sk = ecdsa_secp256k1::EcdsaSecp256k1DSIGN::gen_key(&seed);
         let vk = ecdsa_secp256k1::EcdsaSecp256k1DSIGN::derive_verification_key(&sk);
-        let ctx = ecdsa_secp256k1::Context::default();
+        let ctx = ecdsa_secp256k1::Context;
 
         let sig = ecdsa_secp256k1::EcdsaSecp256k1DSIGN::sign_bytes(&ctx, original_message, &sk);
         assert!(
@@ -318,7 +321,7 @@ fn test_message_tampering_detection() {
     {
         let sk = schnorr_secp256k1::SchnorrSecp256k1DSIGN::gen_key(&seed);
         let vk = schnorr_secp256k1::SchnorrSecp256k1DSIGN::derive_verification_key(&sk);
-        let ctx = schnorr_secp256k1::Context::default();
+        let ctx = schnorr_secp256k1::Context;
 
         let sig = schnorr_secp256k1::SchnorrSecp256k1DSIGN::sign_bytes(&ctx, original_message, &sk);
         assert!(
@@ -358,7 +361,7 @@ fn test_bitcoin_workflow_integration() {
     let tx_hash = sha256d(tx_data);
 
     // Sign the transaction hash
-    let ctx = ecdsa_secp256k1::Context::default();
+    let ctx = ecdsa_secp256k1::Context;
     let signature = ecdsa_secp256k1::EcdsaSecp256k1DSIGN::sign_bytes(&ctx, &tx_hash, &sk);
 
     // Verify signature
@@ -388,7 +391,7 @@ fn test_ethereum_workflow_integration() {
     let tx_hash = keccak256(tx_data);
 
     // Sign the transaction hash
-    let ctx = ecdsa_secp256k1::Context::default();
+    let ctx = ecdsa_secp256k1::Context;
     let signature = ecdsa_secp256k1::EcdsaSecp256k1DSIGN::sign_bytes(&ctx, &tx_hash, &sk);
 
     // Verify signature
@@ -418,7 +421,7 @@ fn test_bitcoin_taproot_workflow_integration() {
     let tx_hash = sha256d(tx_data);
 
     // Sign with Schnorr
-    let ctx = schnorr_secp256k1::Context::default();
+    let ctx = schnorr_secp256k1::Context;
     let signature = schnorr_secp256k1::SchnorrSecp256k1DSIGN::sign_bytes(&ctx, &tx_hash, &sk);
 
     // Verify signature

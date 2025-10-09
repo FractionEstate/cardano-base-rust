@@ -24,7 +24,9 @@ fn test_basic_prove_verify_cycle() {
     let proof = cardano_vrf_prove(&sk, message).expect("prove should succeed");
 
     let pk_slice = &sk[32..64];
-    let pk_array: [u8; 32] = pk_slice.try_into().unwrap();
+    let pk_array: [u8; 32] = pk_slice
+        .try_into()
+        .expect("public key slice must be 32 bytes");
     let output = cardano_vrf_verify(&pk_array, &proof, message).expect("verify should succeed");
 
     assert_eq!(output.len(), 64, "Output should be 64 bytes");
@@ -173,10 +175,10 @@ fn test_cardano_hash_to_curve_matches_gamma_factorisation() {
     }
 }
 
+type ParseVectorResult = Result<(Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>), String>;
+
 /// Parse a VRF test vector file
-fn parse_test_vector(
-    content: &str,
-) -> Result<(Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>), String> {
+fn parse_test_vector(content: &str) -> ParseVectorResult {
     let mut sk = None;
     let mut pk = None;
     let mut alpha = None;

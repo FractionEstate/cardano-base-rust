@@ -124,13 +124,19 @@ where
     .expect("verify signature at boundary period");
 
     let rewind_attempt = K::update_kes(&(), signing_key, boundary_period - 1);
-    match rewind_attempt {
-        Ok(_) => panic!("evolved key unexpectedly allowed rewind to earlier period"),
-        Err(KesMError::Kes(KesError::PeriodOutOfRange { period, .. })) => {
-            assert_eq!(period, boundary_period - 1);
-        },
-        Err(KesMError::Kes(KesError::KeyExpired)) => {},
-        Err(other) => panic!("unexpected error while attempting rewind: {other:?}"),
+    assert!(
+        rewind_attempt.is_err(),
+        "evolved key unexpectedly allowed rewind to earlier period"
+    );
+    if let Err(err) = rewind_attempt {
+        if let KesMError::Kes(KesError::PeriodOutOfRange { period, .. }) = &err {
+            assert_eq!(*period, boundary_period - 1);
+        } else {
+            assert!(
+                matches!(&err, KesMError::Kes(KesError::KeyExpired)),
+                "unexpected error while attempting rewind: {err:?}"
+            );
+        }
     }
 }
 
@@ -221,12 +227,31 @@ fn compact_sum_forward_security_preserves_past_signature_validity() {
 }
 #[test]
 fn compact_sum_signatures_are_smaller_than_sum_signatures() {
+    let seed_sum = vec![0x5Au8; Sum4Kes::SEED_SIZE];
+    let seed_compact = vec![0x5Bu8; CompactSum4Kes::SEED_SIZE];
+    let message = b"size-comparison";
+
+    let sum_sk = Sum4Kes::gen_key_kes_from_seed_bytes(&seed_sum).expect("sum signing key");
+    let sum_vk = Sum4Kes::derive_verification_key(&sum_sk).expect("sum verification key");
+    let sum_sig = Sum4Kes::sign_kes(&(), 0, message, &sum_sk).expect("sum signature");
+    let sum_sig_len = Sum4Kes::raw_serialize_signature_kes(&sum_sig).len();
+    let sum_vk_len = Sum4Kes::raw_serialize_verification_key_kes(&sum_vk).len();
+
+    let compact_sk = CompactSum4Kes::gen_key_kes_from_seed_bytes(&seed_compact)
+        .expect("compact sum signing key");
+    let compact_vk =
+        CompactSum4Kes::derive_verification_key(&compact_sk).expect("compact sum verification key");
+    let compact_sig =
+        CompactSum4Kes::sign_kes(&(), 0, message, &compact_sk).expect("compact sum signature");
+    let compact_sig_len = CompactSum4Kes::raw_serialize_signature_kes(&compact_sig).len();
+    let compact_vk_len = CompactSum4Kes::raw_serialize_verification_key_kes(&compact_vk).len();
+
     assert!(
-        CompactSum4Kes::SIGNATURE_SIZE < Sum4Kes::SIGNATURE_SIZE,
+        compact_sig_len < sum_sig_len,
         "compact sum signatures should be smaller than sum signatures"
     );
-    assert!(
-        CompactSum4Kes::VERIFICATION_KEY_SIZE == Sum4Kes::VERIFICATION_KEY_SIZE,
+    assert_eq!(
+        compact_vk_len, sum_vk_len,
         "verification key size parity expected"
     );
 }
@@ -285,7 +310,12 @@ mod vector_forward_security {
                 5 => exercise_forward_security::<Sum5Kes>(level),
                 6 => exercise_forward_security::<Sum6Kes>(level),
                 7 => exercise_forward_security::<Sum7Kes>(level),
-                other => panic!("unexpected SumKES evolution level {other}"),
+                other => {
+                    assert!(
+                        (1..=7).contains(&other),
+                        "unexpected SumKES evolution level {other}"
+                    );
+                },
             }
         }
     }
@@ -306,7 +336,12 @@ mod vector_forward_security {
                 5 => exercise_forward_security::<CompactSum5Kes>(level),
                 6 => exercise_forward_security::<CompactSum6Kes>(level),
                 7 => exercise_forward_security::<CompactSum7Kes>(level),
-                other => panic!("unexpected CompactSumKES evolution level {other}"),
+                other => {
+                    assert!(
+                        (1..=7).contains(&other),
+                        "unexpected CompactSumKES evolution level {other}"
+                    );
+                },
             }
         }
     }

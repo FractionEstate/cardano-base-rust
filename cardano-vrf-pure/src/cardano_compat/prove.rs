@@ -59,7 +59,10 @@ pub fn cardano_vrf_prove(secret_key: &[u8; 64], message: &[u8]) -> VrfResult<[u8
     az[31] &= 127;
     az[31] |= 64;
 
-    let x = Scalar::from_bytes_mod_order(az[0..32].try_into().unwrap());
+    let secret_scalar_bytes: [u8; 32] = az[0..32]
+        .try_into()
+        .expect("secret key slice must be 32 bytes");
+    let x = Scalar::from_bytes_mod_order(secret_scalar_bytes);
 
     // Extract public key
     let pk = &secret_key[32..64];
@@ -88,7 +91,11 @@ pub fn cardano_vrf_prove(secret_key: &[u8; 64], message: &[u8]) -> VrfResult<[u8
     nonce_hasher.update(&az[32..64]);
     nonce_hasher.update(&h_string);
     let nonce_hash = nonce_hasher.finalize();
-    let k = Scalar::from_bytes_mod_order_wide(&nonce_hash.as_slice().try_into().unwrap());
+    let nonce_bytes: [u8; 64] = nonce_hash
+        .as_slice()
+        .try_into()
+        .expect("SHA-512 hash must be 64 bytes");
+    let k = Scalar::from_bytes_mod_order_wide(&nonce_bytes);
 
     // Step 6: k*B and k*H
     let k_b: curve25519_dalek::edwards::EdwardsPoint = &k * ED25519_BASEPOINT_TABLE;

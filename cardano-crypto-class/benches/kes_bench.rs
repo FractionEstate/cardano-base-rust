@@ -87,7 +87,7 @@ where
                 for period in 0..K::total_periods().min(16) {
                     // cap to 16 periods to bound runtime
                     let msg = format!("evo-{i}-{period}").into_bytes();
-                    let active = sk_state.take().unwrap();
+                    let active = sk_state.take().expect("active key must be present");
                     let _sig = K::sign_kes(&(), period, &msg, &active).expect("sign");
                     sk_state = K::update_kes(&(), active, period).expect("evolve");
                     if sk_state.is_none() {

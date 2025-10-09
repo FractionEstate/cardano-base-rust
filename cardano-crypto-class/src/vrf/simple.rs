@@ -18,11 +18,11 @@ const FIELD_DEGREE: u32 = 113;
 const FIELD_MASK: u128 = (1u128 << FIELD_DEGREE) - 1;
 const REDUCTION_POLY: u128 = (1u128 << FIELD_DEGREE) | (1 << 9) | 1;
 
-const CURVE_A: u128 = 0x0030_8825_0CA6_E7C7_FE64_9CE8_5820_F7;
-const CURVE_B: u128 = 0x00E8_BEE4_D3E2_2607_4418_8BE0_E9C7_23;
-const BASE_X: u128 = 0x009D_7361_6F35_F4AB_1407_D735_62C1_0F;
-const BASE_Y: u128 = 0x00A5_2830_2779_58EE_84D1_315E_D318_86;
-const CURVE_ORDER: u128 = 0x0100_0000_0000_0000_D9CC_EC8A_39E5_6F;
+const CURVE_A: u128 = 0x0000_3088_250C_A6E7_C7FE_649C_E858_20F7;
+const CURVE_B: u128 = 0x0000_E8BE_E4D3_E226_0744_188B_E0E9_C723;
+const BASE_X: u128 = 0x0000_9D73_616F_35F4_AB14_07D7_3562_C10F;
+const BASE_Y: u128 = 0x0000_A528_3027_7958_EE84_D131_5ED3_1886;
+const CURVE_ORDER: u128 = 0x0001_0000_0000_0000_00D9_CCEC_8A39_E56F;
 
 const SIMPLE_OUTPUT_SIZE: usize = 8;
 const SIMPLE_SEED_ATTEMPTS: usize = 100;
@@ -183,7 +183,7 @@ impl SimplePoint {
         }
     }
 
-    fn to_option_coordinates(&self) -> Option<(u128, u128)> {
+    fn as_option_coordinates(&self) -> Option<(u128, u128)> {
         match self {
             SimplePoint::Infinity => None,
             SimplePoint::Affine { x, y } => Some((x.value(), y.value())),
@@ -420,7 +420,7 @@ fn cbor_unsigned(value: u128) -> Value {
 }
 
 fn encode_point(point: &SimplePoint) -> Vec<u8> {
-    let encoded = match point.to_option_coordinates() {
+    let encoded = match point.as_option_coordinates() {
         None => Value::Null,
         Some((x, y)) => Value::Array(vec![cbor_unsigned(x), cbor_unsigned(y)]),
     };
@@ -577,25 +577,25 @@ impl VRFAlgorithm for SimpleVRF {
         assert_eq!(seed.len(), Self::SEED_SIZE, "unexpected seed length");
         let mut rng = SeedRng::new(Seed::from_bytes(seed.to_vec()));
         let mut buf = [0u8; 16];
-        for _ in 0..SIMPLE_SEED_ATTEMPTS {
-            rng.fill_bytes_checked(&mut buf)
-                .expect("insufficient seed material for SimpleVRF");
-            let candidate = bytes_to_u128(&buf) % CURVE_ORDER;
-            if candidate != 0 {
-                return SimpleSigningKey(candidate);
-            }
-        }
-        panic!("failed to derive SimpleVRF signing key from seed");
+        rng.fill_bytes_checked(&mut buf)
+            .expect("insufficient seed material for SimpleVRF");
+        // Map into the range [1, CURVE_ORDER - 1] to avoid the point at infinity.
+        let candidate = bytes_to_u128(&buf) % (CURVE_ORDER - 1) + 1;
+        SimpleSigningKey(candidate)
     }
 
     fn raw_serialize_verification_key(key: &Self::VerificationKey) -> Vec<u8> {
-        match key.point() {
-            SimplePoint::Infinity => panic!("cannot serialise point at infinity"),
-            SimplePoint::Affine { x, y } => {
-                let mut bytes = write_binary_natural(16, &BigUint::from(x.value()));
-                bytes.extend(write_binary_natural(16, &BigUint::from(y.value())));
-                bytes
-            },
+        let point = key.point();
+        debug_assert!(
+            !matches!(point, SimplePoint::Infinity),
+            "cannot serialise point at infinity"
+        );
+        if let SimplePoint::Affine { x, y } = point {
+            let mut bytes = write_binary_natural(16, &BigUint::from(x.value()));
+            bytes.extend(write_binary_natural(16, &BigUint::from(y.value())));
+            bytes
+        } else {
+            Vec::new()
         }
     }
 
@@ -624,15 +624,19 @@ impl VRFAlgorithm for SimpleVRF {
     }
 
     fn raw_serialize_proof(proof: &Self::Proof) -> Vec<u8> {
-        match proof.point() {
-            SimplePoint::Infinity => panic!("cannot serialise point at infinity"),
-            SimplePoint::Affine { x, y } => {
-                let mut bytes = write_binary_natural(16, &BigUint::from(x.value()));
-                bytes.extend(write_binary_natural(16, &BigUint::from(y.value())));
-                bytes.extend(write_binary_natural(16, &BigUint::from(proof.challenge())));
-                bytes.extend(write_binary_natural(16, &BigUint::from(proof.response())));
-                bytes
-            },
+        let point = proof.point();
+        debug_assert!(
+            !matches!(point, SimplePoint::Infinity),
+            "cannot serialise point at infinity"
+        );
+        if let SimplePoint::Affine { x, y } = point {
+            let mut bytes = write_binary_natural(16, &BigUint::from(x.value()));
+            bytes.extend(write_binary_natural(16, &BigUint::from(y.value())));
+            bytes.extend(write_binary_natural(16, &BigUint::from(proof.challenge())));
+            bytes.extend(write_binary_natural(16, &BigUint::from(proof.response())));
+            bytes
+        } else {
+            Vec::new()
         }
     }
 

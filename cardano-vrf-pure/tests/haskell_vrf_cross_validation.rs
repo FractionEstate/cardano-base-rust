@@ -9,7 +9,8 @@ use cardano_vrf_pure::draft03::VrfDraft03;
 fn haskell_vrf_test_vector_1() {
     let secret_key_hex = "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60\
                           d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a";
-    let secret_key_bytes = hex::decode(secret_key_hex).unwrap();
+    let secret_key_bytes =
+        hex::decode(secret_key_hex).expect("secret key hex string should be valid hexadecimal");
     let mut secret_key = [0u8; 64];
     secret_key.copy_from_slice(&secret_key_bytes);
 
@@ -17,7 +18,7 @@ fn haskell_vrf_test_vector_1() {
     let proof_result = VrfDraft03::prove(&secret_key, message);
     assert!(proof_result.is_ok(), "Valid key should produce proof");
 
-    let proof = proof_result.unwrap();
+    let proof = proof_result.expect("Proof generation with valid key should succeed");
     let mut public_key = [0u8; 32];
     public_key.copy_from_slice(&secret_key[32..64]);
 
@@ -29,7 +30,8 @@ fn haskell_vrf_test_vector_1() {
 fn haskell_vrf_proof_generation() {
     let secret_key_hex = "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60\
                           d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a";
-    let secret_key_bytes = hex::decode(secret_key_hex).unwrap();
+    let secret_key_bytes =
+        hex::decode(secret_key_hex).expect("secret key hex string should be valid hexadecimal");
     let mut secret_key = [0u8; 64];
     secret_key.copy_from_slice(&secret_key_bytes);
 

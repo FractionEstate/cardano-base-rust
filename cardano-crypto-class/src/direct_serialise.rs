@@ -24,12 +24,22 @@ pub type DirectResult<T> = Result<T, SizeCheckError>;
 /// Trait for types that can expose their internal representation as raw
 /// memory blocks for serialisation.
 pub trait DirectSerialise {
+    /// Emit the raw representation via the supplied callback.
+    ///
+    /// # Errors
+    ///
+    /// Propagates any error returned by `f`.
     fn direct_serialise(&self, f: &mut dyn FnMut(&[u8]) -> DirectResult<()>) -> DirectResult<()>;
 }
 
 /// Trait for types that can be reconstructed from raw memory blocks during
 /// deserialisation.
 pub trait DirectDeserialise: Sized {
+    /// Consume the supplied callback to reconstruct the value.
+    ///
+    /// # Errors
+    ///
+    /// Propagates any error returned by `f`.
     fn direct_deserialise(f: &mut dyn FnMut(&mut [u8]) -> DirectResult<()>) -> DirectResult<Self>;
 }
 

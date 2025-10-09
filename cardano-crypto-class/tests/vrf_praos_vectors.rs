@@ -37,18 +37,18 @@ fn parse_vector(name: &str, contents: &str) -> TestVector {
         if trimmed.is_empty() {
             continue;
         }
-        let Some((key, value)) = trimmed.split_once(':') else {
-            panic!("malformed line in {}: {}", name, line);
-        };
+        let (key, value) = trimmed
+            .split_once(':')
+            .expect("VRF test vectors lines must contain a ':' separator");
         fields.insert(key.trim().to_string(), value.trim().to_string());
     }
 
     let algorithm = fields
         .remove("vrf")
-        .unwrap_or_else(|| panic!("missing vrf field in {}", name));
+        .expect("VRF test vector should include vrf field");
     let version = fields
         .remove("ver")
-        .unwrap_or_else(|| panic!("missing ver field in {}", name));
+        .expect("VRF test vector should include ver field");
     let signing_key = hex_field(&fields, "sk", name);
     let verifying_key = hex_field(&fields, "pk", name);
     let message = alpha_field(&fields, name);
@@ -70,23 +70,28 @@ fn parse_vector(name: &str, contents: &str) -> TestVector {
 fn hex_field(fields: &BTreeMap<String, String>, key: &str, name: &str) -> Vec<u8> {
     let value = fields
         .get(key)
-        .unwrap_or_else(|| panic!("missing {} field in {}", key, name));
+        .ok_or_else(|| format!("missing {key} field in {name}"))
+        .expect("VRF test vector should define required field");
     if value.eq_ignore_ascii_case("empty") {
         Vec::new()
     } else {
         hex::decode(value)
-            .unwrap_or_else(|err| panic!("{}: invalid hex for {}: {}", name, key, err))
+            .map_err(|err| format!("{name}: invalid hex for {key}: {err}"))
+            .expect("VRF test vector hex fields must decode")
     }
 }
 
 fn alpha_field(fields: &BTreeMap<String, String>, name: &str) -> Vec<u8> {
     let value = fields
         .get("alpha")
-        .unwrap_or_else(|| panic!("missing alpha field in {}", name));
+        .ok_or_else(|| format!("missing alpha field in {name}"))
+        .expect("VRF test vector should define alpha field");
     if value.eq_ignore_ascii_case("empty") {
         Vec::new()
     } else {
-        hex::decode(value).unwrap_or_else(|err| panic!("{}: invalid hex for alpha: {}", name, err))
+        hex::decode(value)
+            .map_err(|err| format!("{name}: invalid hex for alpha: {err}"))
+            .expect("VRF test vector alpha must decode")
     }
 }
 
@@ -133,9 +138,11 @@ fn praos_batch_vectors_match_reference() {
 fn run_praos_vector(vector: &TestVector) {
     let signing_key_bytes = extend_praos_signing_key(&vector.signing_key, &vector.verifying_key);
     let signing_key = PraosSigningKey::from_bytes(&signing_key_bytes)
-        .unwrap_or_else(|err| panic!("{}: failed to decode signing key: {}", vector.name, err));
+        .map_err(|err| format!("{}: failed to decode signing key: {err}", vector.name))
+        .expect("Praos signing key should decode");
     let verifying_key = PraosVerificationKey::from_bytes(&vector.verifying_key)
-        .unwrap_or_else(|err| panic!("{}: failed to decode verifying key: {}", vector.name, err));
+        .map_err(|err| format!("{}: failed to decode verifying key: {err}", vector.name))
+        .expect("Praos verifying key should decode");
 
     let derived_vk = PraosVRF::derive_verification_key(&signing_key);
     assert_eq!(
@@ -147,7 +154,8 @@ fn run_praos_vector(vector: &TestVector) {
 
     let proof = signing_key
         .prove(&vector.message)
-        .unwrap_or_else(|err| panic!("{}: prove failed: {}", vector.name, err));
+        .map_err(|err| format!("{}: prove failed: {err}", vector.name))
+        .expect("Praos proof generation should succeed");
     assert_eq!(
         proof.as_bytes(),
         vector.proof.as_slice(),
@@ -156,7 +164,8 @@ fn run_praos_vector(vector: &TestVector) {
     );
 
     let proof_from_bytes = PraosProof::from_bytes(&vector.proof)
-        .unwrap_or_else(|err| panic!("{}: proof_from_bytes failed: {}", vector.name, err));
+        .map_err(|err| format!("{}: proof_from_bytes failed: {err}", vector.name))
+        .expect("Praos proof decoding should succeed");
     assert_eq!(
         proof_from_bytes.as_bytes(),
         vector.proof.as_slice(),
@@ -166,8 +175,9 @@ fn run_praos_vector(vector: &TestVector) {
 
     let proof_output = proof_from_bytes
         .to_output_bytes()
-        .unwrap_or_else(|err| panic!("{}: proof_to_hash failed: {}", vector.name, err))
-        .expect("proof_to_hash should succeed");
+        .map_err(|err| format!("{}: proof_to_hash failed: {err}", vector.name))
+        .expect("Praos proof_to_hash should succeed")
+        .expect("Praos proof_to_hash should return Some");
     assert_eq!(
         proof_output, vector.output,
         "{}: proof_to_hash output",
@@ -176,8 +186,9 @@ fn run_praos_vector(vector: &TestVector) {
 
     let verify_output = verifying_key
         .verify(&vector.message, &proof_from_bytes)
-        .unwrap_or_else(|err| panic!("{}: verify failed: {}", vector.name, err))
-        .expect("verify should succeed");
+        .map_err(|err| format!("{}: verify failed: {err}", vector.name))
+        .expect("Praos verification should succeed")
+        .expect("Praos verification should return Some");
     assert_eq!(
         verify_output, vector.output,
         "{}: verify output",
@@ -199,7 +210,7 @@ fn run_praos_vector(vector: &TestVector) {
     );
 
     let verified = PraosVRF::verify_bytes(&(), &verifying_key, &vector.message, &cert)
-        .unwrap_or_else(|| panic!("{}: VRF verification failed", vector.name));
+        .expect("Praos VRF verification should succeed");
     assert_eq!(
         verified.as_bytes(),
         vector.output.as_slice(),
@@ -210,20 +221,17 @@ fn run_praos_vector(vector: &TestVector) {
 
 fn run_praos_batch_vector(vector: &TestVector) {
     let signing_key_bytes = extend_praos_signing_key(&vector.signing_key, &vector.verifying_key);
-    let signing_key =
-        PraosBatchCompatSigningKey::from_bytes(&signing_key_bytes).unwrap_or_else(|err| {
-            panic!(
-                "{}: failed to decode batch signing key: {}",
-                vector.name, err
-            )
-        });
+    let signing_key = PraosBatchCompatSigningKey::from_bytes(&signing_key_bytes)
+        .map_err(|err| format!("{}: failed to decode batch signing key: {err}", vector.name))
+        .expect("Praos batch signing key should decode");
     let verifying_key = PraosBatchCompatVerificationKey::from_bytes(&vector.verifying_key)
-        .unwrap_or_else(|err| {
-            panic!(
-                "{}: failed to decode batch verifying key: {}",
-                vector.name, err
+        .map_err(|err| {
+            format!(
+                "{}: failed to decode batch verifying key: {err}",
+                vector.name
             )
-        });
+        })
+        .expect("Praos batch verifying key should decode");
 
     let derived_vk = PraosBatchCompatVRF::derive_verification_key(&signing_key);
     assert_eq!(
@@ -235,7 +243,8 @@ fn run_praos_batch_vector(vector: &TestVector) {
 
     let proof = signing_key
         .prove(&vector.message)
-        .unwrap_or_else(|err| panic!("{}: prove failed: {}", vector.name, err));
+        .map_err(|err| format!("{}: prove failed: {err}", vector.name))
+        .expect("Praos batch proof generation should succeed");
     assert_eq!(
         proof.as_bytes(),
         vector.proof.as_slice(),
@@ -244,7 +253,8 @@ fn run_praos_batch_vector(vector: &TestVector) {
     );
 
     let proof_from_bytes = PraosBatchCompatProof::from_bytes(&vector.proof)
-        .unwrap_or_else(|err| panic!("{}: proof_from_bytes failed: {}", vector.name, err));
+        .map_err(|err| format!("{}: proof_from_bytes failed: {err}", vector.name))
+        .expect("Praos batch proof decoding should succeed");
     assert_eq!(
         proof_from_bytes.as_bytes(),
         vector.proof.as_slice(),
@@ -254,8 +264,9 @@ fn run_praos_batch_vector(vector: &TestVector) {
 
     let proof_output = proof_from_bytes
         .to_output_bytes()
-        .unwrap_or_else(|err| panic!("{}: proof_to_hash failed: {}", vector.name, err))
-        .expect("proof_to_hash should succeed");
+        .map_err(|err| format!("{}: proof_to_hash failed: {err}", vector.name))
+        .expect("Praos batch proof_to_hash should succeed")
+        .expect("Praos batch proof_to_hash should return Some");
     assert_eq!(
         proof_output, vector.output,
         "{}: proof_to_hash output",
@@ -264,8 +275,9 @@ fn run_praos_batch_vector(vector: &TestVector) {
 
     let verify_output = verifying_key
         .verify(&vector.message, &proof_from_bytes)
-        .unwrap_or_else(|err| panic!("{}: verify failed: {}", vector.name, err))
-        .expect("verify should succeed");
+        .map_err(|err| format!("{}: verify failed: {err}", vector.name))
+        .expect("Praos batch verification should succeed")
+        .expect("Praos batch verification should return Some");
     assert_eq!(
         verify_output, vector.output,
         "{}: verify output",
@@ -288,7 +300,7 @@ fn run_praos_batch_vector(vector: &TestVector) {
     );
 
     let verified = PraosBatchCompatVRF::verify_bytes(&(), &verifying_key, &vector.message, &cert)
-        .unwrap_or_else(|| panic!("{}: VRF verification failed", vector.name));
+        .expect("Praos batch VRF verification should succeed");
     assert_eq!(
         verified.as_bytes(),
         vector.output.as_slice(),
@@ -298,14 +310,18 @@ fn run_praos_batch_vector(vector: &TestVector) {
 }
 
 fn extend_praos_signing_key(signing_key: &[u8], verifying_key: &[u8]) -> Vec<u8> {
-    match signing_key.len() {
-        64 => signing_key.to_vec(),
-        32 if verifying_key.len() == 32 => {
-            let mut extended = Vec::with_capacity(64);
-            extended.extend_from_slice(signing_key);
-            extended.extend_from_slice(verifying_key);
-            extended
-        },
-        len => panic!("praos signing key has unsupported length {len}; expected 32 or 64 bytes"),
+    assert!(
+        signing_key.len() == 64 || (signing_key.len() == 32 && verifying_key.len() == 32),
+        "praos signing key has unsupported length {}; expected 32 or 64 bytes",
+        signing_key.len()
+    );
+
+    if signing_key.len() == 64 {
+        signing_key.to_vec()
+    } else {
+        let mut extended = Vec::with_capacity(64);
+        extended.extend_from_slice(signing_key);
+        extended.extend_from_slice(verifying_key);
+        extended
     }
 }

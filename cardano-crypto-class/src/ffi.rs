@@ -35,6 +35,12 @@ impl<'a, const N: usize> SizedPtr<'a, N> {
     pub const fn len(self) -> usize {
         N
     }
+
+    /// Returns `true` if the pointer represents an empty region.
+    #[must_use]
+    pub const fn is_empty(self) -> bool {
+        N == 0
+    }
 }
 
 /// Mutable sized pointer variant.
@@ -65,5 +71,11 @@ impl<'a, const N: usize> SizedMutPtr<'a, N> {
     #[must_use]
     pub const fn len(self) -> usize {
         N
+    }
+
+    /// Returns `true` if the pointer represents an empty region.
+    #[must_use]
+    pub const fn is_empty(self) -> bool {
+        N == 0
     }
 }

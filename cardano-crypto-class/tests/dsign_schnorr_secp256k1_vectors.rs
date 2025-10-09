@@ -33,11 +33,15 @@ fn test_schnorr_vectors_parse() {
     let vectors = parse_schnorr_vectors();
 
     assert_eq!(
-        vectors["algorithm"].as_str().unwrap(),
+        vectors["algorithm"]
+            .as_str()
+            .expect("algorithm field must be a string"),
         "SchnorrSecp256k1DSIGN"
     );
 
-    let sign_verify = vectors["sign_and_verify_vectors"].as_array().unwrap();
+    let sign_verify = vectors["sign_and_verify_vectors"]
+        .as_array()
+        .expect("sign_and_verify_vectors field must be an array");
     assert!(
         !sign_verify.is_empty(),
         "Should have sign/verify test vectors"
@@ -52,14 +56,20 @@ fn test_schnorr_vectors_parse() {
 #[test]
 fn test_schnorr_key_generation_from_seed() {
     let vectors = parse_schnorr_vectors();
-    let sign_verify = vectors["sign_and_verify_vectors"].as_array().unwrap();
+    let sign_verify = vectors["sign_and_verify_vectors"]
+        .as_array()
+        .expect("sign_and_verify_vectors field must be an array");
 
     for vector in sign_verify {
-        let test_name = vector["test_name"].as_str().unwrap();
+        let test_name = vector["test_name"]
+            .as_str()
+            .expect("test_name must be a string");
         println!("\n=== Testing Key Generation: {} ===", test_name);
 
         // Generate keys from secret key
-        let sk_hex = vector["secret_key"].as_str().unwrap();
+        let sk_hex = vector["secret_key"]
+            .as_str()
+            .expect("secret_key must be a hex string");
         let sk_bytes = decode_hex(sk_hex);
         let seed = mk_seed_from_bytes(sk_bytes);
         let signing_key = SchnorrSecp256k1DSIGN::gen_key(&seed);
@@ -81,21 +91,29 @@ fn test_schnorr_key_generation_from_seed() {
 #[test]
 fn test_schnorr_sign_and_verify() {
     let vectors = parse_schnorr_vectors();
-    let sign_verify = vectors["sign_and_verify_vectors"].as_array().unwrap();
+    let sign_verify = vectors["sign_and_verify_vectors"]
+        .as_array()
+        .expect("sign_and_verify_vectors field must be an array");
 
     for vector in sign_verify {
-        let test_name = vector["test_name"].as_str().unwrap();
+        let test_name = vector["test_name"]
+            .as_str()
+            .expect("test_name must be a string");
         println!("\n=== Testing Sign/Verify: {} ===", test_name);
 
         // Generate keys from secret key
-        let sk_hex = vector["secret_key"].as_str().unwrap();
+        let sk_hex = vector["secret_key"]
+            .as_str()
+            .expect("secret_key must be a hex string");
         let sk_bytes = decode_hex(sk_hex);
         let seed = mk_seed_from_bytes(sk_bytes);
         let signing_key = SchnorrSecp256k1DSIGN::gen_key(&seed);
         let verification_key = SchnorrSecp256k1DSIGN::derive_verification_key(&signing_key);
 
         // Decode message
-        let message_hex = vector["message"].as_str().unwrap();
+        let message_hex = vector["message"]
+            .as_str()
+            .expect("message must be a hex string");
         let message = decode_hex(message_hex);
         println!("Message: {} bytes", message.len());
 
@@ -127,21 +145,29 @@ fn test_schnorr_sign_and_verify() {
 #[test]
 fn test_schnorr_randomized_signatures() {
     let vectors = parse_schnorr_vectors();
-    let sign_verify = vectors["sign_and_verify_vectors"].as_array().unwrap();
+    let sign_verify = vectors["sign_and_verify_vectors"]
+        .as_array()
+        .expect("sign_and_verify_vectors field must be an array");
 
     // Use first vector
     let vector = &sign_verify[0];
-    let test_name = vector["test_name"].as_str().unwrap();
+    let test_name = vector["test_name"]
+        .as_str()
+        .expect("test_name must be a string");
 
     println!("\n=== Testing Randomized Signatures: {} ===", test_name);
 
-    let sk_hex = vector["secret_key"].as_str().unwrap();
+    let sk_hex = vector["secret_key"]
+        .as_str()
+        .expect("secret_key must be a hex string");
     let sk_bytes = decode_hex(sk_hex);
     let seed = mk_seed_from_bytes(sk_bytes);
     let signing_key = SchnorrSecp256k1DSIGN::gen_key(&seed);
     let verification_key = SchnorrSecp256k1DSIGN::derive_verification_key(&signing_key);
 
-    let message_hex = vector["message"].as_str().unwrap();
+    let message_hex = vector["message"]
+        .as_str()
+        .expect("message must be a hex string");
     let message = decode_hex(message_hex);
 
     // Generate signature twice - BIP340 allows randomized nonces for additional security
@@ -167,18 +193,24 @@ fn test_schnorr_randomized_signatures() {
 #[test]
 fn test_schnorr_verify_fails_wrong_message() {
     let vectors = parse_schnorr_vectors();
-    let sign_verify = vectors["sign_and_verify_vectors"].as_array().unwrap();
+    let sign_verify = vectors["sign_and_verify_vectors"]
+        .as_array()
+        .expect("sign_and_verify_vectors field must be an array");
 
     let vector = &sign_verify[0];
     println!("\n=== Testing Wrong Message Verification ===");
 
-    let sk_hex = vector["secret_key"].as_str().unwrap();
+    let sk_hex = vector["secret_key"]
+        .as_str()
+        .expect("secret_key must be a hex string");
     let sk_bytes = decode_hex(sk_hex);
     let seed = mk_seed_from_bytes(sk_bytes);
     let signing_key = SchnorrSecp256k1DSIGN::gen_key(&seed);
     let verification_key = SchnorrSecp256k1DSIGN::derive_verification_key(&signing_key);
 
-    let message_hex = vector["message"].as_str().unwrap();
+    let message_hex = vector["message"]
+        .as_str()
+        .expect("message must be a hex string");
     let message = decode_hex(message_hex);
 
     let context = Default::default();
@@ -199,18 +231,24 @@ fn test_schnorr_verify_fails_wrong_message() {
 #[test]
 fn test_schnorr_verify_fails_wrong_key() {
     let vectors = parse_schnorr_vectors();
-    let sign_verify = vectors["sign_and_verify_vectors"].as_array().unwrap();
+    let sign_verify = vectors["sign_and_verify_vectors"]
+        .as_array()
+        .expect("sign_and_verify_vectors field must be an array");
 
     println!("\n=== Testing Wrong Key Verification ===");
 
     // Use first vector to sign
     let vector = &sign_verify[0];
-    let sk_hex = vector["secret_key"].as_str().unwrap();
+    let sk_hex = vector["secret_key"]
+        .as_str()
+        .expect("secret_key must be a hex string");
     let sk_bytes = decode_hex(sk_hex);
     let seed = mk_seed_from_bytes(sk_bytes);
     let signing_key = SchnorrSecp256k1DSIGN::gen_key(&seed);
 
-    let message_hex = vector["message"].as_str().unwrap();
+    let message_hex = vector["message"]
+        .as_str()
+        .expect("message must be a hex string");
     let message = decode_hex(message_hex);
 
     let context = Default::default();
@@ -218,7 +256,9 @@ fn test_schnorr_verify_fails_wrong_key() {
 
     // Use a different key for verification
     let vector2 = &sign_verify[1];
-    let sk2_hex = vector2["secret_key"].as_str().unwrap();
+    let sk2_hex = vector2["secret_key"]
+        .as_str()
+        .expect("secret_key must be a hex string");
     let sk2_bytes = decode_hex(sk2_hex);
     let seed2 = mk_seed_from_bytes(sk2_bytes);
     let signing_key2 = SchnorrSecp256k1DSIGN::gen_key(&seed2);
@@ -241,12 +281,16 @@ fn test_schnorr_verify_fails_wrong_key() {
 #[test]
 fn test_schnorr_serialization_roundtrip() {
     let vectors = parse_schnorr_vectors();
-    let sign_verify = vectors["sign_and_verify_vectors"].as_array().unwrap();
+    let sign_verify = vectors["sign_and_verify_vectors"]
+        .as_array()
+        .expect("sign_and_verify_vectors field must be an array");
 
     let vector = &sign_verify[0];
     println!("\n=== Testing Serialization Roundtrip ===");
 
-    let sk_hex = vector["secret_key"].as_str().unwrap();
+    let sk_hex = vector["secret_key"]
+        .as_str()
+        .expect("secret_key must be a hex string");
     let sk_bytes = decode_hex(sk_hex);
     let seed = mk_seed_from_bytes(sk_bytes);
     let signing_key = SchnorrSecp256k1DSIGN::gen_key(&seed);
@@ -279,7 +323,9 @@ fn test_schnorr_serialization_roundtrip() {
     );
 
     // Sign and verify with restored keys
-    let message_hex = vector["message"].as_str().unwrap();
+    let message_hex = vector["message"]
+        .as_str()
+        .expect("message must be a hex string");
     let message = decode_hex(message_hex);
 
     let context = Default::default();
@@ -309,12 +355,16 @@ fn test_schnorr_serialization_roundtrip() {
 #[test]
 fn test_schnorr_empty_message() {
     let vectors = parse_schnorr_vectors();
-    let sign_verify = vectors["sign_and_verify_vectors"].as_array().unwrap();
+    let sign_verify = vectors["sign_and_verify_vectors"]
+        .as_array()
+        .expect("sign_and_verify_vectors field must be an array");
 
     let vector = &sign_verify[0];
     println!("\n=== Testing Empty Message ===");
 
-    let sk_hex = vector["secret_key"].as_str().unwrap();
+    let sk_hex = vector["secret_key"]
+        .as_str()
+        .expect("secret_key must be a hex string");
     let sk_bytes = decode_hex(sk_hex);
     let seed = mk_seed_from_bytes(sk_bytes);
     let signing_key = SchnorrSecp256k1DSIGN::gen_key(&seed);
@@ -337,12 +387,16 @@ fn test_schnorr_empty_message() {
 #[test]
 fn test_schnorr_large_message() {
     let vectors = parse_schnorr_vectors();
-    let sign_verify = vectors["sign_and_verify_vectors"].as_array().unwrap();
+    let sign_verify = vectors["sign_and_verify_vectors"]
+        .as_array()
+        .expect("sign_and_verify_vectors field must be an array");
 
     let vector = &sign_verify[0];
     println!("\n=== Testing Large Message (10KB) ===");
 
-    let sk_hex = vector["secret_key"].as_str().unwrap();
+    let sk_hex = vector["secret_key"]
+        .as_str()
+        .expect("secret_key must be a hex string");
     let sk_bytes = decode_hex(sk_hex);
     let seed = mk_seed_from_bytes(sk_bytes);
     let signing_key = SchnorrSecp256k1DSIGN::gen_key(&seed);

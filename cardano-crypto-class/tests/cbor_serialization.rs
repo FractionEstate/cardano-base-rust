@@ -57,15 +57,19 @@ mod cbor_tests {
 
         // Serialize both VK and signature to CBOR
         let mut vk_cbor = Vec::new();
-        ciborium::into_writer(&verification_key, &mut vk_cbor).unwrap();
+        ciborium::into_writer(&verification_key, &mut vk_cbor)
+            .expect("Failed to serialize Ed25519 verification key to CBOR");
         let mut sig_cbor = Vec::new();
-        ciborium::into_writer(&signature, &mut sig_cbor).unwrap();
+        ciborium::into_writer(&signature, &mut sig_cbor)
+            .expect("Failed to serialize Ed25519 signature to CBOR");
 
         // Deserialize
         let vk_decoded: <Ed25519 as DsignAlgorithm>::VerificationKey =
-            ciborium::from_reader(vk_cbor.as_slice()).unwrap();
+            ciborium::from_reader(vk_cbor.as_slice())
+                .expect("Failed to deserialize Ed25519 verification key from CBOR");
         let sig_decoded: <Ed25519 as DsignAlgorithm>::Signature =
-            ciborium::from_reader(sig_cbor.as_slice()).unwrap();
+            ciborium::from_reader(sig_cbor.as_slice())
+                .expect("Failed to deserialize Ed25519 signature from CBOR");
 
         // Verify the deserialized signature with deserialized VK
         let result =
@@ -81,9 +85,11 @@ mod cbor_tests {
         let verification_key = <Ed25519 as DsignAlgorithm>::derive_verification_key(&signing_key);
 
         let mut cbor1 = Vec::new();
-        ciborium::into_writer(&verification_key, &mut cbor1).unwrap();
+        ciborium::into_writer(&verification_key, &mut cbor1)
+            .expect("Failed to serialize Ed25519 verification key to CBOR");
         let mut cbor2 = Vec::new();
-        ciborium::into_writer(&verification_key, &mut cbor2).unwrap();
+        ciborium::into_writer(&verification_key, &mut cbor2)
+            .expect("Failed to serialize Ed25519 verification key to CBOR");
 
         assert_eq!(cbor1, cbor2, "CBOR encoding should be deterministic");
     }
@@ -146,18 +152,27 @@ mod vrf_cbor_tests {
 
         // Serialize both VK and proof to CBOR
         let mut vk_cbor = Vec::new();
-        ciborium::into_writer(&verification_key, &mut vk_cbor).unwrap();
+        ciborium::into_writer(&verification_key, &mut vk_cbor)
+            .expect("Failed to serialize Praos verification key to CBOR");
         let mut proof_cbor = Vec::new();
-        ciborium::into_writer(&proof, &mut proof_cbor).unwrap();
+        ciborium::into_writer(&proof, &mut proof_cbor)
+            .expect("Failed to serialize Praos proof to CBOR");
 
         // Deserialize
-        let vk_decoded: PraosVerificationKey = ciborium::from_reader(vk_cbor.as_slice()).unwrap();
-        let proof_decoded: PraosProof = ciborium::from_reader(proof_cbor.as_slice()).unwrap();
+        let vk_decoded: PraosVerificationKey = ciborium::from_reader(vk_cbor.as_slice())
+            .expect("Failed to deserialize Praos verification key from CBOR");
+        let proof_decoded: PraosProof = ciborium::from_reader(proof_cbor.as_slice())
+            .expect("Failed to deserialize Praos proof from CBOR");
 
         // Verify the deserialized proof with deserialized VK
         let result = vk_decoded.verify(message, &proof_decoded);
         assert!(result.is_ok(), "VRF proof verification should succeed");
-        assert!(result.unwrap().is_some(), "VRF should produce output");
+        assert!(
+            result
+                .expect("Praos verification should not fail")
+                .is_some(),
+            "VRF should produce output"
+        );
     }
 
     #[test]
@@ -167,9 +182,11 @@ mod vrf_cbor_tests {
             keypair_from_seed(&seed).expect("Failed to generate keypair");
 
         let mut cbor1 = Vec::new();
-        ciborium::into_writer(&verification_key, &mut cbor1).unwrap();
+        ciborium::into_writer(&verification_key, &mut cbor1)
+            .expect("Failed to serialize Praos verification key to CBOR");
         let mut cbor2 = Vec::new();
-        ciborium::into_writer(&verification_key, &mut cbor2).unwrap();
+        ciborium::into_writer(&verification_key, &mut cbor2)
+            .expect("Failed to serialize Praos verification key to CBOR");
 
         assert_eq!(
             cbor1, cbor2,
@@ -288,9 +305,11 @@ mod kes_cbor_tests {
     #[test]
     fn test_single_kes_verification_key_cbor_roundtrip() {
         // Generate a signing key using Ed25519 directly
-        let mut seed = MLockedSeed::<32>::new_zeroed().unwrap();
+        let mut seed =
+            MLockedSeed::<32>::new_zeroed().expect("Failed to allocate zeroed MLockedSeed");
         seed.as_mut_bytes().copy_from_slice(&[42u8; 32]);
-        let signing_key = Ed25519::gen_key_m(&seed).unwrap();
+        let signing_key =
+            Ed25519::gen_key_m(&seed).expect("Failed to generate Ed25519 signing key");
 
         // Derive verification key
         let verification_key = SingleKesEd25519::derive_verification_key(&signing_key)
@@ -316,9 +335,11 @@ mod kes_cbor_tests {
     #[test]
     fn test_single_kes_signature_cbor_roundtrip() {
         // Generate a signing key
-        let mut seed = MLockedSeed::<32>::new_zeroed().unwrap();
+        let mut seed =
+            MLockedSeed::<32>::new_zeroed().expect("Failed to allocate zeroed MLockedSeed");
         seed.as_mut_bytes().copy_from_slice(&[7u8; 32]);
-        let signing_key = Ed25519::gen_key_m(&seed).unwrap();
+        let signing_key =
+            Ed25519::gen_key_m(&seed).expect("Failed to generate Ed25519 signing key");
 
         let message = b"SingleKes CBOR test message";
         let signature = SingleKesEd25519::sign_kes(&(), 0, message, &signing_key)
@@ -344,9 +365,11 @@ mod kes_cbor_tests {
     #[test]
     fn test_single_kes_cbor_signature_verification() {
         // Generate keypair
-        let mut seed = MLockedSeed::<32>::new_zeroed().unwrap();
+        let mut seed =
+            MLockedSeed::<32>::new_zeroed().expect("Failed to allocate zeroed MLockedSeed");
         seed.as_mut_bytes().copy_from_slice(&[99u8; 32]);
-        let signing_key = Ed25519::gen_key_m(&seed).unwrap();
+        let signing_key =
+            Ed25519::gen_key_m(&seed).expect("Failed to generate Ed25519 signing key");
         let verification_key = SingleKesEd25519::derive_verification_key(&signing_key)
             .expect("Failed to derive verification key");
 
@@ -356,13 +379,17 @@ mod kes_cbor_tests {
 
         // Serialize both VK and signature to CBOR
         let mut vk_cbor = Vec::new();
-        ciborium::into_writer(&verification_key, &mut vk_cbor).unwrap();
+        ciborium::into_writer(&verification_key, &mut vk_cbor)
+            .expect("Failed to serialize SingleKes verification key to CBOR");
         let mut sig_cbor = Vec::new();
-        ciborium::into_writer(&signature, &mut sig_cbor).unwrap();
+        ciborium::into_writer(&signature, &mut sig_cbor)
+            .expect("Failed to serialize SingleKes signature to CBOR");
 
         // Deserialize
-        let vk_decoded = ciborium::from_reader(vk_cbor.as_slice()).unwrap();
-        let sig_decoded = ciborium::from_reader(sig_cbor.as_slice()).unwrap();
+        let vk_decoded = ciborium::from_reader(vk_cbor.as_slice())
+            .expect("Failed to deserialize SingleKes verification key from CBOR");
+        let sig_decoded = ciborium::from_reader(sig_cbor.as_slice())
+            .expect("Failed to deserialize SingleKes signature from CBOR");
 
         // Verify the deserialized signature with deserialized VK
         let result = SingleKesEd25519::verify_kes(&(), &vk_decoded, 0, message, &sig_decoded);
@@ -391,9 +418,11 @@ mod kes_cbor_tests {
         type CompactSingleKesEd25519 = CompactSingleKes<Ed25519>;
 
         // Generate a signing key
-        let mut seed = MLockedSeed::<32>::new_zeroed().unwrap();
+        let mut seed =
+            MLockedSeed::<32>::new_zeroed().expect("Failed to allocate zeroed MLockedSeed");
         seed.as_mut_bytes().copy_from_slice(&[55u8; 32]);
-        let signing_key = Ed25519::gen_key_m(&seed).unwrap();
+        let signing_key =
+            Ed25519::gen_key_m(&seed).expect("Failed to generate Ed25519 signing key");
 
         // Derive verification key
         let verification_key = CompactSingleKesEd25519::derive_verification_key(&signing_key)
@@ -426,9 +455,11 @@ mod kes_cbor_tests {
         type CompactSingleKesEd25519 = CompactSingleKes<Ed25519>;
 
         // Generate a signing key
-        let mut seed = MLockedSeed::<32>::new_zeroed().unwrap();
+        let mut seed =
+            MLockedSeed::<32>::new_zeroed().expect("Failed to allocate zeroed MLockedSeed");
         seed.as_mut_bytes().copy_from_slice(&[77u8; 32]);
-        let signing_key = Ed25519::gen_key_m(&seed).unwrap();
+        let signing_key =
+            Ed25519::gen_key_m(&seed).expect("Failed to generate Ed25519 signing key");
 
         let message = b"CompactSingleKes CBOR test message";
         let signature = CompactSingleKesEd25519::sign_kes(&(), 0, message, &signing_key)
@@ -461,9 +492,11 @@ mod kes_cbor_tests {
         type CompactSingleKesEd25519 = CompactSingleKes<Ed25519>;
 
         // Generate keypair
-        let mut seed = MLockedSeed::<32>::new_zeroed().unwrap();
+        let mut seed =
+            MLockedSeed::<32>::new_zeroed().expect("Failed to allocate zeroed MLockedSeed");
         seed.as_mut_bytes().copy_from_slice(&[88u8; 32]);
-        let signing_key = Ed25519::gen_key_m(&seed).unwrap();
+        let signing_key =
+            Ed25519::gen_key_m(&seed).expect("Failed to generate Ed25519 signing key");
         let verification_key = CompactSingleKesEd25519::derive_verification_key(&signing_key)
             .expect("Failed to derive verification key");
 
@@ -473,13 +506,17 @@ mod kes_cbor_tests {
 
         // Serialize both VK and signature to CBOR
         let mut vk_cbor = Vec::new();
-        ciborium::into_writer(&verification_key, &mut vk_cbor).unwrap();
+        ciborium::into_writer(&verification_key, &mut vk_cbor)
+            .expect("Failed to serialize CompactSingleKes verification key to CBOR");
         let mut sig_cbor = Vec::new();
-        ciborium::into_writer(&signature, &mut sig_cbor).unwrap();
+        ciborium::into_writer(&signature, &mut sig_cbor)
+            .expect("Failed to serialize CompactSingleKes signature to CBOR");
 
         // Deserialize
-        let vk_decoded = ciborium::from_reader(vk_cbor.as_slice()).unwrap();
-        let sig_decoded = ciborium::from_reader(sig_cbor.as_slice()).unwrap();
+        let vk_decoded = ciborium::from_reader(vk_cbor.as_slice())
+            .expect("Failed to deserialize CompactSingleKes verification key from CBOR");
+        let sig_decoded = ciborium::from_reader(sig_cbor.as_slice())
+            .expect("Failed to deserialize CompactSingleKes signature from CBOR");
 
         // Verify the deserialized signature with deserialized VK
         let result =

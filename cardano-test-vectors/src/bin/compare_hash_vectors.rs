@@ -60,35 +60,6 @@ struct HashVectorsFile {
     vectors: Vec<HashVector>,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn compare_identical_vectors_succeeds() {
-        let path = default_candidate_path();
-        let vectors = load_vectors(&path).expect("load canonical vectors");
-        let mismatches = compare(&vectors, &vectors);
-        assert!(mismatches.is_empty());
-    }
-
-    #[test]
-    fn compare_detects_mismatch() {
-        let path = default_candidate_path();
-        let reference = load_vectors(&path).expect("load canonical vectors");
-        let mut candidate = reference.clone();
-        // Corrupt one digest.
-        candidate.vectors[0].sha256.push('0');
-
-        let mismatches = compare(&reference, &candidate);
-        assert!(
-            mismatches
-                .iter()
-                .any(|entry| entry.contains("sha256 digest mismatch"))
-        );
-    }
-}
-
 fn main() -> Result<(), Box<dyn Error>> {
     let mut args = std::env::args().skip(1);
     let reference_path = args
@@ -200,4 +171,33 @@ fn compare_vector(
     check_field!(blake2b224, "blake2b224 digest");
     check_field!(blake2b256, "blake2b256 digest");
     check_field!(blake2b512, "blake2b512 digest");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn compare_identical_vectors_succeeds() {
+        let path = default_candidate_path();
+        let vectors = load_vectors(&path).expect("load canonical vectors");
+        let mismatches = compare(&vectors, &vectors);
+        assert!(mismatches.is_empty());
+    }
+
+    #[test]
+    fn compare_detects_mismatch() {
+        let path = default_candidate_path();
+        let reference = load_vectors(&path).expect("load canonical vectors");
+        let mut candidate = reference.clone();
+        // Corrupt one digest.
+        candidate.vectors[0].sha256.push('0');
+
+        let mismatches = compare(&reference, &candidate);
+        assert!(
+            mismatches
+                .iter()
+                .any(|entry| entry.contains("sha256 digest mismatch"))
+        );
+    }
 }

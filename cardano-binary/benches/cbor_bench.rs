@@ -1,6 +1,6 @@
 use cardano_binary::{decode_full, serialize};
 use criterion::{Criterion, Throughput, black_box, criterion_group, criterion_main};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 // Small structure - minimal overhead test
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -26,6 +26,14 @@ struct LargeStruct {
     signatures: Vec<Vec<u8>>, // Changed from [u8; 64] to Vec<u8>
 }
 
+fn bench_serialize<T: Serialize>(value: &T) -> Vec<u8> {
+    serialize(value).expect("benchmark serialization must succeed")
+}
+
+fn bench_deserialize<T: DeserializeOwned>(bytes: &[u8]) -> T {
+    decode_full(bytes).expect("benchmark deserialization must succeed")
+}
+
 fn small_struct_roundtrip(c: &mut Criterion) {
     let data = SmallStruct { id: 42, flag: true };
 
@@ -34,25 +42,25 @@ fn small_struct_roundtrip(c: &mut Criterion) {
 
     group.bench_function("serialize", |b| {
         b.iter(|| {
-            let bytes = serialize(black_box(&data)).unwrap();
+            let bytes = bench_serialize(black_box(&data));
             black_box(bytes);
         });
     });
 
-    let serialized = serialize(&data).unwrap();
+    let serialized = bench_serialize(&data);
     group.throughput(Throughput::Bytes(serialized.len() as u64));
 
     group.bench_function("deserialize", |b| {
         b.iter(|| {
-            let decoded: SmallStruct = decode_full(black_box(&serialized)).unwrap();
+            let decoded: SmallStruct = bench_deserialize(black_box(&serialized));
             black_box(decoded);
         });
     });
 
     group.bench_function("roundtrip", |b| {
         b.iter(|| {
-            let bytes = serialize(black_box(&data)).unwrap();
-            let decoded: SmallStruct = decode_full(&bytes).unwrap();
+            let bytes = bench_serialize(black_box(&data));
+            let decoded: SmallStruct = bench_deserialize(&bytes);
             black_box(decoded);
         });
     });
@@ -77,25 +85,25 @@ fn medium_struct_roundtrip(c: &mut Criterion) {
 
     group.bench_function("serialize", |b| {
         b.iter(|| {
-            let bytes = serialize(black_box(&data)).unwrap();
+            let bytes = bench_serialize(black_box(&data));
             black_box(bytes);
         });
     });
 
-    let serialized = serialize(&data).unwrap();
+    let serialized = bench_serialize(&data);
     group.throughput(Throughput::Bytes(serialized.len() as u64));
 
     group.bench_function("deserialize", |b| {
         b.iter(|| {
-            let decoded: MediumStruct = decode_full(black_box(&serialized)).unwrap();
+            let decoded: MediumStruct = bench_deserialize(black_box(&serialized));
             black_box(decoded);
         });
     });
 
     group.bench_function("roundtrip", |b| {
         b.iter(|| {
-            let bytes = serialize(black_box(&data)).unwrap();
-            let decoded: MediumStruct = decode_full(&bytes).unwrap();
+            let bytes = bench_serialize(black_box(&data));
+            let decoded: MediumStruct = bench_deserialize(&bytes);
             black_box(decoded);
         });
     });
@@ -127,25 +135,25 @@ fn large_struct_roundtrip(c: &mut Criterion) {
 
     group.bench_function("serialize", |b| {
         b.iter(|| {
-            let bytes = serialize(black_box(&data)).unwrap();
+            let bytes = bench_serialize(black_box(&data));
             black_box(bytes);
         });
     });
 
-    let serialized = serialize(&data).unwrap();
+    let serialized = bench_serialize(&data);
     group.throughput(Throughput::Bytes(serialized.len() as u64));
 
     group.bench_function("deserialize", |b| {
         b.iter(|| {
-            let decoded: LargeStruct = decode_full(black_box(&serialized)).unwrap();
+            let decoded: LargeStruct = bench_deserialize(black_box(&serialized));
             black_box(decoded);
         });
     });
 
     group.bench_function("roundtrip", |b| {
         b.iter(|| {
-            let bytes = serialize(black_box(&data)).unwrap();
-            let decoded: LargeStruct = decode_full(&bytes).unwrap();
+            let bytes = bench_serialize(black_box(&data));
+            let decoded: LargeStruct = bench_deserialize(&bytes);
             black_box(decoded);
         });
     });
@@ -158,19 +166,19 @@ fn collections_benchmark(c: &mut Criterion) {
 
     // Vec of integers
     let vec_data: Vec<u64> = (0..1000).collect();
-    let vec_bytes = serialize(&vec_data).unwrap();
+    let vec_bytes = bench_serialize(&vec_data);
     group.throughput(Throughput::Bytes(vec_bytes.len() as u64));
 
     group.bench_function("vec_1000_u64/serialize", |b| {
         b.iter(|| {
-            let bytes = serialize(black_box(&vec_data)).unwrap();
+            let bytes = bench_serialize(black_box(&vec_data));
             black_box(bytes);
         });
     });
 
     group.bench_function("vec_1000_u64/deserialize", |b| {
         b.iter(|| {
-            let decoded: Vec<u64> = decode_full(black_box(&vec_bytes)).unwrap();
+            let decoded: Vec<u64> = bench_deserialize(black_box(&vec_bytes));
             black_box(decoded);
         });
     });
@@ -179,19 +187,19 @@ fn collections_benchmark(c: &mut Criterion) {
     let map_data: Vec<(String, u64)> = (0..100)
         .map(|i| (format!("key_{:03}", i), i as u64))
         .collect();
-    let map_bytes = serialize(&map_data).unwrap();
+    let map_bytes = bench_serialize(&map_data);
     group.throughput(Throughput::Bytes(map_bytes.len() as u64));
 
     group.bench_function("map_100_entries/serialize", |b| {
         b.iter(|| {
-            let bytes = serialize(black_box(&map_data)).unwrap();
+            let bytes = bench_serialize(black_box(&map_data));
             black_box(bytes);
         });
     });
 
     group.bench_function("map_100_entries/deserialize", |b| {
         b.iter(|| {
-            let decoded: Vec<(String, u64)> = decode_full(black_box(&map_bytes)).unwrap();
+            let decoded: Vec<(String, u64)> = bench_deserialize(black_box(&map_bytes));
             black_box(decoded);
         });
     });
