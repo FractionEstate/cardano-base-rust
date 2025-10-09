@@ -329,12 +329,11 @@ Validate and achieve 100% functional parity between the Rust KES (Key Evolving S
 
 ## Reporting Cadence
 
-- Update the **Status** line and tick checkboxes as work progresses.
-- Provide short status notes (date + bullet) under this section:
   - **2025-10-06**: Phase 05 initiated after DSIGN parity completion. Status: In progress, Owner: @FractionEstate.
   - **2025-10-07**: Consolidated KES coverage: generated deterministic Single/CompactSingle/Sum/CompactSum vectors (including evolution traces), added structural (`sum_kes_signature_components*`, `compact_sum3_kes_signature_components`), integration (`kes_integration`), cross-family (`kes_cross_family`), forward-security (`kes_forward_security`), tamper, and serialization edge-case regressions. Ran `cargo test -p cardano-crypto-class --features serde` and `cargo test -p cardano-test-vectors` to validate all suites. Future work: mlocked memory security validation, performance benchmarks, documentation polish.
 
 ---
+  - 2025-10-08: Converted SumKES/CompactSumKES direct-serialise callbacks to safe slice-based closures (parity with `Cardano.Crypto.DirectSerialise`), purged remaining pointer plumbing, and re-ran the full KES regression matrix to confirm no behaviour drift.
 
 ## Related Work
 

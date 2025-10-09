@@ -32,7 +32,7 @@ static SQRT_M1_BIG: Lazy<BigUint> = Lazy::new(|| {
 });
 /// sqrt(-A-2) mod p (Cardano constant)
 static SQRT_AM2_BIG: Lazy<BigUint> = Lazy::new(|| {
-    let neg_a_minus_two = mod_neg(&mod_add(&*A_BIG, &BigUint::from(2u8))); // -(A+2)
+    let neg_a_minus_two = mod_neg(&mod_add(&A_BIG, &BigUint::from(2u8))); // -(A+2)
     sqrt_mod(&neg_a_minus_two).expect("sqrt(-A-2) must exist")
 });
 
@@ -94,7 +94,7 @@ fn mod_mul(a: &BigUint, b: &BigUint) -> BigUint {
 }
 
 fn mod_pow(base: &BigUint, exp: &BigUint) -> BigUint {
-    base.modpow(exp, &*P)
+    base.modpow(exp, &P)
 }
 
 fn mod_inv(a: &BigUint) -> BigUint {
@@ -126,7 +126,7 @@ fn sqrt_mod(n: &BigUint) -> Option<BigUint> {
     let exp = (&*P + BigUint::from(3u8)) >> 3;
     let mut root = mod_pow(&n, &exp);
     if mod_mul(&root, &root) != n {
-        root = mod_mul(&root, &*SQRT_M1_BIG);
+        root = mod_mul(&root, &SQRT_M1_BIG);
     }
     if mod_mul(&root, &root) == n {
         Some(root)
@@ -138,7 +138,7 @@ fn sqrt_mod(n: &BigUint) -> Option<BigUint> {
 fn mont_rhs(x: &BigUint) -> BigUint {
     let x_sq = mod_mul(x, x);
     let x_cu = mod_mul(&x_sq, x);
-    let ax_sq = mod_mul(&*A_BIG, &x_sq);
+    let ax_sq = mod_mul(&A_BIG, &x_sq);
     mod_add(&mod_add(&x_cu, &ax_sq), x)
 }
 
@@ -152,7 +152,7 @@ fn mont_to_edwards(x: &BigUint, y: &BigUint) -> (BigUint, BigUint) {
     } else {
         mod_inv(&denom)
     };
-    let mut ed_x = mod_mul(&mod_mul(&*SQRT_AM2_BIG, x), &denom_inv);
+    let mut ed_x = mod_mul(&mod_mul(&SQRT_AM2_BIG, x), &denom_inv);
     ed_x = mod_mul(&ed_x, &x_plus_one);
     let mut ed_y = mod_mul(&denom_inv, y);
     ed_y = mod_mul(&ed_y, &x_minus_one);
@@ -163,6 +163,7 @@ fn mont_to_edwards(x: &BigUint, y: &BigUint) -> (BigUint, BigUint) {
 }
 
 // Default BigUint-based ge25519_from_hash (stable)
+#[cfg(not(feature = "field-h2c-experimental"))]
 fn ge25519_from_hash(hash: &[u8; 64]) -> VrfResult<(EdwardsPoint, [u8; 32])> {
     let fe_f = fe_reduce64(hash);
     let r_bytes = fe_f.to_bytes();
@@ -171,11 +172,11 @@ fn ge25519_from_hash(hash: &[u8; 64]) -> VrfResult<(EdwardsPoint, [u8; 32])> {
     rr2 = mod_mul(&rr2, &BigUint::from(2u8));
     let denom = mod_add(&rr2, &BigUint::one());
     let denom_inv = mod_inv(&denom);
-    let mut x = mod_neg(&mod_mul(&denom_inv, &*A_BIG));
+    let mut x = mod_neg(&mod_mul(&denom_inv, &A_BIG));
     let mut gx1 = mont_rhs(&x);
     let notsquare = !is_quadratic_residue(&gx1);
     if notsquare {
-        x = mod_sub(&mod_neg(&x), &*A_BIG);
+        x = mod_sub(&mod_neg(&x), &A_BIG);
         gx1 = mont_rhs(&x);
     }
     let mut y = sqrt_mod(&gx1).ok_or(VrfError::InvalidPoint)?;
@@ -184,7 +185,7 @@ fn ge25519_from_hash(hash: &[u8; 64]) -> VrfResult<(EdwardsPoint, [u8; 32])> {
         y = mod_neg(&y);
     }
     let y_inv = mod_inv(&y);
-    let x_ed = mod_mul(&mod_mul(&*SQRT_AM2_BIG, &x), &y_inv);
+    let x_ed = mod_mul(&mod_mul(&SQRT_AM2_BIG, &x), &y_inv);
     let x_minus_one = mod_sub(&x, &BigUint::one());
     let x_plus_one = mod_add(&x, &BigUint::one());
     let y_ed = mod_mul(&x_minus_one, &mod_inv(&x_plus_one));
@@ -216,11 +217,11 @@ fn hash_to_curve_bigint(r: &[u8; 32], x_sign: u8) -> VrfResult<EdwardsPoint> {
     let denom = mod_add(&rr2, &BigUint::one());
     let denom_inv = mod_inv(&denom);
 
-    let mut x = mod_neg(&mod_mul(&denom_inv, &*A_BIG));
+    let mut x = mod_neg(&mod_mul(&denom_inv, &A_BIG));
     let mut gx1 = mont_rhs(&x);
 
     if !is_quadratic_residue(&gx1) {
-        x = mod_sub(&mod_neg(&x), &*A_BIG);
+        x = mod_sub(&mod_neg(&x), &A_BIG);
         gx1 = mont_rhs(&x);
     }
 
@@ -307,6 +308,7 @@ pub fn cardano_hash_to_curve(r: &[u8; 32]) -> VrfResult<EdwardsPoint> {
 /// Cardano-specific cofactor clearing
 ///
 /// Multiplies point by cofactor (8) using Cardano's method.
+#[must_use]
 pub fn cardano_clear_cofactor(point: &EdwardsPoint) -> EdwardsPoint {
     use curve25519_dalek::scalar::Scalar;
     let eight = Scalar::from(8u8);

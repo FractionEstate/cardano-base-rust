@@ -337,18 +337,18 @@ impl<'de> serde::Deserialize<'de> for PraosVerificationKey {
 impl DirectSerialise for PraosVerificationKey {
     fn direct_serialise(
         &self,
-        push: &mut dyn FnMut(*const u8, usize) -> DirectResult<()>,
+        push: &mut dyn FnMut(&[u8]) -> DirectResult<()>,
     ) -> DirectResult<()> {
-        push(self.bytes.as_ptr(), verification_key_size())
+        push(&self.bytes)
     }
 }
 
 impl DirectDeserialise for PraosVerificationKey {
     fn direct_deserialise(
-        pull: &mut dyn FnMut(*mut u8, usize) -> DirectResult<()>,
+        pull: &mut dyn FnMut(&mut [u8]) -> DirectResult<()>,
     ) -> DirectResult<Self> {
         let mut bytes = vec![0u8; verification_key_size()];
-        pull(bytes.as_mut_ptr(), verification_key_size())?;
+        pull(&mut bytes)?;
         Self::from_bytes(&bytes).map_err(|_| SizeCheckError {
             expected_size: verification_key_size(),
             actual_size: bytes.len(),
@@ -463,18 +463,18 @@ impl<'de> serde::Deserialize<'de> for PraosProof {
 impl DirectSerialise for PraosProof {
     fn direct_serialise(
         &self,
-        push: &mut dyn FnMut(*const u8, usize) -> DirectResult<()>,
+        push: &mut dyn FnMut(&[u8]) -> DirectResult<()>,
     ) -> DirectResult<()> {
-        push(self.bytes.as_ptr(), proof_size())
+        push(&self.bytes)
     }
 }
 
 impl DirectDeserialise for PraosProof {
     fn direct_deserialise(
-        pull: &mut dyn FnMut(*mut u8, usize) -> DirectResult<()>,
+        pull: &mut dyn FnMut(&mut [u8]) -> DirectResult<()>,
     ) -> DirectResult<Self> {
         let mut bytes = vec![0u8; proof_size()];
-        pull(bytes.as_mut_ptr(), proof_size())?;
+        pull(&mut bytes)?;
         Self::from_bytes(&bytes).map_err(|_| SizeCheckError {
             expected_size: proof_size(),
             actual_size: bytes.len(),

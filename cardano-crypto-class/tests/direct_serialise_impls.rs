@@ -7,7 +7,6 @@ use cardano_crypto_class::dsign::{DsignAlgorithm, DsignMAlgorithm};
 use cardano_crypto_class::mlocked_seed::MLockedSeed;
 use cardano_crypto_class::vrf::VRFAlgorithm;
 use cardano_crypto_class::vrf::praos::{PraosProof, PraosSeed, PraosVRF, PraosVerificationKey};
-use std::ptr::NonNull;
 
 #[test]
 fn test_ed25519_signature_direct_serialise_roundtrip() {
@@ -21,8 +20,7 @@ fn test_ed25519_signature_direct_serialise_roundtrip() {
 
     // Serialize using DirectSerialise
     let mut buffer = vec![0u8; Ed25519::SIGNATURE_SIZE];
-    let ptr = NonNull::new(buffer.as_mut_ptr()).unwrap();
-    let written = direct_serialise_buf(ptr, buffer.len(), &signature).unwrap();
+    let written = direct_serialise_buf(&mut buffer, &signature).unwrap();
 
     assert_eq!(
         written,
@@ -31,9 +29,7 @@ fn test_ed25519_signature_direct_serialise_roundtrip() {
     );
 
     // Deserialize using DirectDeserialise
-    let ptr = NonNull::new(buffer.as_mut_ptr()).unwrap();
-    let (deserialized, read): (Ed25519Signature, usize) =
-        direct_deserialise_buf(ptr, buffer.len()).unwrap();
+    let (deserialized, read): (Ed25519Signature, usize) = direct_deserialise_buf(&buffer).unwrap();
 
     assert_eq!(
         read,
@@ -57,8 +53,7 @@ fn test_ed25519_verification_key_direct_serialise_roundtrip() {
 
     // Serialize using DirectSerialise
     let mut buffer = vec![0u8; Ed25519::VERIFICATION_KEY_SIZE];
-    let ptr = NonNull::new(buffer.as_mut_ptr()).unwrap();
-    let written = direct_serialise_buf(ptr, buffer.len(), &vk).unwrap();
+    let written = direct_serialise_buf(&mut buffer, &vk).unwrap();
 
     assert_eq!(
         written,
@@ -67,9 +62,8 @@ fn test_ed25519_verification_key_direct_serialise_roundtrip() {
     );
 
     // Deserialize using DirectDeserialise
-    let ptr = NonNull::new(buffer.as_mut_ptr()).unwrap();
     let (deserialized, read): (Ed25519VerificationKey, usize) =
-        direct_deserialise_buf(ptr, buffer.len()).unwrap();
+        direct_deserialise_buf(&buffer).unwrap();
 
     assert_eq!(
         read,
@@ -92,12 +86,9 @@ fn test_direct_serialise_signature_can_verify() {
 
     // Serialize and deserialize signature
     let mut buffer = vec![0u8; Ed25519::SIGNATURE_SIZE];
-    let ptr = NonNull::new(buffer.as_mut_ptr()).unwrap();
-    direct_serialise_buf(ptr, buffer.len(), &signature).unwrap();
+    direct_serialise_buf(&mut buffer, &signature).unwrap();
 
-    let ptr = NonNull::new(buffer.as_mut_ptr()).unwrap();
-    let (deserialized_sig, _): (Ed25519Signature, usize) =
-        direct_deserialise_buf(ptr, buffer.len()).unwrap();
+    let (deserialized_sig, _): (Ed25519Signature, usize) = direct_deserialise_buf(&buffer).unwrap();
 
     // Verify the deserialized signature
     let verification = Ed25519::verify_bytes(&(), &vk, message, &deserialized_sig);
@@ -121,11 +112,8 @@ fn test_direct_serialise_deterministic() {
     let mut buffer1 = vec![0u8; Ed25519::SIGNATURE_SIZE];
     let mut buffer2 = vec![0u8; Ed25519::SIGNATURE_SIZE];
 
-    let ptr1 = NonNull::new(buffer1.as_mut_ptr()).unwrap();
-    let ptr2 = NonNull::new(buffer2.as_mut_ptr()).unwrap();
-
-    direct_serialise_buf(ptr1, buffer1.len(), &signature).unwrap();
-    direct_serialise_buf(ptr2, buffer2.len(), &signature).unwrap();
+    direct_serialise_buf(&mut buffer1, &signature).unwrap();
+    direct_serialise_buf(&mut buffer2, &signature).unwrap();
 
     assert_eq!(buffer1, buffer2, "DirectSerialise should be deterministic");
 }
@@ -142,8 +130,7 @@ fn test_direct_serialise_buffer_too_small() {
 
     // Try to serialize into a buffer that's too small
     let mut buffer = vec![0u8; Ed25519::SIGNATURE_SIZE - 1];
-    let ptr = NonNull::new(buffer.as_mut_ptr()).unwrap();
-    let result = direct_serialise_buf(ptr, buffer.len(), &signature);
+    let result = direct_serialise_buf(&mut buffer, &signature);
 
     assert!(result.is_err(), "Should fail with buffer too small");
 }
@@ -159,8 +146,7 @@ fn test_praos_verification_key_direct_serialise_roundtrip() {
 
     // Serialize verification key using DirectSerialise
     let mut buffer = vec![0u8; PraosVRF::VERIFICATION_KEY_SIZE];
-    let ptr = NonNull::new(buffer.as_mut_ptr()).unwrap();
-    let written = direct_serialise_buf(ptr, buffer.len(), &vk).unwrap();
+    let written = direct_serialise_buf(&mut buffer, &vk).unwrap();
 
     assert_eq!(
         written,
@@ -169,9 +155,8 @@ fn test_praos_verification_key_direct_serialise_roundtrip() {
     );
 
     // Deserialize using DirectDeserialise
-    let ptr = NonNull::new(buffer.as_mut_ptr()).unwrap();
     let (deserialized, read): (PraosVerificationKey, usize) =
-        direct_deserialise_buf(ptr, buffer.len()).unwrap();
+        direct_deserialise_buf(&buffer).unwrap();
 
     assert_eq!(
         read,
@@ -191,8 +176,7 @@ fn test_praos_proof_direct_serialise_roundtrip() {
 
     // Serialize proof using DirectSerialise
     let mut buffer = vec![0u8; PraosVRF::PROOF_SIZE];
-    let ptr = NonNull::new(buffer.as_mut_ptr()).unwrap();
-    let written = direct_serialise_buf(ptr, buffer.len(), &proof).unwrap();
+    let written = direct_serialise_buf(&mut buffer, &proof).unwrap();
 
     assert_eq!(
         written,
@@ -201,9 +185,7 @@ fn test_praos_proof_direct_serialise_roundtrip() {
     );
 
     // Deserialize using DirectDeserialise
-    let ptr = NonNull::new(buffer.as_mut_ptr()).unwrap();
-    let (deserialized, read): (PraosProof, usize) =
-        direct_deserialise_buf(ptr, buffer.len()).unwrap();
+    let (deserialized, read): (PraosProof, usize) = direct_deserialise_buf(&buffer).unwrap();
 
     assert_eq!(
         read,
@@ -227,12 +209,9 @@ fn test_praos_proof_direct_serialise_can_verify() {
 
     // Serialize and deserialize proof
     let mut buffer = vec![0u8; PraosVRF::PROOF_SIZE];
-    let ptr = NonNull::new(buffer.as_mut_ptr()).unwrap();
-    direct_serialise_buf(ptr, buffer.len(), &proof).unwrap();
+    direct_serialise_buf(&mut buffer, &proof).unwrap();
 
-    let ptr = NonNull::new(buffer.as_mut_ptr()).unwrap();
-    let (deserialized_proof, _): (PraosProof, usize) =
-        direct_deserialise_buf(ptr, buffer.len()).unwrap();
+    let (deserialized_proof, _): (PraosProof, usize) = direct_deserialise_buf(&buffer).unwrap();
 
     // Verify the deserialized proof
     let verified_output = PraosVRF::verify_bytes(&(), &vk, message, &deserialized_proof);
@@ -259,11 +238,8 @@ fn test_praos_direct_serialise_deterministic() {
     let mut buffer1 = vec![0u8; PraosVRF::PROOF_SIZE];
     let mut buffer2 = vec![0u8; PraosVRF::PROOF_SIZE];
 
-    let ptr1 = NonNull::new(buffer1.as_mut_ptr()).unwrap();
-    let ptr2 = NonNull::new(buffer2.as_mut_ptr()).unwrap();
-
-    direct_serialise_buf(ptr1, buffer1.len(), &proof).unwrap();
-    direct_serialise_buf(ptr2, buffer2.len(), &proof).unwrap();
+    direct_serialise_buf(&mut buffer1, &proof).unwrap();
+    direct_serialise_buf(&mut buffer2, &proof).unwrap();
 
     assert_eq!(buffer1, buffer2, "DirectSerialise should be deterministic");
 }

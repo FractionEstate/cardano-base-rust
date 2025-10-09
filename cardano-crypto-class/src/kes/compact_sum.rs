@@ -424,7 +424,7 @@ where
 {
     fn direct_serialise(
         &self,
-        push: &mut dyn FnMut(*const u8, usize) -> DirectResult<()>,
+        push: &mut dyn FnMut(&[u8]) -> DirectResult<()>,
     ) -> DirectResult<()> {
         // Serialize child signing key
         self.sk.direct_serialise(push)?;
@@ -432,11 +432,11 @@ where
         // Serialize r1_seed (mlocked seed for right subtree)
         if let Some(ref r1_seed) = self.r1_seed {
             let slice = r1_seed.as_slice();
-            push(slice.as_ptr(), slice.len())?;
+            push(slice)?;
         } else {
             // If r1_seed is None, serialize zero bytes
             let zero_bytes = vec![0u8; D::SEED_SIZE];
-            push(zero_bytes.as_ptr(), D::SEED_SIZE)?;
+            push(&zero_bytes)?;
         }
 
         // Serialize verification keys
@@ -456,7 +456,7 @@ where
     H: KesHashAlgorithm,
 {
     fn direct_deserialise(
-        pull: &mut dyn FnMut(*mut u8, usize) -> DirectResult<()>,
+        pull: &mut dyn FnMut(&mut [u8]) -> DirectResult<()>,
     ) -> DirectResult<Self> {
         // Deserialize child signing key
         let sk = D::SigningKey::direct_deserialise(pull)?;
@@ -470,7 +470,7 @@ where
         })?;
         {
             let slice = r1_mlocked.as_mut_slice();
-            pull(slice.as_mut_ptr(), D::SEED_SIZE)?;
+            pull(slice)?;
         }
 
         // Deserialize verification keys

@@ -20,11 +20,8 @@ fn test_single_kes_signing_key_direct_serialise_roundtrip() {
 
     // Serialize the signing key
     let mut serialized = Vec::new();
-    let mut push = |ptr: *const u8, len: usize| {
-        unsafe {
-            let slice = std::slice::from_raw_parts(ptr, len);
-            serialized.extend_from_slice(slice);
-        }
+    let mut push = |chunk: &[u8]| {
+        serialized.extend_from_slice(chunk);
         Ok(())
     };
     sk.direct_serialise(&mut push)
@@ -39,11 +36,10 @@ fn test_single_kes_signing_key_direct_serialise_roundtrip() {
 
     // Deserialize the signing key
     let mut offset = 0;
-    let mut pull = |ptr: *mut u8, len: usize| {
-        unsafe {
-            std::ptr::copy_nonoverlapping(serialized[offset..].as_ptr(), ptr, len);
-        }
-        offset += len;
+    let mut pull = |chunk: &mut [u8]| {
+        let end = offset + chunk.len();
+        chunk.copy_from_slice(&serialized[offset..end]);
+        offset = end;
         Ok(())
     };
 
@@ -80,11 +76,8 @@ fn test_compact_single_kes_signing_key_direct_serialise_roundtrip() {
 
     // Serialize the signing key
     let mut serialized = Vec::new();
-    let mut push = |ptr: *const u8, len: usize| {
-        unsafe {
-            let slice = std::slice::from_raw_parts(ptr, len);
-            serialized.extend_from_slice(slice);
-        }
+    let mut push = |chunk: &[u8]| {
+        serialized.extend_from_slice(chunk);
         Ok(())
     };
     sk.direct_serialise(&mut push)
@@ -99,11 +92,10 @@ fn test_compact_single_kes_signing_key_direct_serialise_roundtrip() {
 
     // Deserialize the signing key
     let mut offset = 0;
-    let mut pull = |ptr: *mut u8, len: usize| {
-        unsafe {
-            std::ptr::copy_nonoverlapping(serialized[offset..].as_ptr(), ptr, len);
-        }
-        offset += len;
+    let mut pull = |chunk: &mut [u8]| {
+        let end = offset + chunk.len();
+        chunk.copy_from_slice(&serialized[offset..end]);
+        offset = end;
         Ok(())
     };
 
@@ -142,11 +134,8 @@ fn test_single_kes_direct_serialise_security() {
         .expect("Failed to generate signing key");
 
     let mut serialized = Vec::new();
-    let mut push = |ptr: *const u8, len: usize| {
-        unsafe {
-            let slice = std::slice::from_raw_parts(ptr, len);
-            serialized.extend_from_slice(slice);
-        }
+    let mut push = |chunk: &[u8]| {
+        serialized.extend_from_slice(chunk);
         Ok(())
     };
     sk.direct_serialise(&mut push)

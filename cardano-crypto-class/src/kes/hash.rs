@@ -15,6 +15,7 @@ pub trait KesHashAlgorithm: Clone + Send + Sync + 'static {
 
     /// Hash two pieces of data concatenated together.
     /// Default implementation concatenates then hashes, but can be overridden for efficiency.
+    #[must_use]
     fn hash_concat(data1: &[u8], data2: &[u8]) -> Vec<u8> {
         let mut combined = Vec::with_capacity(data1.len() + data2.len());
         combined.extend_from_slice(data1);
@@ -27,6 +28,7 @@ pub trait KesHashAlgorithm: Clone + Send + Sync + 'static {
     /// Uses prefixes 1 and 2 to match Haskell cardano-base implementation:
     /// - r0 = hash(1 || seed)
     /// - r1 = hash(2 || seed)
+    #[must_use]
     fn expand_seed(seed: &[u8]) -> (Vec<u8>, Vec<u8>) {
         // Hash with different prefixes to get two independent seeds
         // Using 1 and 2 to match Haskell: BS.cons 1 and BS.cons 2

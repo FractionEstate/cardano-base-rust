@@ -34,7 +34,7 @@ use crate::{
 /// # Algorithm
 ///
 /// 1. Expand secret key using SHA-512
-/// 2. Clamp scalar (az[0] &= 248, az[31] &= 127|64)
+/// 2. Clamp scalar (az\[0\] &= 248, az\[31\] &= 127|64)
 /// 3. Hash to curve: H = hash_to_curve(suite || 0x01 || pk || msg)
 /// 4. Compute Gamma = x * H
 /// 5. Generate nonce k from hash(az[32..] || H)

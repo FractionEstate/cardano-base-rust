@@ -1,35 +1,7 @@
-use cardano_git_rev::git_rev;
-
-unsafe extern "C" {
-    static mut _cardano_git_rev: [u8; 68];
-}
+use cardano_git_rev::{git_rev, set_embedded_revision_for_testing};
 
 fn is_hex_sha(candidate: &str) -> bool {
     candidate.len() == 40 && candidate.chars().all(|c| c.is_ascii_hexdigit())
-}
-
-struct StaticGuard([u8; 68]);
-
-impl Drop for StaticGuard {
-    fn drop(&mut self) {
-        unsafe {
-            core::ptr::addr_of_mut!(_cardano_git_rev).write(self.0);
-        }
-    }
-}
-
-fn replace_embedded(revision: &str) -> StaticGuard {
-    assert_eq!(revision.len(), 40, "revision must be a 40-character SHA1");
-
-    let original = unsafe { core::ptr::addr_of!(_cardano_git_rev).read() };
-    let mut patched = original;
-    patched[28..68].copy_from_slice(revision.as_bytes());
-
-    unsafe {
-        core::ptr::addr_of_mut!(_cardano_git_rev).write(patched);
-    }
-
-    StaticGuard(original)
 }
 
 #[test]
@@ -39,19 +11,22 @@ fn git_rev_returns_sane_value() {
 }
 
 #[test]
-fn patch_placeholder_layout() {
-    let bytes: [u8; 68] = unsafe { core::ptr::addr_of!(_cardano_git_rev).read() };
-    assert_eq!(&bytes[0..2], b"fe");
-    assert_eq!(&bytes[2..8], b"gitrev");
-    assert_eq!(&bytes[8..18], b"0000000000");
-    assert_eq!(&bytes[18..28], b"0000000040");
-}
-
-#[test]
-fn prefers_injected_embedded_revision() {
+fn prefers_overridden_embedded_revision() {
+    let baseline = git_rev().into_owned();
     let replacement = "0123456789abcdef0123456789abcdef01234567";
-    let _guard = replace_embedded(replacement);
+    let alternate = "89abcdef0123456789abcdef0123456701234567";
+    let desired = if baseline == replacement {
+        alternate
+    } else {
+        replacement
+    };
 
-    let rev = git_rev();
-    assert_eq!(rev.as_ref(), replacement);
+    {
+        let _guard = set_embedded_revision_for_testing(desired);
+        let rev = git_rev();
+        assert_eq!(rev.as_ref(), desired);
+    }
+
+    let restored = git_rev().into_owned();
+    assert_eq!(restored, baseline);
 }

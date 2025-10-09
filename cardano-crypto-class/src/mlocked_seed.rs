@@ -113,20 +113,15 @@ impl<const N: usize> MLockedSeed<N> {
 }
 
 impl<const N: usize> DirectSerialise for MLockedSeed<N> {
-    fn direct_serialise(
-        &self,
-        f: &mut dyn FnMut(*const u8, usize) -> DirectResult<()>,
-    ) -> DirectResult<()> {
-        self.bytes.with_c_ptr(|ptr| f(ptr, N))
+    fn direct_serialise(&self, f: &mut dyn FnMut(&[u8]) -> DirectResult<()>) -> DirectResult<()> {
+        f(self.as_bytes())
     }
 }
 
 impl<const N: usize> DirectDeserialise for MLockedSeed<N> {
-    fn direct_deserialise(
-        f: &mut dyn FnMut(*mut u8, usize) -> DirectResult<()>,
-    ) -> DirectResult<Self> {
+    fn direct_deserialise(f: &mut dyn FnMut(&mut [u8]) -> DirectResult<()>) -> DirectResult<Self> {
         let mut seed = Self::new_zeroed().expect("failed to allocate mlocked seed");
-        seed.bytes.with_c_ptr_mut(|ptr| f(ptr, N))?;
+        f(seed.as_mut_bytes())?;
         Ok(seed)
     }
 }
@@ -135,7 +130,6 @@ impl<const N: usize> DirectDeserialise for MLockedSeed<N> {
 mod tests {
     use super::*;
     use crate::direct_serialise::{direct_deserialise_buf_checked, direct_serialise_buf_checked};
-    use std::ptr::NonNull;
 
     #[test]
     fn random_seed_has_content() {
@@ -148,12 +142,10 @@ mod tests {
         let mut seed = MLockedSeed::<16>::new_zeroed().unwrap();
         seed.as_mut_bytes().copy_from_slice(b"0123456789abcdef");
         let mut buffer = [0u8; 16];
-        let nn = NonNull::new(buffer.as_mut_ptr()).unwrap();
-        direct_serialise_buf_checked(nn, buffer.len(), &seed).unwrap();
+        direct_serialise_buf_checked(&mut buffer, &seed).unwrap();
         assert_eq!(&buffer, b"0123456789abcdef");
 
-        let roundtrip =
-            direct_deserialise_buf_checked::<MLockedSeed<16>>(nn, buffer.len()).unwrap();
+        let roundtrip = direct_deserialise_buf_checked::<MLockedSeed<16>>(&buffer).unwrap();
         assert_eq!(roundtrip.as_bytes(), seed.as_bytes());
     }
 }

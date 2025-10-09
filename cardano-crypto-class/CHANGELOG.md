@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+* Replaced the pointer-based `DirectSerialise`/`DirectDeserialise` callbacks with
+  slice-based closures, mirroring the safe interface exposed by Haskell’s
+  `Cardano.Crypto.DirectSerialise`. This removes the remaining `unsafe`
+  plumbing in DSIGN, KES, and Praos VRF direct-serialise paths and updates the
+  regression harnesses to exercise the new API surface.
 * Added `hash::blake2b224` and the accompanying `Blake2b224` helper to mirror
   `Cardano.Crypto.Hash.Blake2b_224`, expanded the hash vector corpus (and
   regression tests) with 224-bit digests, wired the new variant into the

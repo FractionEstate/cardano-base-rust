@@ -1,0 +1,8 @@
+    Checking cardano-vrf-pure v0.1.0 (/workspaces/cardano-base-rust/cardano-vrf-pure)
+ Documenting cardano-vrf-pure v0.1.0 (/workspaces/cardano-base-rust/cardano-vrf-pure)
+    Checking cardano-crypto-class v0.1.0 (/workspaces/cardano-base-rust/cardano-crypto-class)
+    Checking cardano-test-vectors v0.1.0 (/workspaces/cardano-base-rust/cardano-test-vectors)
+ Documenting cardano-test-vectors v0.1.0 (/workspaces/cardano-base-rust/cardano-test-vectors)
+ Documenting cardano-crypto-class v0.1.0 (/workspaces/cardano-base-rust/cardano-crypto-class)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.15s
+   Generated /workspaces/cardano-base-rust/target/doc/base_deriving_via/index.html and 18 other files

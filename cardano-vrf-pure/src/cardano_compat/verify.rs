@@ -116,7 +116,7 @@ pub fn cardano_vrf_verify(
     let c_hash = c_hasher.finalize();
 
     // Step 6: Verify challenge matches
-    if &c_hash[0..16] != c_bytes_short {
+    if c_hash[0..16] != c_bytes_short {
         return Err(VrfError::VerificationFailed);
     }
 

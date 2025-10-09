@@ -45,10 +45,10 @@ impl Ed25519MLockedSigningKey {
 impl DirectSerialise for Ed25519MLockedSigningKey {
     fn direct_serialise(
         &self,
-        push: &mut dyn FnMut(*const u8, usize) -> DirectResult<()>,
+        push: &mut dyn FnMut(&[u8]) -> DirectResult<()>,
     ) -> DirectResult<()> {
         let mut seed = self.seed_bytes();
-        let result = push(seed.as_ptr(), SEED_BYTES);
+        let result = push(&seed);
         seed.fill(0);
         result
     }
@@ -56,7 +56,7 @@ impl DirectSerialise for Ed25519MLockedSigningKey {
 
 impl DirectDeserialise for Ed25519MLockedSigningKey {
     fn direct_deserialise(
-        pull: &mut dyn FnMut(*mut u8, usize) -> DirectResult<()>,
+        pull: &mut dyn FnMut(&mut [u8]) -> DirectResult<()>,
     ) -> DirectResult<Self> {
         let mut seed = MLockedSeed::<SEED_BYTES>::new_zeroed().map_err(|_| SizeCheckError {
             expected_size: SEED_BYTES,
@@ -64,7 +64,7 @@ impl DirectDeserialise for Ed25519MLockedSigningKey {
         })?;
         {
             let slice = seed.as_mut_bytes();
-            pull(slice.as_mut_ptr(), SEED_BYTES)?;
+            pull(slice)?;
         }
         let signing_key =
             Ed25519MLockedSigningKey::from_seed(&seed).map_err(|_| SizeCheckError {

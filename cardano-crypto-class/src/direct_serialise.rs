@@ -6,7 +6,6 @@
 //! buffer sizes.
 
 use std::cell::Cell;
-use std::ptr::NonNull;
 
 use thiserror::Error;
 
@@ -25,18 +24,13 @@ pub type DirectResult<T> = Result<T, SizeCheckError>;
 /// Trait for types that can expose their internal representation as raw
 /// memory blocks for serialisation.
 pub trait DirectSerialise {
-    fn direct_serialise(
-        &self,
-        f: &mut dyn FnMut(*const u8, usize) -> DirectResult<()>,
-    ) -> DirectResult<()>;
+    fn direct_serialise(&self, f: &mut dyn FnMut(&[u8]) -> DirectResult<()>) -> DirectResult<()>;
 }
 
 /// Trait for types that can be reconstructed from raw memory blocks during
 /// deserialisation.
 pub trait DirectDeserialise: Sized {
-    fn direct_deserialise(
-        f: &mut dyn FnMut(*mut u8, usize) -> DirectResult<()>,
-    ) -> DirectResult<Self>;
+    fn direct_deserialise(f: &mut dyn FnMut(&mut [u8]) -> DirectResult<()>) -> DirectResult<Self>;
 }
 
 /// Helper that writes into a destination buffer, ensuring no more than
@@ -46,13 +40,14 @@ pub trait DirectDeserialise: Sized {
 ///
 /// Returns an error if more than `dst_len` bytes are written.
 pub fn direct_serialise_to<T: DirectSerialise>(
-    mut write: impl FnMut(usize, *const u8, usize) -> DirectResult<()>,
+    mut write: impl FnMut(usize, &[u8]) -> DirectResult<()>,
     dst_len: usize,
     value: &T,
 ) -> DirectResult<usize> {
     let pos = Cell::new(0usize);
 
-    value.direct_serialise(&mut |ptr, len| {
+    value.direct_serialise(&mut |chunk| {
+        let len = chunk.len();
         let current = pos.get();
         let next = current + len;
         if next > dst_len {
@@ -61,7 +56,7 @@ pub fn direct_serialise_to<T: DirectSerialise>(
                 actual_size: next - current,
             });
         }
-        write(current, ptr, len)?;
+        write(current, chunk)?;
         pos.set(next);
         Ok(())
     })?;
@@ -77,7 +72,7 @@ pub fn direct_serialise_to<T: DirectSerialise>(
 /// - More than `dst_len` bytes are written
 /// - Fewer than `dst_len` bytes are written
 pub fn direct_serialise_to_checked<T: DirectSerialise>(
-    write: impl FnMut(usize, *const u8, usize) -> DirectResult<()>,
+    write: impl FnMut(usize, &[u8]) -> DirectResult<()>,
     dst_len: usize,
     value: &T,
 ) -> DirectResult<()> {
@@ -97,21 +92,13 @@ pub fn direct_serialise_to_checked<T: DirectSerialise>(
 /// # Errors
 ///
 /// Returns an error if more than `dst_len` bytes are written.
-pub fn direct_serialise_buf<T: DirectSerialise>(
-    dst: NonNull<u8>,
-    dst_len: usize,
-    value: &T,
-) -> DirectResult<usize> {
-    let base = dst.as_ptr();
+pub fn direct_serialise_buf<T: DirectSerialise>(dst: &mut [u8], value: &T) -> DirectResult<usize> {
+    let dst_len = dst.len();
     direct_serialise_to(
-        |offset, src, len| {
-            // SAFETY: Caller guarantees dst is valid for dst_len bytes.
-            // offset + len <= dst_len is verified by direct_serialise_to.
-            // src is valid for len bytes (provided by value.direct_serialise).
-            unsafe {
-                std::ptr::copy_nonoverlapping(src, base.add(offset), len);
-                Ok(())
-            }
+        |offset, chunk| {
+            let end = offset + chunk.len();
+            dst[offset..end].copy_from_slice(chunk);
+            Ok(())
         },
         dst_len,
         value,
@@ -126,19 +113,15 @@ pub fn direct_serialise_buf<T: DirectSerialise>(
 /// - More than `dst_len` bytes are written
 /// - Fewer than `dst_len` bytes are written
 pub fn direct_serialise_buf_checked<T: DirectSerialise>(
-    dst: NonNull<u8>,
-    dst_len: usize,
+    dst: &mut [u8],
     value: &T,
 ) -> DirectResult<()> {
+    let dst_len = dst.len();
     direct_serialise_to_checked(
-        |offset, src, len| {
-            // SAFETY: Caller guarantees dst is valid for dst_len bytes.
-            // offset + len <= dst_len is verified by direct_serialise_to_checked.
-            // src is valid for len bytes (provided by value.direct_serialise).
-            unsafe {
-                std::ptr::copy_nonoverlapping(src, dst.as_ptr().add(offset), len);
-                Ok(())
-            }
+        |offset, chunk| {
+            let end = offset + chunk.len();
+            dst[offset..end].copy_from_slice(chunk);
+            Ok(())
         },
         dst_len,
         value,
@@ -153,12 +136,13 @@ pub fn direct_serialise_buf_checked<T: DirectSerialise>(
 ///
 /// Returns an error if more than `src_len` bytes are read.
 pub fn direct_deserialise_from<T: DirectDeserialise>(
-    mut read: impl FnMut(usize, *mut u8, usize) -> DirectResult<()>,
+    mut read: impl FnMut(usize, &mut [u8]) -> DirectResult<()>,
     src_len: usize,
 ) -> DirectResult<(T, usize)> {
     let pos = Cell::new(0usize);
 
-    let value = T::direct_deserialise(&mut |ptr, len| {
+    let value = T::direct_deserialise(&mut |chunk| {
+        let len = chunk.len();
         let current = pos.get();
         let next = current + len;
         if next > src_len {
@@ -167,7 +151,7 @@ pub fn direct_deserialise_from<T: DirectDeserialise>(
                 actual_size: next - current,
             });
         }
-        read(current, ptr, len)?;
+        read(current, chunk)?;
         pos.set(next);
         Ok(())
     })?;
@@ -183,7 +167,7 @@ pub fn direct_deserialise_from<T: DirectDeserialise>(
 /// - More than `src_len` bytes are read
 /// - Fewer than `src_len` bytes are read
 pub fn direct_deserialise_from_checked<T: DirectDeserialise>(
-    read: impl FnMut(usize, *mut u8, usize) -> DirectResult<()>,
+    read: impl FnMut(usize, &mut [u8]) -> DirectResult<()>,
     src_len: usize,
 ) -> DirectResult<T> {
     let (value, read_len) = direct_deserialise_from(read, src_len)?;
@@ -202,22 +186,14 @@ pub fn direct_deserialise_from_checked<T: DirectDeserialise>(
 /// # Errors
 ///
 /// Returns an error if more than `src_len` bytes are read.
-pub fn direct_deserialise_buf<T: DirectDeserialise>(
-    src: NonNull<u8>,
-    src_len: usize,
-) -> DirectResult<(T, usize)> {
-    let base = src.as_ptr();
+pub fn direct_deserialise_buf<T: DirectDeserialise>(src: &[u8]) -> DirectResult<(T, usize)> {
     direct_deserialise_from(
-        |offset, dst, len| {
-            // SAFETY: Caller guarantees src is valid for src_len bytes.
-            // offset + len <= src_len is verified by direct_deserialise_from.
-            // dst is valid for len bytes (provided by T::direct_deserialise).
-            unsafe {
-                std::ptr::copy_nonoverlapping(base.add(offset), dst, len);
-                Ok(())
-            }
+        |offset, dst| {
+            let end = offset + dst.len();
+            dst.copy_from_slice(&src[offset..end]);
+            Ok(())
         },
-        src_len,
+        src.len(),
     )
 }
 
@@ -228,21 +204,14 @@ pub fn direct_deserialise_buf<T: DirectDeserialise>(
 /// Returns an error if:
 /// - More than `src_len` bytes are read
 /// - Fewer than `src_len` bytes are read
-pub fn direct_deserialise_buf_checked<T: DirectDeserialise>(
-    src: NonNull<u8>,
-    src_len: usize,
-) -> DirectResult<T> {
+pub fn direct_deserialise_buf_checked<T: DirectDeserialise>(src: &[u8]) -> DirectResult<T> {
     direct_deserialise_from_checked(
-        |offset, dst, len| {
-            // SAFETY: Caller guarantees src is valid for src_len bytes.
-            // offset + len <= src_len is verified by direct_deserialise_from_checked.
-            // dst is valid for len bytes (provided by T::direct_deserialise).
-            unsafe {
-                std::ptr::copy_nonoverlapping(src.as_ptr().add(offset), dst, len);
-                Ok(())
-            }
+        |offset, dst| {
+            let end = offset + dst.len();
+            dst.copy_from_slice(&src[offset..end]);
+            Ok(())
         },
-        src_len,
+        src.len(),
     )
 }
 
@@ -256,21 +225,21 @@ mod tests {
     impl DirectSerialise for Pair {
         fn direct_serialise(
             &self,
-            f: &mut dyn FnMut(*const u8, usize) -> DirectResult<()>,
+            f: &mut dyn FnMut(&[u8]) -> DirectResult<()>,
         ) -> DirectResult<()> {
-            f(self.0.as_ptr(), self.0.len())?;
-            f(self.1.as_ptr(), self.1.len())
+            f(&self.0)?;
+            f(&self.1)
         }
     }
 
     impl DirectDeserialise for Pair {
         fn direct_deserialise(
-            f: &mut dyn FnMut(*mut u8, usize) -> DirectResult<()>,
+            f: &mut dyn FnMut(&mut [u8]) -> DirectResult<()>,
         ) -> DirectResult<Self> {
             let mut first = [0u8; 4];
             let mut second = [0u8; 4];
-            f(first.as_mut_ptr(), first.len())?;
-            f(second.as_mut_ptr(), second.len())?;
+            f(&mut first)?;
+            f(&mut second)?;
             Ok(Pair(first, second))
         }
     }
@@ -279,11 +248,10 @@ mod tests {
     fn serialise_to_buffer_roundtrip() {
         let pair = Pair(*b"ABCD", *b"WXYZ");
         let mut buffer = [0u8; 8];
-        let nn = NonNull::new(buffer.as_mut_ptr()).unwrap();
-        direct_serialise_buf_checked(nn, buffer.len(), &pair).unwrap();
+        direct_serialise_buf_checked(&mut buffer, &pair).unwrap();
         assert_eq!(&buffer, b"ABCDWXYZ");
 
-        let (decoded, read) = direct_deserialise_buf::<Pair>(nn, buffer.len()).unwrap();
+        let (decoded, read) = direct_deserialise_buf::<Pair>(&buffer).unwrap();
         assert_eq!(read, buffer.len());
         assert_eq!(decoded, pair);
     }
@@ -292,8 +260,7 @@ mod tests {
     fn serialise_size_mismatch_errors() {
         let pair = Pair(*b"AAAA", *b"BBBB");
         let mut buf = [0u8; 4];
-        let nn = NonNull::new(buf.as_mut_ptr()).unwrap();
-        let err = direct_serialise_buf(nn, buf.len(), &pair).unwrap_err();
+        let err = direct_serialise_buf(&mut buf, &pair).unwrap_err();
         assert_eq!(
             err,
             SizeCheckError {
@@ -305,9 +272,8 @@ mod tests {
 
     #[test]
     fn deserialise_size_mismatch_errors() {
-        let mut buf = [0u8; 4];
-        let nn = NonNull::new(buf.as_mut_ptr()).unwrap();
-        let err = direct_deserialise_buf_checked::<Pair>(nn, buf.len()).unwrap_err();
+        let buf = [0u8; 4];
+        let err = direct_deserialise_buf_checked::<Pair>(&buf).unwrap_err();
         assert_eq!(
             err,
             SizeCheckError {

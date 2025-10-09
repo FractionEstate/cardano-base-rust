@@ -94,19 +94,18 @@ impl<'de> serde::Deserialize<'de> for Ed25519VerificationKey {
 impl DirectSerialise for Ed25519VerificationKey {
     fn direct_serialise(
         &self,
-        push: &mut dyn FnMut(*const u8, usize) -> DirectResult<()>,
+        push: &mut dyn FnMut(&[u8]) -> DirectResult<()>,
     ) -> DirectResult<()> {
-        self.0.with_c_ptr(|ptr| push(ptr, VERIFICATION_KEY_BYTES))
+        push(self.0.as_bytes())
     }
 }
 
 impl DirectDeserialise for Ed25519VerificationKey {
     fn direct_deserialise(
-        pull: &mut dyn FnMut(*mut u8, usize) -> DirectResult<()>,
+        pull: &mut dyn FnMut(&mut [u8]) -> DirectResult<()>,
     ) -> DirectResult<Self> {
-        let (bytes, result) = PinnedSizedBytes::<VERIFICATION_KEY_BYTES>::create_result(|ptr| {
-            pull(ptr, VERIFICATION_KEY_BYTES)
-        });
+        let (bytes, result) =
+            PinnedSizedBytes::<VERIFICATION_KEY_BYTES>::create_result_with_slice(|buf| pull(buf));
         result?;
         Ed25519VerificationKey::from_bytes(bytes.as_bytes()).ok_or(SizeCheckError {
             expected_size: VERIFICATION_KEY_BYTES,
@@ -238,18 +237,18 @@ impl<'de> serde::Deserialize<'de> for Ed25519Signature {
 impl DirectSerialise for Ed25519Signature {
     fn direct_serialise(
         &self,
-        push: &mut dyn FnMut(*const u8, usize) -> DirectResult<()>,
+        push: &mut dyn FnMut(&[u8]) -> DirectResult<()>,
     ) -> DirectResult<()> {
-        self.0.with_c_ptr(|ptr| push(ptr, SIGNATURE_BYTES))
+        push(self.as_bytes())
     }
 }
 
 impl DirectDeserialise for Ed25519Signature {
     fn direct_deserialise(
-        pull: &mut dyn FnMut(*mut u8, usize) -> DirectResult<()>,
+        pull: &mut dyn FnMut(&mut [u8]) -> DirectResult<()>,
     ) -> DirectResult<Self> {
         let (bytes, result) =
-            PinnedSizedBytes::<SIGNATURE_BYTES>::create_result(|ptr| pull(ptr, SIGNATURE_BYTES));
+            PinnedSizedBytes::<SIGNATURE_BYTES>::create_result_with_slice(|buf| pull(buf));
         result?;
         let mut array = [0u8; SIGNATURE_BYTES];
         array.copy_from_slice(bytes.as_bytes());

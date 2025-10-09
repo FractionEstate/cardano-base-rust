@@ -271,6 +271,9 @@ Bring the Rust DSIGN (Digital Signature) implementations to 100% functional pari
     - Introduced `ed25519-debug` feature with `CARDANO_ED25519_DEBUG` env toggle to mirror VRF debugging strategy
     - Added debug trace and performance harnesses (`tests/debug_ed25519_trace.rs`, `tests/performance.rs`) aligning with `cardano-vrf-pure`
     - Verified vectors via `cargo test -p cardano-test-vectors` (all passing)
+  - **2025-10-08**: Tightened DSIGN direct-serialise APIs by switching pointer callbacks to
+    safe slice closures, eliminating the last `unsafe` usage in Ed25519 direct serialisation and
+    updating all regression suites to exercise the new interface.
 
 ---
 

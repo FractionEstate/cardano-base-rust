@@ -29,6 +29,7 @@ pub use crate::kes::hash::{Blake2b224, Blake2b256, Blake2b512};
 /// SHA-256 hash (32 bytes output).
 ///
 /// Used extensively in Bitcoin for transaction hashing, block mining, and address generation.
+#[must_use]
 pub fn sha256(data: &[u8]) -> [u8; 32] {
     let mut hasher = Sha256::new();
     hasher.update(data);
@@ -39,6 +40,7 @@ pub fn sha256(data: &[u8]) -> [u8; 32] {
 ///
 /// Common pattern in Bitcoin: `SHA256(SHA256(data))`.
 /// Used for transaction IDs and block hashing.
+#[must_use]
 pub fn sha256d(data: &[u8]) -> [u8; 32] {
     sha256(&sha256(data))
 }
@@ -46,6 +48,7 @@ pub fn sha256d(data: &[u8]) -> [u8; 32] {
 /// SHA-512 hash (64 bytes output).
 ///
 /// General purpose cryptographic hash with longer output.
+#[must_use]
 pub fn sha512(data: &[u8]) -> [u8; 64] {
     let mut hasher = Sha512::new();
     hasher.update(data);
@@ -56,6 +59,7 @@ pub fn sha512(data: &[u8]) -> [u8; 64] {
 ///
 /// Keccak-based standardized hash function.
 /// Used in Ethereum 2.0 and various modern protocols.
+#[must_use]
 pub fn sha3_256(data: &[u8]) -> [u8; 32] {
     let mut hasher = Sha3_256::new();
     hasher.update(data);
@@ -65,6 +69,7 @@ pub fn sha3_256(data: &[u8]) -> [u8; 32] {
 /// SHA3-512 hash (64 bytes output).
 ///
 /// Keccak-based standardized hash function with longer output.
+#[must_use]
 pub fn sha3_512(data: &[u8]) -> [u8; 64] {
     let mut hasher = Sha3_512::new();
     hasher.update(data);
@@ -75,6 +80,7 @@ pub fn sha3_512(data: &[u8]) -> [u8; 64] {
 ///
 /// Original Keccak algorithm before NIST standardization.
 /// Used in Ethereum 1.0 for transaction hashing and address generation.
+#[must_use]
 pub fn keccak256(data: &[u8]) -> [u8; 32] {
     let mut hasher = Keccak256::new();
     hasher.update(data);
@@ -84,6 +90,7 @@ pub fn keccak256(data: &[u8]) -> [u8; 32] {
 /// RIPEMD-160 hash (20 bytes output).
 ///
 /// Used in Bitcoin address generation: `RIPEMD160(SHA256(pubkey))`.
+#[must_use]
 pub fn ripemd160(data: &[u8]) -> [u8; 20] {
     let mut hasher = Ripemd160::new();
     hasher.update(data);
@@ -93,6 +100,7 @@ pub fn ripemd160(data: &[u8]) -> [u8; 20] {
 /// Bitcoin-style address hash: `RIPEMD160(SHA256(data))`.
 ///
 /// Used in Bitcoin P2PKH address generation.
+#[must_use]
 pub fn hash160(data: &[u8]) -> [u8; 20] {
     ripemd160(&sha256(data))
 }
@@ -102,6 +110,7 @@ pub fn hash160(data: &[u8]) -> [u8; 20] {
 /// Cardano uses this digest size when hashing verification keys during address
 /// construction. The variant matches `Cardano.Crypto.Hash.Blake2b_224` by
 /// fixing the output length to 224 bits without truncating a longer digest.
+#[must_use]
 pub fn blake2b224(data: &[u8]) -> [u8; 28] {
     let mut hasher = Blake2b::<U28>::new();
     hasher.update(data);
@@ -113,6 +122,7 @@ pub fn blake2b224(data: &[u8]) -> [u8; 28] {
 /// Returns `false` if the inputs differ in length. When lengths match, the
 /// comparison is performed in constant time using `subtle::ConstantTimeEq` to
 /// avoid data-dependent early exits.
+#[must_use]
 pub fn constant_time_eq(lhs: &[u8], rhs: &[u8]) -> bool {
     if lhs.len() != rhs.len() {
         return false;

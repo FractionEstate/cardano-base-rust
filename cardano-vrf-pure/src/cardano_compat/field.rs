@@ -8,7 +8,7 @@
 //!
 //! Field elements are represented as `FieldElement([i64; 10])` where:
 //! - Limbs alternate between 26 and 25 bits
-//! - Element value = Σ(limb[i] * 2^(26*⌊i/2⌋ + 25*⌈i/2⌉))
+//! - Element value = Σ(limb\[i\] * 2^(26*⌊i/2⌋ + 25*⌈i/2⌉))
 //!
 //! # Operations
 //!
@@ -47,6 +47,7 @@ impl FieldElement {
     /// assert_eq!(zero.0[0], 0);
     /// ```
     #[inline]
+    #[must_use]
     pub const fn zero() -> Self {
         FieldElement([0; 10])
     }
@@ -61,6 +62,7 @@ impl FieldElement {
     /// assert_eq!(one.0[0], 1);
     /// ```
     #[inline]
+    #[must_use]
     pub const fn one() -> Self {
         let mut fe = [0i64; 10];
         fe[0] = 1;
@@ -87,6 +89,7 @@ impl FieldElement {
     /// let bytes = [0u8; 32];
     /// let fe = FieldElement::from_bytes(&bytes);
     /// ```
+    #[must_use]
     pub fn from_bytes(bytes: &[u8; 32]) -> Self {
         #[inline(always)]
         fn load3(input: &[u8]) -> i64 {
@@ -152,10 +155,7 @@ impl FieldElement {
         h9 += carry8;
         h8 -= carry8 << 26;
 
-        FieldElement([
-            h0 as i64, h1 as i64, h2 as i64, h3 as i64, h4 as i64, h5 as i64, h6 as i64, h7 as i64,
-            h8 as i64, h9 as i64,
-        ])
+        FieldElement([h0, h1, h2, h3, h4, h5, h6, h7, h8, h9])
     }
 
     /// Convert field element to 32 bytes (little-endian)
@@ -175,6 +175,7 @@ impl FieldElement {
     /// let bytes = fe.to_bytes();
     /// assert_eq!(bytes[0], 1);
     /// ```
+    #[must_use]
     pub fn to_bytes(&self) -> [u8; 32] {
         // Start from a reduced representation to keep limb ranges small
         let h = self.reduce().0;
@@ -243,7 +244,7 @@ impl FieldElement {
         h1 -= carry1 << 25;
 
         let mut s = [0u8; 32];
-        s[0] = (h0 >> 0) as u8;
+        s[0] = h0 as u8;
         s[1] = (h0 >> 8) as u8;
         s[2] = (h0 >> 16) as u8;
         s[3] = ((h0 >> 24) | (h1 << 2)) as u8;
@@ -259,7 +260,7 @@ impl FieldElement {
         s[13] = (h4 >> 2) as u8;
         s[14] = (h4 >> 10) as u8;
         s[15] = (h4 >> 18) as u8;
-        s[16] = (h5 >> 0) as u8;
+        s[16] = h5 as u8;
         s[17] = (h5 >> 8) as u8;
         s[18] = (h5 >> 16) as u8;
         s[19] = ((h5 >> 24) | (h6 << 1)) as u8;
@@ -287,6 +288,7 @@ impl FieldElement {
     /// # Returns
     ///
     /// Reduced field element with normalized limbs
+    #[must_use]
     pub fn reduce(&self) -> Self {
         let mut h = self.0;
         let mut carry: i64;
@@ -357,6 +359,7 @@ impl FieldElement {
     ///
     /// The squared field element
     #[inline]
+    #[must_use]
     pub fn square(&self) -> Self {
         *self * *self
     }
@@ -369,6 +372,7 @@ impl FieldElement {
     ///
     /// 2 * self^2
     #[inline]
+    #[must_use]
     pub fn square2(&self) -> Self {
         let sq = self.square();
         sq + sq
@@ -475,6 +479,7 @@ impl FieldElement {
     /// # Returns
     ///
     /// `true` if the element has a square root, `false` otherwise
+    #[must_use]
     pub fn is_square(&self) -> bool {
         let x = self.reduce();
         if x.is_zero() {
@@ -531,6 +536,7 @@ impl FieldElement {
     /// # Returns
     ///
     /// `Some(sqrt)` if square root exists, `None` otherwise
+    #[must_use]
     pub fn sqrt(&self) -> Option<Self> {
         let a = self.reduce();
         if a.is_zero() {
@@ -555,6 +561,7 @@ impl FieldElement {
     /// # Returns
     ///
     /// The multiplicative inverse
+    #[must_use]
     pub fn invert(&self) -> Self {
         let (t19, t3) = self.pow22501();
         let t20 = t19.pow2k(5);
@@ -575,6 +582,7 @@ impl FieldElement {
     ///
     /// `a` if `choice == 1`, `b` if `choice == 0`
     #[inline]
+    #[must_use]
     pub fn conditional_select(a: &Self, b: &Self, choice: u8) -> Self {
         let mask = -(choice as i64);
         let mut result = [0i64; 10];
@@ -610,6 +618,7 @@ impl FieldElement {
     /// # Returns
     ///
     /// `true` if the element is zero, `false` otherwise
+    #[must_use]
     pub fn is_zero(&self) -> bool {
         let reduced = self.reduce();
         let bytes = reduced.to_bytes();
@@ -624,6 +633,7 @@ impl FieldElement {
     /// # Returns
     ///
     /// `true` if negative, `false` otherwise
+    #[must_use]
     pub fn is_negative(&self) -> bool {
         let bytes = self.to_bytes();
         (bytes[0] & 1) == 1

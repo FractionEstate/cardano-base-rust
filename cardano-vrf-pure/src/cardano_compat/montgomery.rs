@@ -53,6 +53,7 @@ fn montgomery_a_fe() -> FieldElement {
 ///
 /// The key insight: If v^3 + Av^2 + v is a QR, use x=v; otherwise x=-v-A.
 /// This ensures at least one of these x values will have a corresponding y.
+#[must_use]
 pub fn elligator2(r: &[u8; 32]) -> Option<FieldElement> {
     let a_fe = montgomery_a_fe();
     let r_fe = FieldElement::from_bytes(r);
@@ -128,6 +129,7 @@ pub fn elligator2(r: &[u8; 32]) -> Option<FieldElement> {
 /// Returns (x, y, notsquare) where (x,y) are Montgomery coordinates and
 /// notsquare indicates whether the first candidate gx1 was a nonsquare
 /// (i.e. 1 if gx1 not square, 0 if square) exactly like C sets notsquare.
+#[must_use]
 pub fn ge25519_elligator2_faithful(r: &FieldElement) -> (FieldElement, FieldElement, u8) {
     // Mirrors C:
     // cardano_fe25519_sq2(rr2, r); rr2[0]++; invert; x = -A * rr2; (neg afterwards) etc.
@@ -209,6 +211,7 @@ fn is_quadratic_residue(value: &FieldElement) -> bool {
 /// For Curve25519/Ed25519 conversion:
 /// - x = sqrt(-486664) * u / v
 /// - y = (u - 1) / (u + 1)
+#[must_use]
 pub fn mont_to_edwards(
     mont_u: &FieldElement,
     mont_v: &FieldElement,
@@ -236,6 +239,7 @@ pub fn mont_to_edwards(
 
 /// Faithful port of libsodium/cardano C ge25519_mont_to_ed
 /// Input: Montgomery (x,y) -> Output: Edwards (X,Y)
+#[must_use]
 pub fn ge25519_mont_to_ed_faithful(
     x: &FieldElement,
     y: &FieldElement,
@@ -306,6 +310,7 @@ fn fe_hex(fe: &FieldElement) -> String {
 /// # Formula
 ///
 /// Solves By^2 = x^3 + Ax^2 + x for y where B = 1, A = 486662
+#[must_use]
 pub fn xmont_to_ymont(x: &FieldElement, sign: u8) -> Option<FieldElement> {
     // Compute x^2
     let x2 = x.square().reduce();

@@ -103,6 +103,9 @@ Cardano node can switch to the Rust primitives without behavioural drift.
             `0x00` byte to `proof_to_hash` and re-running all `cardano-vrf-pure` tests. Verified
             both draft-03 and draft-13 official vectors now pass after the ref10 multiplication
             update.
+      - _08-10-2025-time-11:20_: Migrated Praos direct-serialise callbacks to safe slice-based
+            closures (mirroring `Cardano.Crypto.DirectSerialise`), removing the remaining pointer
+            plumbing and keeping all VRF regression suites green.
 
 ## Dependencies & references
 - Haskell source: <https://github.com/IntersectMBO/cardano-base/tree/master>

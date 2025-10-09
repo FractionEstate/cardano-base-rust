@@ -54,6 +54,7 @@ pub(crate) fn record_update() {
 
 /// Obtain a metrics snapshot. With the feature disabled this returns zeros.
 #[inline]
+#[must_use]
 pub fn snapshot() -> KesMetrics {
     #[cfg(feature = "kes-metrics")]
     {

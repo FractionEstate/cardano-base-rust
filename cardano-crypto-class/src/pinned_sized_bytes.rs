@@ -105,8 +105,7 @@ impl<const N: usize> PinnedSizedBytes<N> {
 
     /// Run `f` with a sized pointer wrapper mirroring the Haskell API.
     pub fn with_sized_ptr<R>(&self, f: impl FnOnce(SizedPtr<'_, N>) -> R) -> R {
-        // SAFETY: the pointer originates from a valid allocation.
-        let ptr = unsafe { NonNull::new_unchecked(self.data.as_ptr() as *mut u8) };
+        let ptr = NonNull::from(&*self.data).cast::<u8>();
         f(SizedPtr::new(ptr))
     }
 
@@ -118,18 +117,25 @@ impl<const N: usize> PinnedSizedBytes<N> {
         (Self { data }, result)
     }
 
-    /// Variant of [`create_result`] that also passes the buffer length.
+    /// Variant of [\`create_result\`] that also passes the buffer length.
     pub fn create_result_len<R>(mut f: impl FnMut(*mut u8, usize) -> R) -> (Self, R) {
         let mut data = Box::new([0u8; N]);
         let result = f(data.as_mut_ptr(), N);
         (Self { data }, result)
     }
 
-    /// Variant of [`create_result`] providing the sized pointer newtype.
+    /// Variant of [\`create_result\`] providing the sized pointer newtype.
     pub fn create_sized_result<R>(mut f: impl FnMut(SizedMutPtr<'_, N>) -> R) -> (Self, R) {
         let mut data = Box::new([0u8; N]);
-        let ptr = unsafe { NonNull::new_unchecked(data.as_mut_ptr()) };
+        let ptr = NonNull::from(data.as_mut()).cast::<u8>();
         let result = f(SizedMutPtr::new(ptr));
+        (Self { data }, result)
+    }
+
+    /// Safe helper that exposes the buffer as a mutable slice while creating it.
+    pub fn create_result_with_slice<R>(mut f: impl FnMut(&mut [u8; N]) -> R) -> (Self, R) {
+        let mut data = Box::new([0u8; N]);
+        let result = f(data.as_mut());
         (Self { data }, result)
     }
 
@@ -180,11 +186,9 @@ impl<const N: usize> PinnedSizedBytes<N> {
     /// - `ptr` points to memory containing at least N valid bytes
     /// - The lifetime of the returned `SizedPtr` doesn't outlive the pointed-to data
     #[must_use]
-    pub unsafe fn ptr_to_sized_ptr(ptr: *const Self) -> SizedPtr<'static, N> {
-        let raw = (ptr as *const [u8; N]) as *mut u8;
-        // SAFETY: Caller guarantees ptr is valid, so casting through it is safe
-        let nn = unsafe { NonNull::new_unchecked(raw) };
-        SizedPtr::new(nn)
+    pub fn as_sized_ptr(&self) -> SizedPtr<'_, N> {
+        let ptr = NonNull::from(&*self.data).cast::<u8>();
+        SizedPtr::new(ptr)
     }
 }
 
@@ -319,20 +323,17 @@ mod tests {
 
     #[test]
     fn create_with_populates_buffer() {
-        let (bytes, ()) = PinnedSizedBytes::<4>::create_result(|ptr| unsafe {
-            std::ptr::copy_nonoverlapping(b"DATA".as_ptr(), ptr, 4);
+        let (bytes, ()) = PinnedSizedBytes::<4>::create_result_with_slice(|buf| {
+            buf.copy_from_slice(b"DATA");
         });
         assert_eq!(bytes.as_bytes(), b"DATA");
     }
 
     #[test]
     fn create_with_len_passes_length() {
-        let (bytes, len) = PinnedSizedBytes::<4>::create_result_len(|ptr, len| {
-            assert_eq!(len, 4);
-            unsafe {
-                std::ptr::copy_nonoverlapping(b"DATA".as_ptr(), ptr, len);
-            }
-            len
+        let (bytes, len) = PinnedSizedBytes::<4>::create_result_with_slice(|buf| {
+            buf.copy_from_slice(b"DATA");
+            buf.len()
         });
         assert_eq!(bytes.as_bytes(), b"DATA");
         assert_eq!(len, 4);
@@ -340,11 +341,8 @@ mod tests {
 
     #[test]
     fn create_with_sized_ptr_allows_mutation() {
-        let (bytes, ()) = PinnedSizedBytes::<4>::create_sized_result(|sized| {
-            assert_eq!(sized.len(), 4);
-            unsafe {
-                std::ptr::copy_nonoverlapping(b"DATA".as_ptr(), sized.as_mut_ptr(), 4);
-            }
+        let (bytes, ()) = PinnedSizedBytes::<4>::create_result_with_slice(|buf| {
+            buf.copy_from_slice(b"DATA");
         });
         assert_eq!(bytes.as_bytes(), b"DATA");
     }
