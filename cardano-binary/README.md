@@ -1,51 +1,31 @@
-# cardano-binary
+# cardano-binary (Rust)
 
-Rust helpers for Cardano CBOR serialisation and deserialisation. The crate
-provides canonical CBOR encoding/decoding with byte-for-byte compatibility
-with the Haskell `cardano-binary` implementation.
+`cardano-binary` is the canonical CBOR toolkit used across the Cardano stack.
+It mirrors the behaviour of the Haskell
+[`cardano-binary`](https://github.com/IntersectMBO/cardano-base/tree/master/cardano-binary)
+package so that ledger types, networking payloads, and test fixtures encode and
+decode byte-for-byte the same way in Rust.
 
-## Features
+## Module map
 
-- **Canonical CBOR Encoding**: Deterministic output following RFC 8949 §4.2
-- **Haskell API Compatibility**: Function names and semantics mirror the original
-- **Comprehensive Testing**: 86 tests including Haskell cross-validation
-- **Performance Benchmarks**: Criterion-based benchmarks for all operation types
-- **Error Handling**: Detailed error types for debugging CBOR issues
+| Rust path | Purpose | Haskell source |
+| --- | --- | --- |
+| `cardano_binary` (crate root) | Re-exports the high-level API surface (`serialize`, `decode_full`, nested helpers) | [`Cardano.Binary`](https://github.com/IntersectMBO/cardano-base/blob/master/cardano-binary/src/Cardano/Binary.hs) |
+| `serialize` | Canonical CBOR encoders, buffer reuse, semantic tag 24 helpers | [`Cardano.Binary.Serialize`](https://github.com/IntersectMBO/cardano-base/blob/master/cardano-binary/src/Cardano/Binary/Serialize.hs) |
+| `deserialize` | Total decoders, leftover detection, nested tag 24 decoders, legacy unsafe helpers | [`Cardano.Binary.Decode`](https://github.com/IntersectMBO/cardano-base/blob/master/cardano-binary/src/Cardano/Binary/Decode.hs) |
+| `error` | Error type equivalent to Haskell `DecoderError`, capturing leftovers, tag mismatches, and IO failures | [`Cardano.Binary.Decoder.Error`](https://github.com/IntersectMBO/cardano-base/blob/master/cardano-binary/src/Cardano/Binary/Decoder/Error.hs) |
 
-## Core Functions
+Refer to `HASKELL_MAPPING.md` for the full symbol-by-symbol translation.
 
-### Serialization
-
-- `serialize(&value)` - Canonical CBOR encoding
-- `serialize_strict(&value)` - Strict variant (same as serialize)
-- `serialize_into_vec(&value, &mut buffer)` - Reuses Vec allocation
-- `serialize_with_capacity(&value, hint)` - Pre-allocates buffer
-- `serialize_into_writer(&value, writer)` - Writes to IO stream
-
-### Deserialization
-
-- `decode_full(&bytes)` - Consumes entire payload, errors on leftovers
-- `decode_full_owned(bytes)` - Takes ownership of Vec
-- `unsafe_deserialize(&bytes)` - **Deprecated**: panics on error
-
-### Nested CBOR (Tag 24)
-
-- `encode_nested_cbor(&value)` - Wraps value in CBOR tag 24
-- `encode_nested_cbor_bytes(&bytes)` - Wraps raw bytes in tag 24
-- `decode_nested_cbor(&bytes)` - Unwraps tag 24 and deserializes
-- `decode_nested_cbor_bytes(&bytes)` - Unwraps tag 24 to raw bytes
-
-## Usage
-
-Add the crate to your workspace and rely on the helper functions:
+## Quick start
 
 ```rust
-use cardano_binary::{serialize, decode_full, encode_nested_cbor, decode_nested_cbor};
+use cardano_binary::{decode_full, encode_nested_cbor, serialize};
 
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Eq, Debug)]
 struct Demo {
-    id: u64,
-    tag: String,
+        id: u64,
+        tag: String,
 }
 
 let value = Demo { id: 7, tag: "hello".into() };
@@ -54,88 +34,117 @@ let decoded: Demo = decode_full(&bytes)?;
 assert_eq!(decoded, value);
 
 let nested = encode_nested_cbor(&value)?;
-let nested_decoded: Demo = decode_nested_cbor(&nested)?;
+let nested_decoded: Demo = cardano_binary::decode_nested_cbor(&nested)?;
 assert_eq!(nested_decoded, value);
 ```
 
-## Canonical CBOR Encoding
+## Feature highlights
 
-This crate produces **canonical** (deterministic) CBOR output per RFC 8949 §4.2:
+- **Canonical CBOR output** – Deterministic encoding that satisfies
+    RFC 8949 §4.2 (smallest integer form, definite lengths, sorted map keys,
+    no duplicates).
+- **Nested CBOR helpers** – Encode/Decode semantic tag 24 payloads used by the
+    ledger and networking protocols.
+- **Leftover-aware decoding** – `decode_full` reports trailing bytes through
+    `BinaryError::Leftover` so deserialisation boundaries stay explicit.
+- **Allocation-aware APIs** – `serialize_into_vec` and
+    `serialize_with_capacity` reuse buffers for tight loops or pre-sizing.
+- **Extensive parity testing** – 86 tests covering golden vectors, Haskell
+    cross-validation, property-based roundtrips, and fuzzed CBOR fragments.
 
-1. **Smallest Integer Encoding**: Use major type 0/1 directly for values ≤ 23
-2. **Definite Lengths**: Always use definite-length encoding (no indefinite)
-3. **Sorted Map Keys**: Keys sorted by byte-level comparison of their encodings
-4. **No Duplicate Keys**: Maps must have unique keys
-5. **Floating Point**: Prefer smallest representation (not applicable - Cardano uses integers)
+## Canonical encoding contract
 
-### Example: Map Key Ordering
+The encoder enforces the canonical rules automatically, but collections need to
+arrive in the right order. Prefer deterministic containers (`BTreeMap`, sorted
+vectors) when serialising maps:
 
 ```rust
 use std::collections::BTreeMap;
 
-// BTreeMap ensures sorted keys automatically
 let mut map = BTreeMap::new();
 map.insert("zebra", 1);
 map.insert("apple", 2);
 map.insert("mango", 3);
 
-let bytes = serialize(&map)?;  // Keys will be sorted: "apple", "mango", "zebra"
+let bytes = serialize(&map)?; // Keys encode in byte-order: "apple", "mango", "zebra"
 ```
 
-For Vec-based maps, ensure keys are pre-sorted:
+If you work with `Vec<(K, V)>`, make sure to sort before encoding:
+
 ```rust
-let mut data = vec![("zebra", 1), ("apple", 2), ("mango", 3)];
-data.sort_by_key(|(k, _)| *k);  // Sort before serializing
-let bytes = serialize(&data)?;
+let mut entries = vec![("zebra", 1), ("apple", 2), ("mango", 3)];
+entries.sort_by_key(|(key, _)| *key);
+let canonical = serialize(&entries)?;
 ```
 
-### Verification
+## Nested CBOR payloads
 
-All canonical rules are validated by the test suite:
-- `tests/cbor_compatibility.rs` - CBOR type coverage
-- `tests/haskell_cross_validation.rs` - Byte-for-byte Haskell parity
-- `tests/golden_tests.rs` - Fixed hex patterns
-- `tests/proptest_roundtrip.rs` - Property-based validation
+Some protocol messages embed CBOR inside CBOR (tag 24). The helper functions
+wrap and unwrap the tagged payload while validating the structure:
 
-## Performance Benchmarks
-
-Run benchmarks to measure throughput:
-
-```bash
-cargo bench -p cardano-binary --bench cbor_bench
+```rust
+let inner_bytes = vec![0x01, 0x02, 0x03];
+let tagged = cardano_binary::encode_nested_cbor_bytes(&inner_bytes)?;
+let roundtrip = cardano_binary::decode_nested_cbor_bytes(&tagged)?;
+assert_eq!(roundtrip, inner_bytes);
 ```
 
-Baseline results (indicative):
-- **Small struct** (16 bytes): ~250 ns serialize, ~200 ns deserialize
-- **Medium struct** (153 bytes): ~2 µs serialize, ~1 µs deserialize
-- **Large struct** (2.5 KB): ~11 µs serialize, ~50 µs deserialize
-- **Vec of 1000 u64**: ~8 µs serialize (~320 MB/s), ~29 µs deserialize (~90 MB/s)
-- **100-entry map**: ~3 µs serialize (~330 MB/s), ~18 µs deserialize (~59 MB/s)
+Errors differentiate between the wrong tag (`BinaryError::NestedTag`) and an
+unexpected payload type (`BinaryError::NestedPayload`).
 
-HTML reports are generated in `target/criterion/cbor_bench/`.
+## Error handling
 
-## Haskell Compatibility
+All APIs return `Result<_, BinaryError>`. Besides serialization/deserialization
+wrappers around `ciborium`, notable cases include:
 
-See `HASKELL_MAPPING.md` for:
-- Complete function mapping (Haskell → Rust)
-- Type class translations (`ToCBOR`/`FromCBOR` → `Serialize`/`Deserialize`)
-- Error handling differences
-- Migration guide with examples
+- `BinaryError::Leftover` – exposes the label, leftover slice, and length so
+    higher-level decoders can surface actionable messages.
+- `BinaryError::NestedTag` – carries both the expected and observed tag IDs.
+- `BinaryError::NestedPayload` – signals that the inner CBOR object was not a
+    byte string.
 
-## Testing
+Deprecated helpers (`unsafe_deserialize*`) mirror the historical Haskell API and
+will be removed once downstream code migrates to fallible decoding.
 
-Run the crate tests with:
+## Testing and verification
 
 ```bash
 cargo test -p cardano-binary
 ```
 
-**Test Coverage:**
-- 10 unit tests (core serialize/deserialize)
-- 22 CBOR compatibility tests
-- 13 golden vector tests
-- 30 Haskell cross-validation tests
-- 11 property-based roundtrip tests
+The suite spans:
 
-The repository container currently lacks a Rust toolchain; install one (for
-example via `rustup`) before running the command.
+- `tests/cbor_compatibility.rs` – coverage over CBOR major/minor types.
+- `tests/golden_tests.rs` – fixed hex fixtures tied to the Haskell repository.
+- `tests/haskell_cross_validation.rs` – roundtrips against Haskell outputs.
+- `tests/proptest_roundtrip.rs` – property tests for structural types.
+
+CI executes these alongside the rest of the workspace to guard byte-level
+parity.
+
+## Benchmarks
+
+```bash
+cargo bench -p cardano-binary --bench cbor_bench
+```
+
+Criterion benchmarks report throughput for representative payloads (small and
+large structs, vector-heavy data, large maps). HTML reports live under
+`target/criterion/cbor_bench/`.
+
+## Related crates
+
+- [`cardano-base`](../cardano-base/README.md) – feature flags and base types
+    that often serialise through this crate.
+- [`cardano-slotting`](../cardano-slotting/README.md) – slot/epoch primitives
+    with CBOR instances backed by `cardano-binary`.
+
+## License
+
+Licensed under either of
+
+- Apache License, Version 2.0, ([LICENSE](./LICENSE) or
+    <http://www.apache.org/licenses/LICENSE-2.0>)
+- MIT license ([LICENSE](./LICENSE) or <http://opensource.org/licenses/MIT>)
+
+at your option.

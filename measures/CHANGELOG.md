@@ -1,13 +1,23 @@
-# Changelog for `measures`
+# Changelog
 
-## Unreleased
+All notable changes to `measures` are documented here. The format follows
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the crate adheres
+to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-* Port package to Rust crate with iterator combinators and numeric implementations.
+## [Unreleased]
+
+### Added
+- Ported the Haskell `Cardano.Measure` module to safe, stable Rust with
+	iterator combinators and tuple blanket implementations.
+- Reworked the README with highlights, crate layout, Haskell↔Rust mapping
+	tables, integration notes, and validation instructions.
 
 ## 0.1.0.2
 
-* Remove `development` flag: #372
+### Changed
+- Remove `development` flag (upstream ref: IntersectMBO/cardano-base#372).
 
 ## 0.1.0.1
 
-* Initial release
+### Added
+- Initial release.

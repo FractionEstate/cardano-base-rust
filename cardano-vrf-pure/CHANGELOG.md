@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and applies cofactor clearing before beta computation
 - `cardano_compat::point::hash_to_curve_bigint`: Refactored to apply cofactor clearing
   and let natural point serialization determine final sign bit
+- README reorganised with highlights, crate layout tables, Haskell↔Rust mapping,
+  and diagnostic/regeneration guidance to support distribution-ready onboarding.
 
 ### Fixed
 - Sign bit handling in Elligator2 hash-to-curve mapping now matches C reference

@@ -1,26 +1,26 @@
 # base-deriving-via (Rust)
 
-This crate is a Rust translation of the original Haskell-only
-`base-deriving-via` package from the Cardano code base. It provides a tiny
-layer for expressing `Semigroup` and `Monoid` instances in terms of a
-“generic” representation—much like `GHC.Generics`—and a convenience wrapper
-[`InstantiatedAt`] that mirrors the `deriving via` pattern familiar to Haskell
-users.
+Rust port of the Haskell `base-deriving-via` package. It offers a lightweight
+way to derive `Semigroup`/`Monoid` implementations from a “generic” tuple
+representation, mirroring the `deriving via` pattern used across the Cardano
+code base.
 
-The implementation is intentionally conservative so it can serve as a starting
-point for a wider migration of the repository toward Rust. Future work can
-expand coverage (e.g. tuple structs, enums, or automatically generated
-representations) as additional modules are ported.
+## Highlights
 
-Key features already available:
+- **`InstantiatedAt<T>` wrapper** — grants `Semigroup`/`Monoid` instances to
+  your type once a compatible generic representation exists.
+- **`Generic`, `GenericSemigroup`, `GenericMonoid` traits** — encode the
+  mapping between the concrete type and its tuple-based representation.
+- **`impl_generic_for_struct!` macro** — derives `Generic` automatically for
+  common record and tuple structs without relying on `unsafe`.
+- **Blanket tuple implementations** — tuples up to arity eight already provide
+  `Semigroup`/`Monoid`, covering most ledger records out of the box.
+- **Standard library support** — integers, durations, strings, vectors,
+  arrays, and options ship with ready-made instances.
+- **Pure Rust** — no macros beyond declarative `macro_rules!`, no runtime
+  reflection, and no external dependencies.
 
-- Blanket [`Semigroup`](src/semigroup.rs) and [`Monoid`](src/semigroup.rs)
-    implementations for tuples up to eight elements, matching the behaviour of
-    the original generics-based derivations.
-- Ready-made helpers to treat `core::time::Duration`, primitive numbers,
-    strings, options, vectors, and fixed-size arrays as algebraic structures.
-
-## Getting started
+## Quick start
 
 ```rust
 use base_deriving_via::{
@@ -38,7 +38,7 @@ impl_generic_for_struct!(struct Counter {
     ticks: i64,
 });
 
-let total = InstantiatedAt::new(Counter {
+let combined = InstantiatedAt::new(Counter {
     label: "alpha".into(),
     ticks: 2,
 })
@@ -48,38 +48,88 @@ let total = InstantiatedAt::new(Counter {
 }))
 .into_inner();
 
-assert_eq!(total.label, "alphabeta");
-assert_eq!(total.ticks, 7);
+assert_eq!(combined.label, "alphabeta");
+assert_eq!(combined.ticks, 7);
 ```
 
-Run the test suite with:
+### Customising the representation
+
+Generic derivation works for tuple structs as well. You can also hand-roll a
+representation when the default tuple layout is insufficient:
+
+```rust
+use base_deriving_via::{Generic, GenericMonoid, InstantiatedAt, Monoid};
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct RollingAverage {
+    sum: i64,
+    count: u32,
+}
+
+// Implement Generic manually to encode additional invariants.
+impl Generic for RollingAverage {
+    type Repr = (i64, u32);
+  type ReprRef<'a> = (&'a i64, &'a u32) where Self: 'a;
+
+    fn into_repr(self) -> Self::Repr {
+        (self.sum, self.count)
+    }
+
+    fn from_repr(repr: Self::Repr) -> Self {
+        RollingAverage {
+            sum: repr.0,
+            count: repr.1,
+        }
+    }
+
+  fn as_repr(&self) -> Self::ReprRef<'_> {
+    (&self.sum, &self.count)
+  }
+}
+
+impl GenericMonoid for RollingAverage {}
+
+let average = InstantiatedAt::new(RollingAverage { sum: 6, count: 2 })
+    .combine(InstantiatedAt::new(RollingAverage { sum: 9, count: 3 }))
+    .into_inner();
+
+assert_eq!(average.sum, 15);
+assert_eq!(average.count, 5);
+```
+
+## Haskell ↔ Rust mapping
+
+| Haskell module/symbol | Rust counterpart |
+|-----------------------|------------------|
+| `Data.DerivingVia.InstantiatedAt` | `base_deriving_via::InstantiatedAt` |
+| `Data.DerivingVia.Generic` | `base_deriving_via::Generic` |
+| `Data.DerivingVia.GenericSemigroup` | `base_deriving_via::GenericSemigroup` |
+| `Data.DerivingVia.GenericMonoid` | `base_deriving_via::GenericMonoid` |
+| `implGenericForStruct` TH helper | `base_deriving_via::impl_generic_for_struct!` |
+| Tuple `Semigroup`/`Monoid` instances | `base_deriving_via::semigroup` module |
+
+## Integration notes
+
+- Downstream crates (`deepseq`, `nothunks`, `orphans-deriving-via`) rely on the
+  `InstantiatedAt` wrapper to bridge evaluation traits. Keep version alignment
+  across the workspace to avoid API drift.
+- The current macro supports record structs and tuple structs. If you need enum
+  coverage, add a new macro pattern or implement `Generic` manually.
+- The crate has no optional features; it is safe to depend on in `no_std`
+  contexts that support heap allocations for `String`/`Vec`.
+
+## Testing
+
+Run the crate tests to validate the derivations:
 
 ```bash
-cargo test
+cargo test -p base-deriving-via
 ```
 
-## Module mapping
+The suite mirrors the Haskell QuickCheck coverage for `InstantiatedAt`, tuple
+instances, and generic macro behaviour.
 
-The original Haskell modules translate to the following Rust modules:
+## License
 
-| Haskell module | Rust equivalent |
-| --- | --- |
-| `Data.DerivingVia` | `src/instantiated_at.rs` (re-exported via `lib.rs`) |
-| `Data.DerivingVia.GHC.Generics.Semigroup` | `src/semigroup.rs` together with `src/generic.rs` |
-| `Data.DerivingVia.GHC.Generics.Monoid` | `src/semigroup.rs` and `src/generic.rs` |
-| `Data/DerivingVia/GHC/Generics/Semigroup.hs` macro usage | `src/macros.rs` (`impl_generic_for_struct!`) |
-
-## Migration checklist
-
-1. **Integrate with the wider workspace:** add the crate to a top-level
-    `Cargo.toml` workspace (or create one) so that other packages can depend on
-    it.
-2. **Wire up CI:** ensure your continuous-integration pipeline executes the
-    Rust tests (e.g. by invoking `cargo test -p base-deriving-via`).
-3. **Port consumers incrementally:** replace Haskell call sites that used the
-    original package with Rust equivalents. Start with simple record types to
-    validate the API.
-4. **Extend macro coverage:** the current macro supports record structs. Add
-    patterns for tuple structs or enums as your migration requires them.
-5. **Audit trait coverage:** implement additional `Semigroup`/`Monoid`
-    instances for domain-specific types once they are ported.
+Dual-licensed under Apache-2.0 or MIT. See [`LICENSE`](../LICENSE) and
+[`NOTICE`](../NOTICE) in the workspace root.

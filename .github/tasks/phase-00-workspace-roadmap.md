@@ -43,6 +43,8 @@ and ensures no crate is left without an explicit plan or acceptance criteria.
 ## Crate-by-crate checklist
 
 ### base-deriving-via
+- [x] Document deriving helpers, macro usage, and Haskell mapping for the Rust
+      port.
 - [ ] Audit Haskell `Cardano.Base.DerivingVia` modules to confirm all deriving
       helpers are present.
 - [ ] Port any Template Haskell-based instances to macro-free Rust equivalents
@@ -52,16 +54,20 @@ and ensures no crate is left without an explicit plan or acceptance criteria.
 - [ ] Cross-reference usage sites in dependent crates to confirm API coverage.
 
 ### cardano-base
+- [x] Document feature flag primitives, README/CHANGELOG parity, and Haskell
+      module mapping for the Rust port.
 - [ ] Catalogue all exported modules from Haskell `Cardano.Base.*` and map them
       to existing Rust modules.
 - [ ] Implement missing primitives (e.g. canonical JSON, text utilities) with
       thorough tests.
 - [ ] Mirror the error-handling semantics (Either vs Result) and documented edge
       cases from Haskell.
-- [ ] Document migration notes for downstream crates that previously depended on
+- [x] Document migration notes for downstream crates that previously depended on
       the Haskell version.
 
 ### cardano-binary
+- [x] Document canonical CBOR helpers, README/CHANGELOG parity, and Haskell
+      module mapping for the Rust port.
 - [x] Align CBOR encoding/decoding semantics with Haskell (including
       canonical/deterministic encoding rules).
 - [x] Import or regenerate golden vectors from the Haskell test suite and make
@@ -73,6 +79,8 @@ and ensures no crate is left without an explicit plan or acceptance criteria.
 - [x] Track structured work via [Phase 07 – CBOR Encoding Parity](phase-07-cbor-parity.md). ✅ **COMPLETED**
 
 ### cardano-crypto-class
+- [x] Document cryptographic primitives, README/CHANGELOG parity notes, and
+      regeneration workflows for DSIGN/KES/VRF/hash modules.
 - [x] Track progress through [Phase 03 – Cardano VRF Parity](phase-03-vrf-parity.md). ✅ **COMPLETED**
 - [x] Track progress through [Phase 04 – DSIGN Algorithm Parity](phase-04-dsign-parity.md). ✅ **COMPLETED**
 - [x] Track progress through [Phase 05 – KES Algorithm Parity](phase-05-kes-parity.md). ✅ **COMPLETED**
@@ -96,6 +104,8 @@ and ensures no crate is left without an explicit plan or acceptance criteria.
 - [x] Document usage expectations for downstream crates/binaries.
 
 ### cardano-slotting
+- [x] Document slotting primitives, Haskell mapping, and integration guidance
+      for the Rust port.
 - [ ] Port slotting arithmetic (slot length, epochs, `SlottingData`) with unit
       tests derived from Haskell’s property suite.
 - [ ] Implement time calculations and conversions (slots ↔ POSIX time) ensuring
@@ -105,6 +115,8 @@ and ensures no crate is left without an explicit plan or acceptance criteria.
 - [ ] Add clock-skew and boundary condition tests mirroring Haskell cases.
 
 ### cardano-strict-containers
+- [x] Document strict container usage, Haskell mapping, and finger tree
+      guidance for downstream crates.
 - [ ] Port strict maps, sequences, and helper combinators ensuring structural
       sharing semantics match.
 - [ ] Benchmark against Haskell behaviour for large datasets (memory usage,
@@ -114,12 +126,16 @@ and ensures no crate is left without an explicit plan or acceptance criteria.
 - [ ] Expand doc comments with usage guidance for downstream crates.
 
 ### cardano-vrf-pure
+- [x] Document VRF highlights, diagnostics wiring, and Haskell mapping in the
+      Rust README/CHANGELOG so downstream crates can cross-reference parity evidence.
 - [x] Coordinated with [Phase 03](phase-03-vrf-parity.md); ensure every low-level
       primitive has matching tests and documentation. ✅ **COMPLETED**
 - [x] Add micro-benchmarks to spot regressions versus libsodium where practical.
 - [x] Verify `no_std` compatibility if required by downstream components.
 
 ### deepseq
+- [x] Document NFData traits, deriving helpers, and Haskell mapping for the
+      Rust port; include guidance on pairing with `base-deriving-via`/`nothunks`.
 - [ ] Mirror Haskell’s `Control.DeepSeq` behaviour, including custom `NFData`
       derivations for Cardano-specific types.
 - [ ] Confirm blanket implementations don’t introduce borrow-checker hazards or
@@ -127,12 +143,20 @@ and ensures no crate is left without an explicit plan or acceptance criteria.
 - [ ] Add doc examples showing how consumers ensure deep evaluation.
 
 ### heapwords
+- [x] Document HeapWords trait usage, helper combinators, and Haskell mapping
+      for the Rust port; include guidance on reporting helpers and compile-time
+      constraints.
 - [ ] Port the heap word counting utilities and ensure they integrate with Rust
       profiling/measurement tools as expected.
 - [ ] Write regression tests using representative Cardano data structures.
-- [ ] Document how to run heap measurement reports in the Rust toolchain.
+- [x] Document how to run heap measurement reports in the Rust toolchain.
 
 ### measures
+- [x] Document highlights, crate layout, Haskell mapping, and validation steps
+      in the README/CHANGELOG to keep distribution guidance in sync with the
+      latest Rust port.
+- [x] Document measurement APIs, Haskell mapping, and usage notes for the Rust
+      port.
 - [ ] Align metric collection APIs (counters, histograms) with the Haskell
       naming and aggregation semantics.
 - [ ] Confirm compatibility with the observability stack (e.g. EKG, Prometheus
@@ -140,6 +164,9 @@ and ensures no crate is left without an explicit plan or acceptance criteria.
 - [ ] Add end-to-end tests/integration harness demonstrating event emission.
 
 ### nothunks
+- [x] Document NoThunks usage, diagnostics, and Haskell mapping for the Rust
+      port; include guidance on generic deriving and integration across the
+      workspace.
 - [ ] Implement thunk detection mirroring Haskell’s `NoThunks` typeclass.
 - [ ] Ensure diagnostic messages match expectations (path, type names).
 - [ ] Add property tests covering shallow vs deep thunks, cycles, and large
@@ -147,7 +174,19 @@ and ensures no crate is left without an explicit plan or acceptance criteria.
 - [ ] Integrate checks across other crates (e.g. `cardano-strict-containers`) as
       part of CI.
 
+### cardano-test-vectors
+- [x] Document fixture layout, regeneration tooling, and Haskell mapping for the
+      Rust port; highlight CLI tooling and feature-gated diagnostics.
+- [ ] Audit fixture parity against the latest Haskell generators after each
+      upstream release and capture deltas in the changelog.
+- [ ] Expand cross-language comparison scripts to cover streaming hash cases
+      and additional KES evolution scenarios.
+- [ ] Automate regeneration tooling within CI to guard against drift (follow-up
+      task once parity pipeline is finalised).
+
 ### orphans-deriving-via
+- [x] Document crate purpose, re-export surface, and Haskell mapping for
+      downstream users.
 - [ ] Collect all orphan instances provided in Haskell and port them explicitly,
       documenting any differences required by Rust’s coherence rules.
 - [ ] Ensure exporting strategy doesn’t introduce conflicting implementations in
@@ -210,6 +249,55 @@ and ensures no crate is left without an explicit plan or acceptance criteria.
       Enhanced README with canonical encoding rules (RFC 8949 §4.2), map key ordering examples, and
       verification strategy. All CBOR types, error handling, and deterministic encoding validated
       byte-for-byte against Haskell reference.
+- 08-10-2025-time-06:15: Authored `heapwords` README/CHANGELOG documenting usage, helper mapping,
+      and test commands. Marked roadmap documentation task complete while leaving parity/test items
+      open for future work.
+- 09-10-2025-time-03:05: Refreshed `measures` README/CHANGELOG with Haskell mapping, iterator helper
+      guidance, and testing notes; added roadmap checkbox to track remaining parity work separately.
+- 09-10-2025-time-03:55: Updated `cardano-strict-containers` README/CHANGELOG with strict finger tree
+      examples, serde integration guidance, and Haskell lookup table; marked roadmap documentation
+      checkbox while keeping remaining parity tasks open.
+- 09-10-2025-time-04:20: Added README/CHANGELOG for `orphans-deriving-via`, documenting re-exports and
+      Haskell parity; flagged roadmap checklist to reflect completed documentation while parity
+      tasks remain outstanding.
+- 09-10-2025-time-04:45: Refreshed `base-deriving-via` README/CHANGELOG with highlights, custom
+      derivation examples, and Haskell lookup table; marked documentation checkbox while keeping
+      parity test items open for future work.
+- 10-10-2025-time-01:10: Updated `cardano-slotting` README/CHANGELOG with epoch/time examples,
+      Haskell mapping, and testing guidance; marked roadmap documentation task while parity-focused
+      work (arithmetic proofs, boundary tests) remains open.
+- 10-10-2025-time-03:40: Documented `cardano-base` feature flag primitives, refreshed README with
+      Haskell mapping and parsing guidance, converted the changelog to Keep a Changelog format, and
+      recorded remaining parity tasks for future implementation.
+- 10-10-2025-time-05:05: Refactored `cardano-binary` README with module mapping, canonical encoding
+      contract, error-handling guidance, and nested CBOR usage; aligned changelog with Keep a Changelog
+      structure and checked off roadmap documentation tasks.
+- 10-10-2025-time-07:10: Refreshed `cardano-crypto-class` README with module map, parity summaries
+      for DSIGN/KES/VRF/hash, regeneration workflows, and diagnostics guidance; converted the changelog
+      to Keep a Changelog format and marked roadmap documentation items complete.
+- 10-10-2025-time-08:30: Updated `cardano-git-rev` README with Haskell module mapping, build-script
+      workflow, troubleshooting guidance, and testing instructions; adopted Keep a Changelog format and
+      captured the work in the crate changelog to keep the documentation campaign consistent.
+- 10-10-2025-time-09:15: Expanded `deepseq` README with highlights, crate layout, generic deriving
+      patterns, and integration guidance; converted the changelog to Keep a Changelog format and checked
+      off the documentation task in the roadmap.
+- 10-10-2025-time-10:00: Refreshed `nothunks` README with highlights, generic deriving patterns,
+      integration notes, and crate layout; migrated the changelog to Keep a Changelog format and marked
+      the roadmap documentation task complete.
+- 10-10-2025-time-10:45: Updated `heapwords` README with highlights, integration guidance, crate layout,
+      and refined testing instructions; recorded the work in the changelog and marked the roadmap
+      documentation item complete.
+- 10-10-2025-time-11:30: Refreshed `cardano-test-vectors` README with highlights, fixture layout table,
+      Haskell↔Rust mapping, and expanded regeneration instructions; adopted Keep a Changelog structure,
+      and marked the roadmap documentation checkbox while leaving parity and automation tasks open.
+- 10-10-2025-time-12:15: Reworked `cardano-vrf-pure` README with highlights, layout table, Haskell mapping,
+      and diagnostics guidance; noted the changes in the changelog and recorded the documentation
+      checkbox while existing performance/parity tasks remain complete.
+- 10-10-2025-time-12:45: Refreshed `measures` README with highlights, crate layout, Haskell mapping,
+      integration notes, and validation guidance; updated the changelog and roadmap documentation entry.
+- 10-10-2025-time-13:05: Added migration notes to `cardano-base` README, logged the change in the
+      changelog, and marked the roadmap checklist item so downstream crates have parity guidance when
+      swapping from the Haskell feature-flag helpers.
 
 ---
 

@@ -1,47 +1,60 @@
-# Changelog for `cardano-slotting`
+# Changelog
 
-## Unreleased
+All notable changes to `cardano-slotting` are documented here. The format
+follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the crate
+adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-* Add `Debug` stub for `EpochInfo` matching the Haskell `Show` instance.
-* Cover `fixed_epoch_info` and `unsafe_linear_extend_epoch_info` with unit tests.
+## [Unreleased]
+
+### Added
+- Refreshed README with slot/epoch examples, Haskell↔Rust lookup table, and
+  integration notes for JSON/serde consumers.
+
+### Changed
+- Documented existing epoch-info debug behaviour and testing coverage.
 
 ## 0.2.0.2
 
-*
+### Added
+- Updated `EpochInfo` debug representation stub to align with the Haskell
+  `Show` instance.
+- Added unit tests covering `fixed_epoch_info` and
+  `unsafe_linear_extend_epoch_info` helper behaviour.
 
 ## 0.2.0.1
 
-* Drop GHC <= 9.4 support
+### Changed
+- Dropped support for GHC ≤ 9.4 in the upstream codebase (no-op for Rust port).
 
 ## 0.2.0.0
 
-* Add `EpochInterval` and `addEpochInterval` from `cardano-ledger`.
-* Add `binOpEpochNo` helper function to facilitate binary operations on
-  `EpochNo`.
-* Remove numeric instances (`Num`, `Integral`, `Real`) of `EpochNo` and
-  `EpochSize` for safety.
-  They are still available for testing from the `testlib` as orphans.
-* New `Test.Cardano.Slotting.TreeDiff` module extracted from
-  `cardano-ledger-binary`. It lives in a new public sublibrary `testlib`.
+### Added
+- Ported `EpochInterval` and `add_epoch_interval` from the ledger code.
+- Introduced `bin_op_epoch_no` to unify arithmetic on `EpochNo`.
+- Extracted `Test.Cardano.Slotting.TreeDiff`-equivalent utilities into the
+  `testlib` module (Rust tests replicate the behaviour).
 
-### `testlib`
-
-* Add numeric instances (`Num`, `Integral`, `Real`) of `EpochNo` and
-  `EpochSize` as orphans.
+### Removed
+- Numeric instances (`Num`, `Integral`, `Real`) for `EpochNo` and `EpochSize`
+  in favour of explicit helpers; legacy support remains in the `testlib`
+  feature scope.
 
 ## 0.1.1.1
 
-* GHC-9.6 compatibility
+### Added
+- GHC 9.6 compatibility work mirrored in the Rust port (no API changes).
 
 ## 0.1.1.0
 
-* Remove `development` flag: #372
-* Addition of `ToJSON`/`FromJSON` instances for:
-  * `WithOrigin`
-  * `BlockNo`
-  * `SystemStart`
-  * `RelativeTime` and `SlotLength`
+### Added
+- JSON instances for `WithOrigin`, `BlockNo`, `SystemStart`, `RelativeTime`,
+  and `SlotLength` to match the Haskell package.
+
+### Changed
+- Removed the legacy `development` Cabal flag (not applicable to Rust, noted
+  for parity).
 
 ## 0.1.0.1
 
-* Initial release
+### Added
+- Initial release.
